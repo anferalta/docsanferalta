@@ -1,59 +1,185 @@
 {% extends "@admin/layout.twig" %}
 
-{% block page_title %}Dashboard de Tramitação{% endblock %}
+{% block page_title %}
+Dashboard de Tramitação
+{% endblock %}
 
 {% block content %}
 
-<h4 class="mb-4">Estado da Tramitação</h4>
+<h4 class="mb-4">
+    <i class="fa fa-chart-pie me-2"></i> Estado da Tramitação
+</h4>
 
-<div class="row">
+{% set total = pendentes + em_tramitacao + em_analise + concluidos + arquivados %}
 
+{% if total == 0 %}
+    {% set total = 1 %}
+{% endif %}
+
+<div class="row g-4">
+
+    <!-- PENDENTES -->
     <div class="col-md-3">
-        <div class="card text-center border-primary">
-            <div class="card-body">
-                <h6>Pendentes</h6>
+        <div class="card shadow-sm border-primary">
+            <div class="card-body text-center">
+                <i class="fa fa-hourglass-start fa-2x text-primary mb-2"></i>
+                <h6 class="fw-bold">Pendentes</h6>
                 <h2 class="text-primary">{{ pendentes }}</h2>
+                <small class="text-muted">
+                    {{ ((pendentes / total) * 100)|number_format(1, '.', ',') }}%
+                </small>
             </div>
         </div>
     </div>
 
+    <!-- EM TRAMITAÇÃO -->
     <div class="col-md-3">
-        <div class="card text-center border-warning">
-            <div class="card-body">
-                <h6>Em Tramitação</h6>
+        <div class="card shadow-sm border-warning">
+            <div class="card-body text-center">
+                <i class="fa fa-random fa-2x text-warning mb-2"></i>
+                <h6 class="fw-bold">Em Tramitação</h6>
                 <h2 class="text-warning">{{ em_tramitacao }}</h2>
+                <small class="text-muted">
+                    {{ ((em_tramitacao / total) * 100)|number_format(1, '.', ',') }}%
+                </small>
             </div>
         </div>
     </div>
 
+    <!-- EM ANÁLISE -->
     <div class="col-md-3">
-        <div class="card text-center border-info">
-            <div class="card-body">
-                <h6>Em Análise</h6>
+        <div class="card shadow-sm border-info">
+            <div class="card-body text-center">
+                <i class="fa fa-search fa-2x text-info mb-2"></i>
+                <h6 class="fw-bold">Em Análise</h6>
                 <h2 class="text-info">{{ em_analise }}</h2>
+                <small class="text-muted">
+                    {{ ((em_analise / total) * 100)|number_format(1, '.', ',') }}%
+                </small>
             </div>
         </div>
     </div>
 
+    <!-- CONCLUÍDOS -->
     <div class="col-md-3">
-        <div class="card text-center border-success">
-            <div class="card-body">
-                <h6>Concluídos</h6>
+        <div class="card shadow-sm border-success">
+            <div class="card-body text-center">
+                <i class="fa fa-check-circle fa-2x text-success mb-2"></i>
+                <h6 class="fw-bold">Concluídos</h6>
                 <h2 class="text-success">{{ concluidos }}</h2>
+                <small class="text-muted">
+                    {{ ((concluidos / total) * 100)|number_format(1, '.', ',') }}%
+                </small>
             </div>
         </div>
     </div>
 
+    <!-- ARQUIVADOS -->
     <div class="col-md-3 mt-4">
-        <div class="card text-center border-dark">
-            <div class="card-body">
-                <h6>Arquivados</h6>
+        <div class="card shadow-sm border-dark">
+            <div class="card-body text-center">
+                <i class="fa fa-archive fa-2x text-dark mb-2"></i>
+                <h6 class="fw-bold">Arquivados</h6>
                 <h2 class="text-dark">{{ arquivados }}</h2>
+                <small class="text-muted">
+                    {{ ((arquivados / total) * 100)|number_format(1, '.', ',') }}%
+                </small>
             </div>
         </div>
     </div>
 
 </div>
 
+<hr class="my-5">
+
+<!-- GRÁFICOS -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header fw-bold">
+                <i class="fa fa-chart-pie me-2"></i> Distribuição Geral
+            </div>
+            <div class="card-body">
+                <canvas id="graficoPizza"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header fw-bold">
+                <i class="fa fa-chart-bar me-2"></i> Quantidade por Estado
+            </div>
+            <div class="card-body">
+                <canvas id="graficoBarra"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
+{% block scripts %}
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    // Dados
+    const labels = ["Pendentes", "Em Tramitação", "Em Análise", "Concluídos", "Arquivados"];
+    const valores = [
+        {{ pendentes }},
+        {{ em_tramitacao }},
+        {{ em_analise }},
+        {{ concluidos }},
+        {{ arquivados }}
+    ];
+
+    // GRÁFICO PIZZA
+    new Chart(document.getElementById("graficoPizza"), {
+        type: "doughnut",
+        data: {
+            labels: labels,
+            datasets: [{
+                data: valores,
+                backgroundColor: [
+                    "#0d6efd",
+                    "#ffc107",
+                    "#0dcaf0",
+                    "#198754",
+                    "#343a40"
+                ]
+            }]
+        }
+    });
+
+    // GRÁFICO BARRA
+    new Chart(document.getElementById("graficoBarra"), {
+        type: "bar",
+        data: {
+            labels: labels,
+            datasets: [{
+                label: "Documentos",
+                data: valores,
+                backgroundColor: [
+                    "#0d6efd",
+                    "#ffc107",
+                    "#0dcaf0",
+                    "#198754",
+                    "#343a40"
+                ]
+            }]
+        },
+        options: {
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+});
+</script>
+
+{% endblock %}

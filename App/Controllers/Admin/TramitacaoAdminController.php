@@ -69,18 +69,40 @@ class TramitacaoAdminController extends BaseController
     {
         $this->authorize('admin.tramitacao.dashboard');
 
-        $pendentes = Documento::countWhere("estado_atual = 'pendente'");
-        $analise = Documento::countWhere("estado_atual = 'analise'");
-        $tramitacao = Documento::countWhere("estado_atual = 'em_tramitacao'");
-        $concluidos = Documento::countWhere("estado_atual = 'concluido'");
-        $arquivados = Documento::countWhere("estado_atual = 'arquivado'");
+        $db = \App\Core\Conexao::getInstancia();
+
+        // Pendentes
+        $pendentes = $db->query("
+        SELECT COUNT(*) FROM documentos WHERE estado_atual = 'pendente'
+    ")->fetchColumn();
+
+        // Em Tramitação
+        $em_tramitacao = $db->query("
+        SELECT COUNT(*) FROM documentos WHERE estado_atual = 'em_tramitacao'
+    ")->fetchColumn();
+
+        // Em Análise (aceita 'analise' e 'em_analise')
+        $em_analise = $db->query("
+        SELECT COUNT(*) FROM documentos 
+        WHERE estado_atual IN ('analise', 'em_analise')
+    ")->fetchColumn();
+
+        // Concluídos
+        $concluidos = $db->query("
+        SELECT COUNT(*) FROM documentos WHERE estado_atual = 'concluido'
+    ")->fetchColumn();
+
+        // Arquivados
+        $arquivados = $db->query("
+        SELECT COUNT(*) FROM documentos WHERE estado_atual = 'arquivado'
+    ")->fetchColumn();
 
         return $this->render('@admin/tramitacao/dashboard.twig', [
                     'pendentes' => $pendentes,
-                    'analise' => $analise,
-                    'tramitacao' => $tramitacao,
+                    'em_tramitacao' => $em_tramitacao,
+                    'em_analise' => $em_analise,
                     'concluidos' => $concluidos,
-                    'arquivados' => $arquivados,
+                    'arquivados' => $arquivados
         ]);
     }
 
