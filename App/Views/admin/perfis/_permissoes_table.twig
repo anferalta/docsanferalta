@@ -1,0 +1,43 @@
+<table class="table table-sm table-bordered">
+    <thead class="table-light">
+        <tr>
+            <th style="width: 40px;">
+                <input type="checkbox" id="check_all_perms">
+            </th>
+            <th>Chave</th>
+            <th>Descrição</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for perm in permissoes %}
+        {% set checked = perfilPerms is defined and perm.id in perfilPerms %}
+        <tr>
+            <td>
+                <input type="checkbox"
+                       name="permissoes[]"
+                       value="{{ perm.id }}"
+                       class="perm-checkbox"
+                       {% if checked %}checked{% endif %}>
+            </td>
+            <td><code>{{ perm.chave }}</code></td>
+            <td>{{ perm.descricao }}</td>
+        </tr>
+    {% else %}
+        <tr>
+            <td colspan="3" class="text-muted text-center">Nenhuma permissão registada.</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const master = document.getElementById('check_all_perms');
+    if (!master) return;
+    master.addEventListener('change', function () {
+        document.querySelectorAll('.perm-checkbox').forEach(cb => {
+            cb.checked = master.checked;
+        });
+    });
+});
+</script>

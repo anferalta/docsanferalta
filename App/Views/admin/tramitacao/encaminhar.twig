@@ -1,0 +1,89 @@
+<!-- MODAL TRAMITAR -->
+<div class="modal fade" id="modalTramitar" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <form method="POST"
+              action="/admin/tramitacao/encaminhar"
+              class="modal-content"
+              id="formEncaminhar">
+
+            {{ csrf_field() }}
+
+            <input type="hidden" name="documento_id" value="{{ documento.id }}">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa fa-random me-2"></i> Encaminhar Documento
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <!-- ÁREA DESTINO -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Área de destino</label>
+                    <select name="area_id" class="form-select" required>
+                        <option value="">Selecione...</option>
+                        {% for a in areas %}
+                            <option value="{{ a.id }}">{{ a.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- COMENTÁRIO -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Comentário (opcional)</label>
+                    <textarea name="comentario"
+                              class="form-control"
+                              rows="3"
+                              placeholder="Descreva o motivo do encaminhamento..."></textarea>
+                </div>
+
+                <!-- ANEXOS -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Anexos (opcional)</label>
+                    <input type="file"
+                           name="anexos[]"
+                           class="form-control"
+                           multiple>
+
+                    <small class="text-muted">
+                        Pode anexar vários ficheiros. Tamanho máximo por ficheiro: 20MB.
+                    </small>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary" id="btnTramitar">
+                    <i class="fa fa-paper-plane me-1"></i> Encaminhar
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<!-- JS ANTI-DUPLICAÇÃO (FINAL E FUNCIONAL) -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const form = document.getElementById('formEncaminhar');
+    const btn = document.getElementById('btnTramitar');
+
+    if (!form || !btn) return;
+
+    form.addEventListener('submit', function (e) {
+
+        // Se já foi clicado → cancela
+        if (btn.disabled) {
+            e.preventDefault();
+            return false;
+        }
+
+        // Bloqueia imediatamente ao primeiro clique
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> A enviar...';
+    });
+});
+</script>

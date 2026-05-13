@@ -1,0 +1,32 @@
+{% extends "@admin/layout.twig" %}
+
+{% block content %}
+<h3>{{ doc.titulo }}</h3>
+
+<p>{{ doc.descricao }}</p>
+
+<div class="mb-3">
+    <strong>Carregado por:</strong> {{ doc.owner_nome }}<br>
+    <strong>Data:</strong> {{ doc.criado_em|date("d/m/Y H:i") }}
+</div>
+
+{% if preview %}
+    {% if preview.type == 'image' %}
+        <img src="{{ preview.url }}" class="img-fluid border rounded">
+    {% elseif preview.type == 'pdf' %}
+        <iframe src="{{ preview.url }}" width="100%" height="600px" class="border rounded"></iframe>
+    {% endif %}
+{% endif %}
+
+<div class="mt-3">
+    <a href="/admin/documentos/download/{{ doc.id }}" class="btn btn-secondary">Download</a>
+    <a href="/admin/documentos/editar/{{ doc.id }}" class="btn btn-warning">Editar</a>
+
+    <form action="/admin/documentos/delete/{{ doc.id }}" method="post" class="d-inline">
+        {{ csrf_field() }}
+        <button class="btn btn-danger" onclick="return confirm('Eliminar documento?')">Eliminar</button>
+    </form>
+
+    <a href="/admin/documentos" class="btn btn-light">Voltar</a>
+</div>
+{% endblock %}

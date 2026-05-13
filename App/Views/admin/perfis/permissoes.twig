@@ -1,0 +1,55 @@
+{% extends "@admin/layout.twig" %}
+{% block title %}Permissões do Perfil{% endblock %}
+{% block header %}Gestão de Perfis{% endblock %}
+
+{% block content %}
+
+<h3 class="mb-4">Permissões — {{ perfil.nome }}</h3>
+
+<form method="POST">
+
+    {{ csrf_field() }}
+
+    <button type="button" class="btn btn-sm btn-secondary mb-3" onclick="toggleAll(true)">Selecionar tudo</button>
+    <button type="button" class="btn btn-sm btn-secondary mb-3" onclick="toggleAll(false)">Desmarcar tudo</button>
+
+    <div class="row">
+        {% for grupo, lista in todas %}
+            <div class="col-md-4 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header fw-bold">
+                        {{ grupo }}
+                    </div>
+                    <div class="card-body">
+                        {% for p in lista %}
+                            <div class="form-check">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       name="permissoes[]"
+                                       value="{{ p.id }}"
+                                       id="perm{{ p.id }}"
+                                       {{ p.id in atuais ? 'checked' }}>
+
+                                <label class="form-check-label" for="perm{{ p.id }}">
+                                    {{ p.nome }} <small class="text-muted">({{ p.codigo }})</small>
+                                </label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        function toggleAll(state) {
+            document.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = state);
+        }
+    </script>
+
+    <button class="btn btn-primary">Guardar Permissões</button>
+    <a href="/admin/perfis" class="btn btn-secondary">Voltar</a>
+
+</form>
+
+{% endblock %}

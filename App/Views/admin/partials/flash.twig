@@ -1,0 +1,13 @@
+{% if flash.sucesso is defined and flash.sucesso is not empty %}
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        {{ flash.sucesso }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+{% endif %}
+
+{% if flash.erro is defined and flash.erro is not empty %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ flash.erro }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+{% endif %}

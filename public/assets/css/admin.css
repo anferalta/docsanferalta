@@ -1,0 +1,370 @@
+/* -----------------------------------------------------------
+   LAYOUT BASE
+----------------------------------------------------------- */
+
+.admin-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+.content-area {
+    flex: 1;
+    background: #f3f4f6;
+    display: flex;
+    flex-direction: column;
+}
+
+.page-content {
+    padding: 20px;
+}
+
+/* -----------------------------------------------------------
+   SIDEBAR — VERSÃO PROFISSIONAL
+----------------------------------------------------------- */
+
+.sidebar {
+    width: 240px;
+    background: #1f2937;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.sidebar .logo {
+    font-size: 1.4rem;
+    font-weight: bold;
+    margin-bottom: 30px;
+}
+
+/* Headers */
+.menu-header {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #9ca3af;
+    margin: 15px 0 5px;
+    font-weight: 700;
+}
+
+/* Items */
+.menu-item {
+    margin-bottom: 4px;
+}
+
+.menu-item.active > .menu-link {
+    background: #374151;
+    color: #fff;
+    font-weight: 600;
+}
+
+/* Links */
+.menu-link {
+    color: #cbd5e1;
+    text-decoration: none;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    transition: 0.2s;
+}
+
+.menu-link:hover {
+    background: #374151;
+    color: #fff;
+}
+
+/* Ícones */
+.menu-link i {
+    font-size: 1.2rem;
+}
+
+/* Submenu */
+.submenu-list {
+    list-style: none;
+    padding-left: 18px;
+    margin: 4px 0 8px;
+}
+
+.submenu-item {
+    margin-bottom: 2px;
+}
+
+.submenu-item.active > .submenu-link {
+    color: #fff;
+    font-weight: 600;
+}
+
+.submenu-link {
+    color: #9ca3af;
+    text-decoration: none;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    transition: 0.2s;
+}
+
+.submenu-link:hover {
+    background: #374151;
+    color: #fff;
+}
+
+/* Badge */
+.badge {
+    background: #f59e0b;
+    color: #000;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    margin-left: auto;
+}
+
+/* -----------------------------------------------------------
+   TIMELINE PREMIUM (Nível Enterprise)
+----------------------------------------------------------- */
+
+.timeline {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    border-left: 3px solid #d0d7de;
+    margin-left: 20px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 30px;
+    padding-left: 40px;
+}
+
+.timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+/* Ícone circular */
+.timeline-icon {
+    position: absolute;
+    left: -22px;
+    top: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #0d6efd;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    box-shadow: 0 0 0 4px #fff;
+}
+
+/* Conteúdo */
+.timeline-content {
+    background: #fff;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    padding: 15px 18px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    transition: all 0.2s ease-in-out;
+    font-size: 1rem !important;
+    line-height: 1.45 !important;
+}
+
+.timeline-content:hover {
+    border-color: #cbd3da;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+/* Título + data */
+.timeline-content h6 {
+    font-size: 1.15rem !important;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+/* Texto */
+.timeline-content p {
+    margin-bottom: 8px;
+    color: #444;
+    font-size: 1rem !important;
+}
+
+/* Anexos */
+.timeline-content ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.timeline-content li {
+    margin-bottom: 4px;
+}
+
+.timeline-content a {
+    text-decoration: none;
+    color: #0d6efd;
+    font-weight: 500;
+}
+
+.timeline-content a:hover {
+    text-decoration: underline;
+}
+
+/* Alertas de comentário */
+.timeline-content .alert {
+    border-radius: 4px;
+    font-size: 1rem !important;
+    padding: 8px 12px;
+}
+
+/* Evitar que o bold do timeline escape para fora */
+.timeline-content strong,
+.timeline-content b {
+    font-weight: 600 !important;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+
+    .timeline {
+        margin-left: 15px;
+        border-left-width: 2px;
+    }
+
+    .timeline-item {
+        padding-left: 35px;
+    }
+
+    .timeline-icon {
+        width: 32px;
+        height: 32px;
+        left: -18px;
+        font-size: 14px;
+    }
+
+    .timeline-content {
+        padding: 12px 14px;
+    }
+}
+
+/* -----------------------------------------------------------
+   BOTÕES PREMIUM
+----------------------------------------------------------- */
+
+.btn {
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 6px;
+    transition: all 0.15s ease-in-out;
+}
+
+.btn-primary {
+    background: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+    background: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    border-color: #6c757d;
+}
+
+.btn-secondary:hover {
+    background: #5c636a;
+    border-color: #565e64;
+}
+
+.btn-warning {
+    background: #f0ad4e;
+    border-color: #eea236;
+    color: #000;
+}
+
+.btn-warning:hover {
+    background: #ec971f;
+    border-color: #d58512;
+}
+
+/* Botões com ícones */
+.btn i {
+    font-size: 14px;
+}
+
+/* -----------------------------------------------------------
+   MODAIS PREMIUM
+----------------------------------------------------------- */
+
+.modal-content {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.modal-header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #e1e4e8;
+    border-radius: 10px 10px 0 0;
+}
+
+.modal-title {
+    font-weight: 600;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    border-top: 1px solid #e1e4e8;
+    padding: 12px 20px;
+}
+
+/* -----------------------------------------------------------
+   CARTÃO DO DOCUMENTO
+----------------------------------------------------------- */
+
+.card {
+    border-radius: 10px;
+    border: 1px solid #e1e4e8;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.card-header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #e1e4e8;
+    border-radius: 10px 10px 0 0;
+}
+
+.card-body p {
+    margin-bottom: 6px;
+    font-size: 15px;
+}
+
+.card-body strong {
+    color: #333;
+}
+
+/* -----------------------------------------------------------
+   CORREÇÃO DO ESTADO EM NEGRITO
+----------------------------------------------------------- */
+
+.estado-atual,
+.documento-estado,
+.badge-estado,
+.card-body strong.estado,
+.card-body span.estado {
+    font-weight: normal !important;
+    color: #333;
+}
+
+.badge {
+    font-weight: 400 !important;
+}

@@ -1,0 +1,34 @@
+{% extends "@site/layout.twig" %}
+
+{% block title %}Contactos{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1>Contactos</h1>
+
+    {% if sucesso %}
+        <div class="alert alert-success">{{ sucesso }}</div>
+    {% endif %}
+
+    <form method="post" action="{{ url('contactos/enviar') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+            <label class="form-label">Nome</label>
+            <input type="text" name="nome" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Mensagem</label>
+            <textarea name="mensagem" class="form-control" rows="4" required></textarea>
+        </div>
+
+        <button class="btn btn-primary">Enviar</button>
+    </form>
+</div>
+{% endblock %}

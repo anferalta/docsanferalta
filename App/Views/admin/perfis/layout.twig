@@ -1,0 +1,33 @@
+{% extends "@admin/layout.twig" %}
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Painel Administrativo{% endblock %}</title>
+
+    <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
+    {% block styles %}{% endblock %}
+</head>
+
+<body>
+
+    {# Sidebar #}
+    {% include 'admin/partials/sidebar.twig' %}
+
+    <div class="main-content">
+
+        {# Navbar #}
+        {% include 'admin/partials/navbar.twig' %}
+
+        <div class="content-wrapper">
+            {% block content %}{% endblock %}
+        </div>
+
+        {# Footer #}
+        {% include 'admin/partials/footer.twig' %}
+    </div>
+
+    <script src="{{ asset('js/admin.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

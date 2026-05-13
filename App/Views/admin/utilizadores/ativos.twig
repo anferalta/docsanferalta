@@ -1,0 +1,112 @@
+{% extends "@admin/layout.twig" %}
+
+{% block title %}Utilizadores Ativos{% endblock %}
+
+{% block page_title %}
+    <i class="bi bi-person-check"></i> Utilizadores Ativos
+{% endblock %}
+
+{% block content %}
+
+    <div class="card mb-4">
+        <div class="card-body">
+
+            <!-- FILTROS -->
+            <form method="get" class="row g-2 mb-3">
+                <div class="col-md-4">
+                    <input type="text" name="nome" value="{{ nome }}" class="form-control" placeholder="Filtrar por nome">
+                </div>
+                <div class="col-md-4">
+                    <input type="text" name="email" value="{{ email }}" class="form-control" placeholder="Filtrar por email">
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+
+            <!-- TABELA -->
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Email</th>
+                        <th>Perfil</th>
+                        <th>Registado em</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for u in ativos %}
+                        <tr>
+                            <td>{{ u.nome }}</td>
+                            <td>{{ u.email }}</td>
+                            <td>{{ u.perfil_nome }}</td>
+                            <td>{{ u.criado_em|date("d/m/Y H:i") }}</td>
+
+                            <td class="d-flex gap-2">
+
+                                {# VER DETALHES #}
+                                <a href="/admin/utilizadores/editar/{{ u.id }}"
+                                   class="btn btn-sm btn-outline-primary"
+                                   title="Ver detalhes">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+
+                                {# BLOQUEAR #}
+                                <button class="btn btn-sm btn-outline-warning"
+                                        title="Bloquear utilizador"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#bloquear{{ u.id }}">
+                                    <i class="bi bi-lock"></i>
+                                </button>
+
+                            </td>
+                        </tr>
+
+                        <!-- MODAL BLOQUEAR -->
+                    <div class="modal fade" id="bloquear{{ u.id }}">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-warning">
+                                    <h5 class="modal-title">Bloquear Utilizador</h5>
+                                </div>
+                                <div class="modal-body">
+                                    Tem a certeza que deseja bloquear <strong>{{ u.nome }}</strong>?
+                                </div>
+                                <div class="modal-footer">
+                                    <form method="post" action="/admin/utilizadores/bloquear/{{ u.id }}">
+                                        {{ csrf_field() }}
+                                        <button class="btn btn-warning">Bloquear</button>
+                                    </form>
+                                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">Nenhum utilizador ativo.</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- PAGINAÇÃO -->
+            <nav>
+                <ul class="pagination justify-content-center">
+                    {% for p in 1..total_paginas %}
+                        <li class="page-item {% if p == pagina %}active{% endif %}">
+                            <a class="page-link" href="?page={{ p }}&nome={{ nome }}&email={{ email }}">{{ p }}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </nav>
+
+        </div>
+    </div>
+
+{% endblock %}

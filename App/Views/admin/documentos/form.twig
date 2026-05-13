@@ -1,0 +1,91 @@
+<form id="upload-form" action="" method="post" enctype="multipart/form-data">
+
+    <div class="mb-3">
+        <label class="form-label">Selecionar documentos</label>
+        <input type="file" name="ficheiros[]" id="ficheiros" class="form-control" multiple required>
+        <small class="text-muted">
+            Pode selecionar vários ficheiros (PDF, JPG, PNG, GIF). Máx: 10MB cada. Máx: 10 ficheiros.
+        </small>
+    </div>
+
+    <!-- Pré-visualização -->
+    <div id="preview" class="row g-3 mt-2"></div>
+
+    <!-- Barra de progresso -->
+    <div class="progress mt-3" style="height: 25px; display:none;">
+        <div id="upload-progress" class="progress-bar progress-bar-striped progress-bar-animated"
+             role="progressbar" style="width: 0%">0%</div>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3">Carregar Documentos</button>
+</form>
+
+<script>
+const input = document.getElementById('ficheiros');
+const preview = document.getElementById('preview');
+const MAX_FILES = 10;
+
+input.addEventListener('change', function () {
+    preview.innerHTML = '';
+
+    if (this.files.length > MAX_FILES) {
+        alert("Só pode enviar até " + MAX_FILES + " ficheiros.");
+        this.value = "";
+        return;
+    }
+
+    [...this.files].forEach(file => {
+        const col = document.createElement('div');
+        col.classList.add('col-3');
+
+        // Apenas imagens têm preview
+        if (file.type.startsWith('image/')) {
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.classList.add('img-fluid', 'rounded', 'border');
+            col.appendChild(img);
+        } else {
+            const box = document.createElement('div');
+            box.classList.add('p-3', 'border', 'rounded', 'bg-light', 'text-center');
+            box.textContent = file.name;
+            col.appendChild(box);
+        }
+
+        preview.appendChild(col);
+    });
+});
+
+// Upload com barra de progresso
+document.getElementById('upload-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const data = new FormData(form);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', form.action);
+
+    const progressBar = document.querySelector('.progress');
+    const bar = document.getElementById('upload-progress');
+
+    progressBar.style.display = 'block';
+
+    xhr.upload.addEventListener('progress', function (e) {
+        if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            bar.style.width = percent + '%';
+            bar.textContent = percent + '%';
+        }
+    });
+
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            window.location.href = '/admin/documentos';
+        } else {
+            alert('Erro ao enviar ficheiros.');
+        }
+    };
+
+    xhr.send(data);
+});
+</script>

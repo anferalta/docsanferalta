@@ -1,0 +1,58 @@
+{% extends "@site/layout.twig" %}
+
+{% block title %}Gestão Documental{% endblock %}
+
+{% block content %}
+
+    <!-- HERO -->
+    <section class="hero bg-light py-5 mb-5">
+        <div class="container text-center">
+            <h1 class="display-4 fw-bold mb-3">Gestão Documental Inteligente</h1>
+
+            <p class="lead mb-4">
+                Organize, armazene e aceda aos seus documentos de forma rápida, segura e eficiente.
+            </p>
+
+            <a href="/login" class="btn btn-primary btn-lg px-4">
+                Entrar no Sistema
+            </a>
+        </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="features py-5">
+        <div class="container">
+            <div class="row g-4">
+
+                <div class="col-md-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body text-center p-4">
+                            <h4 class="fw-bold mb-3">Armazenamento Seguro</h4>
+                            <p>Os seus documentos são guardados com encriptação e controlo de acessos.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body text-center p-4">
+                            <h4 class="fw-bold mb-3">Acesso Rápido</h4>
+                            <p>Encontre qualquer documento em segundos com pesquisa avançada.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body text-center p-4">
+                            <h4 class="fw-bold mb-3">Gestão Colaborativa</h4>
+                            <p>Partilhe documentos com equipas e mantenha tudo organizado.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+{% endblock %}

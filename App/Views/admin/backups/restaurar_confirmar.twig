@@ -1,0 +1,41 @@
+{% extends "@admin/layout.twig" %}
+{% block title %}Confirmar Restauro{% endblock %}
+{% block page_title %}Confirmar Restauro{% endblock %}
+
+{% block content %}
+
+<div class="card">
+    <div class="card-body">
+
+        <h4 class="text-danger">⚠ Atenção</h4>
+
+        <p>Vai restaurar o backup:</p>
+
+        <pre class="bg-light p-2">{{ ficheiro }}</pre>
+
+        <p class="fw-bold text-danger">
+            Este processo é irreversível. Todos os dados atuais serão substituídos.
+        </p>
+
+        {% if tipo is defined and tipo == 'files' %}
+            <form method="post" action="/admin/backups/files/restaurar/{{ ficheiro|replace({'/':'---'}) }}">
+        {% else %}
+            <form method="post" action="/admin/backups/bd/restaurar/{{ ficheiro|replace({'/':'---'}) }}">
+        {% endif %}
+
+            {{ csrf_field() }}
+
+            <button type="submit" class="btn btn-danger">
+                Confirmar Restauro
+            </button>
+
+            <a href="/admin/backups" class="btn btn-secondary">
+                Cancelar
+            </a>
+
+        </form>
+
+    </div>
+</div>
+
+{% endblock %}

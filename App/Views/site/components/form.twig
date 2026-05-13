@@ -1,0 +1,126 @@
+<style>
+    .form-container {
+        background: #fff;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+        max-width: 600px;
+        margin-top: 20px;
+    }
+
+    .form-title {
+        font-size: 22px;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #333;
+    }
+
+    .form-group {
+        margin-bottom: 18px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: #444;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid #dcdcdc;
+        border-radius: 8px;
+        font-size: 15px;
+        transition: all 0.2s ease;
+        background: #fff;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        border-color: #4a90e2;
+        box-shadow: 0 0 0 3px rgba(74,144,226,0.2);
+        outline: none;
+    }
+
+    .btn-submit {
+        padding: 12px 20px;
+        background: #4a90e2;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s ease;
+        margin-top: 10px;
+    }
+
+    .btn-submit:hover {
+        background: #3b7ac4;
+    }
+
+    /* DARK MODE */
+    body.dark .form-container {
+        background: #1f2937;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+    }
+
+    body.dark .form-title {
+        color: #e5e7eb;
+    }
+
+    body.dark .form-group label {
+        color: #d1d5db;
+    }
+
+    body.dark .form-group input,
+    body.dark .form-group select,
+    body.dark .form-group textarea {
+        background: #111827;
+        border-color: #374151;
+        color: #e5e7eb;
+    }
+
+    body.dark .form-group input:focus,
+    body.dark .form-group select:focus,
+    body.dark .form-group textarea:focus {
+        border-color: #4a90e2;
+        box-shadow: 0 0 0 3px rgba(74,144,226,0.3);
+    }
+</style>
+
+<div class="form-container">
+    <div class="form-title">{{ titulo_form }}</div>
+
+    <form method="post" action="{{ action }}">
+
+        {% for field in fields %}
+            <div class="form-group">
+                <label>{{ field.label }}</label>
+
+                {% if field.type == 'textarea' %}
+                    <textarea name="{{ field.name }}" rows="4">{{ field.value }}</textarea>
+
+                {% elseif field.type == 'select' %}
+                    <select name="{{ field.name }}">
+                        {% for key, val in field.options %}
+                            <option value="{{ key }}" {% if key == field.value %}selected{% endif %}>
+                                {{ val }}
+                            </option>
+                        {% endfor %}
+                    </select>
+
+                {% else %}
+                    <input type="{{ field.type }}" name="{{ field.name }}" value="{{ field.value }}">
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="btn-submit">Guardar</button>
+    </form>
+</div>

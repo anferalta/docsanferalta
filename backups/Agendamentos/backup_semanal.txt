@@ -1,0 +1,5 @@
+nome=backup semanal
+frequencia=semanal
+ativo=1
+ultima_execucao=
+proxima_execucao=

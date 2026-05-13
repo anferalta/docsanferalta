@@ -1,0 +1,15 @@
+<div class="form-group">
+    <label class="form-label">{{ label }}</label>
+
+    <input
+        type="{{ type|default('text') }}"
+        name="{{ name }}"
+        class="form-input {{ error(errors, name) ? 'input-error' : '' }}"
+        value="{{ value|default('') }}"
+        placeholder="{{ placeholder|default('') }}"
+    >
+
+    {% if error(errors, name) %}
+        <div class="form-error">{{ error(errors, name) }}</div>
+    {% endif %}
+</div>

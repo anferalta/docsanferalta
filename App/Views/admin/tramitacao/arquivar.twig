@@ -1,0 +1,72 @@
+<!-- MODAL ALTERAR ESTADO -->
+<div class="modal fade" id="modalEstado" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <form method="POST"
+              action="/admin/tramitacao/estado"
+              enctype="multipart/form-data"
+              class="modal-content"
+              id="formEstado">
+
+            {{ csrf_field() }}
+
+            <input type="hidden" name="documento_id" value="{{ documento.id }}">
+            <input type="hidden" name="estado" id="estadoSelecionado">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa fa-flag me-2"></i> Alterar Estado do Documento
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <!-- COMENTÁRIO -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Comentário (opcional)</label>
+                    <textarea name="comentario"
+                              class="form-control"
+                              rows="3"
+                              placeholder="Descreva o motivo da alteração de estado..."></textarea>
+                </div>
+
+                <!-- ANEXOS -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Anexos (opcional)</label>
+                    <input type="file"
+                           name="anexos[]"
+                           class="form-control"
+                           multiple>
+
+                    <small class="text-muted">
+                        Pode anexar vários ficheiros. Tamanho máximo por ficheiro: 20MB.
+                    </small>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-warning" id="btnEstado">
+                    <i class="fa fa-check me-1"></i> Confirmar Alteração
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<script>
+// Define o estado selecionado quando o utilizador clica num botão
+document.querySelectorAll("[data-estado]").forEach(btn => {
+    btn.addEventListener("click", () => {
+        document.getElementById("estadoSelecionado").value = btn.dataset.estado;
+    });
+});
+
+// Evita duplo submit e mostra spinner
+document.getElementById('formEstado').addEventListener('submit', function () {
+    const btn = document.getElementById('btnEstado');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> A processar...';
+});
+</script>

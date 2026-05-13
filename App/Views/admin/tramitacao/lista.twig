@@ -1,0 +1,164 @@
+{% extends "@admin/layout.twig" %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <!-- ALERTA GLOBAL (para notificações AJAX) -->
+    <div id="alerta-global" class="alert d-none" style="display:none;"></div>
+
+    <!-- TÍTULO -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">
+            <i class="fa fa-diagram-project me-2"></i> Documentos em Tramitação
+        </h4>
+    </div>
+
+    <!-- CARTÃO -->
+    <div class="card">
+        <div class="card-body">
+
+            {% if documentos is empty %}
+                <p class="text-muted">Não existem documentos em tramitação.</p>
+            {% else %}
+
+                <div class="table-responsive">
+                    <table class="table table-striped align-middle">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Título</th>
+                                <th>Tipo</th>
+                                <th>Estado</th>
+                                <th>Área Atual</th>
+                                <th>Criado Por</th>
+                                <th>Data</th>
+                                <th class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for d in documentos %}
+                                <tr>
+                                    <td>{{ d.id }}</td>
+
+                                    <td>
+                                        <strong>{{ d.titulo }}</strong>
+                                    </td>
+
+                                    <td>{{ d.tipo_nome }}</td>
+
+                                    <td>
+                                        <span class="badge bg-primary">
+                                            {{ d.estado_atual|upper }}
+                                        </span>
+                                    </td>
+
+                                    <td>{{ d.area_atual_nome }}</td>
+
+                                    <td>{{ d.criador_nome }}</td>
+
+                                    <td>{{ d.criado_em|date("d/m/Y") }}</td>
+
+                                    <td class="text-end">
+
+                                        <!-- Ver Tramitação -->
+                                        <a href="/admin/tramitacao/{{ d.id }}"
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fa fa-random me-1"></i> Tramitação
+                                        </a>
+
+                                        <!-- Ver Documento -->
+                                        <a href="/admin/documentos/ver/{{ d.id }}"
+                                           class="btn btn-sm btn-secondary">
+                                            <i class="fa fa-file me-1"></i> Documento
+                                        </a>
+
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+
+                    </table>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+// ===============================================
+//  TRAMITAÇÃO — SUBMISSÃO DO MODAL ENCAMINHAR
+// ===============================================
+
+$(document).ready(function () {
+
+    $('#formEncaminhar').on('submit', function (e) {
+        e.preventDefault();
+
+        let dados = $(this).serialize();
+
+        $.ajax({
+            url: '/admin/tramitacao/encaminhar',
+            method: 'POST',
+            data: dados,
+            dataType: 'json',
+
+            success: function (res) {
+
+                if (res.sucesso) {
+
+                    mostrarNotificacao('success', 'Documento encaminhado com sucesso.');
+
+                    $('#modalEncaminhar').modal('hide');
+
+                    $('#formEncaminhar')[0].reset();
+
+                    if (typeof atualizarTabela === 'function') {
+                        atualizarTabela();
+                    }
+
+                    return;
+                }
+
+                if (res.erro) {
+                    mostrarNotificacao('danger', res.erro);
+                }
+            },
+
+            error: function () {
+                mostrarNotificacao('danger', 'Ocorreu um erro inesperado.');
+            }
+        });
+    });
+});
+
+
+// ===============================================
+//  FUNÇÃO GLOBAL DE NOTIFICAÇÃO
+// ===============================================
+
+function mostrarNotificacao(tipo, mensagem) {
+
+    let alerta = $('#alerta-global');
+
+    alerta
+        .removeClass('d-none alert-success alert-danger alert-warning alert-info')
+        .addClass('alert-' + tipo)
+        .text(mensagem)
+        .fadeIn(200);
+
+    setTimeout(() => {
+        alerta.fadeOut(300);
+    }, 3000);
+}
+
+</script>
+{% endblock %}

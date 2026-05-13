@@ -1,0 +1,65 @@
+[2026-03-02 16:28:14] mysqldump não encontrado.
+[2026-03-02 16:28:39] mysqldump não encontrado.
+[2026-03-02 17:23:05] mysqldump não encontrado.
+[2026-03-02 18:10:05] mysqldump não encontrado.
+[2026-03-02 18:10:45] mysqldump não encontrado.
+[2026-03-02 18:26:46] mysqldump não encontrado.
+[2026-03-02 18:26:49] mysqldump não encontrado.
+[2026-03-02 18:26:58] mysqldump não encontrado.
+[2026-03-02 18:26:59] mysqldump não encontrado.
+[2026-03-02 18:27:03] mysqldump não encontrado.
+[2026-03-02 18:27:05] mysqldump não encontrado.
+[2026-03-02 18:27:09] mysqldump não encontrado.
+[2026-03-02 19:14:25] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/backup_db_2026-03-02_19-14-25.sql"
+[2026-03-02 19:14:30] Backup criado com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/backup_db_2026-03-02_19-14-25.sql
+[2026-03-02 19:36:40] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-02_19-36-40.sql"
+[2026-03-02 19:36:47] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-02_19-36-40.sql.zip
+[2026-03-02 20:01:56] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-02_20-01-56.sql"
+[2026-03-02 20:02:04] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-02_20-01-56.sql.zip
+[2026-03-02 20:02:32] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-02_20-02-32.sql"
+[2026-03-02 20:02:33] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-02_20-02-32.sql.zip
+[2026-03-03 00:14:40] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-03_00-14-40.sql"
+[2026-03-03 00:14:46] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-03_00-14-40.sql.zip
+[2026-03-03 00:37:23] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-03_00-37-22.sql"
+[2026-03-03 00:37:43] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-03_00-37-22.sql.zip
+[2026-03-03 00:38:27] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-03_00-38-27.sql"
+[2026-03-03 00:38:31] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-03_00-38-27.sql.zip
+[2026-03-03 00:46:15] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-03_00-46-15.sql"
+[2026-03-03 00:46:35] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-03_00-46-15.sql.zip
+[2026-03-03 01:20:51] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-03_01-20-51.sql"
+[2026-03-03 01:20:57] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-03_01-20-51.sql.zip
+[2026-03-03 21:01:25] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-03_21-01-25.sql"
+[2026-03-03 21:01:30] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-03_21-01-25.sql.zip
+[2026-03-03 23:00:50] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-03_23-00-50.sql"
+[2026-03-03 23:01:00] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-03_23-00-50.sql.zip
+[2026-03-03 23:20:05] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-03_23-20-05.sql"
+[2026-03-03 23:20:14] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-03_23-20-05.sql.zip
+[2026-03-04 20:09:32] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-04_20-09-32.sql"
+[2026-03-04 20:09:47] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-04_20-09-32.sql.zip
+[2026-03-04 21:56:56] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-04_21-56-56.sql"
+[2026-03-04 21:57:20] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-04_21-56-56.sql.zip
+[2026-03-05 17:53:57] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-05_17-53-57.sql"
+[2026-03-05 17:54:05] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-05_17-53-57.sql.zip
+[2026-03-05 19:04:45] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-05_19-04-45.sql"
+[2026-03-05 19:04:49] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-05_19-04-45.sql.zip
+[2026-03-05 21:09:30] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-05_21-09-30.sql"
+[2026-03-05 21:09:41] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-05_21-09-30.sql.zip
+[2026-03-05 21:37:43] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-05_21-37-43.sql"
+[2026-03-05 21:37:48] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-05_21-37-43.sql.zip
+[2026-03-07 00:10:48] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-07_00-10-48.sql"
+[2026-03-07 00:11:00] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-07_00-10-48.sql.zip
+[2026-03-14 23:57:59] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-14_23-57-59.sql"
+[2026-03-14 23:58:12] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-14_23-57-59.sql.zip
+[2026-03-30 18:19:14] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-30_18-19-14.sql"
+[2026-03-30 18:19:25] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/03/backup_db_2026-03-30_18-19-14.sql.zip
+[2026-04-05 18:23:44] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/04/backup_db_2026-04-05_18-23-44.sql"
+[2026-04-05 18:23:54] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/04/backup_db_2026-04-05_18-23-44.sql.zip
+[2026-04-10 16:46:00] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/04/backup_db_2026-04-10_16-46-00.sql"
+[2026-04-10 16:46:17] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/04/backup_db_2026-04-10_16-46-00.sql.zip
+[2026-04-13 21:06:12] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/04/backup_db_2026-04-13_21-06-12.sql"
+[2026-04-13 21:06:21] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/04/backup_db_2026-04-13_21-06-12.sql.zip
+[2026-04-13 21:16:42] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/04/backup_db_2026-04-13_21-16-42.sql"
+[2026-04-13 21:16:52] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/04/backup_db_2026-04-13_21-16-42.sql.zip
+[2026-04-26 19:32:19] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/04/backup_db_2026-04-26_19-32-16.sql"
+[2026-04-26 19:36:23] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/04/backup_db_2026-04-26_19-36-23.sql"
+[2026-04-26 19:36:51] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/04/backup_db_2026-04-26_19-36-23.sql.zip

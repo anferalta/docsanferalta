@@ -1,0 +1,176 @@
+{% extends "@admin/layout.twig" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block page_title %}
+    <i class="bi bi-speedometer2"></i> Dashboard
+{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-container">
+
+    <!-- ===================== -->
+    <!--  A. CARDS DE ESTATÍSTICAS -->
+    <!-- ===================== -->
+    <div class="row g-3 mb-4">
+
+        {% set cards = [
+            { title: 'Total Utilizadores', value: totalUtilizadores, icon: 'bi-people', color: 'primary' },
+            { title: 'Ativos', value: totalAtivos, icon: 'bi-person-check', color: 'success' },
+            { title: 'Pendentes', value: totalPendentes, icon: 'bi-hourglass-split', color: 'warning' },
+            { title: 'Bloqueados', value: totalBloqueados, icon: 'bi-person-x', color: 'danger' },
+            { title: 'Documentos', value: totalDocumentos, icon: 'bi-folder', color: 'info' }
+        ] %}
+
+        {% for c in cards %}
+        <div class="col-md-4 col-lg-3">
+            <div class="card stat-card border-{{ c.color }}">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stat-icon text-{{ c.color }}">
+                        <i class="bi {{ c.icon }}"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h6 class="text-muted">{{ c.title }}</h6>
+                        <h3 class="fw-bold">{{ c.value }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+    </div>
+
+    <!-- ===================== -->
+    <!--  B. GRÁFICO DONUT -->
+    <!-- ===================== -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>Distribuição de Utilizadores</strong>
+        </div>
+        <div class="card-body">
+            <canvas id="graficoDonut"></canvas>
+        </div>
+    </div>
+
+    <!-- ===================== -->
+    <!--  C. GRÁFICO DE LINHA -->
+    <!-- ===================== -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>Registos de Utilizadores por Mês</strong>
+        </div>
+        <div class="card-body">
+            <canvas id="graficoLinha"></canvas>
+        </div>
+    </div>
+
+    <!-- ===================== -->
+    <!--  D + E. LISTAS -->
+    <!-- ===================== -->
+    <div class="row g-3 mb-4">
+
+        <!-- Últimos Documentos -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header"><strong>Últimos Documentos</strong></div>
+                <div class="card-body">
+                    {% if ultimosDocs is not empty %}
+                        <ul class="list-group">
+                            {% for d in ultimosDocs %}
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>{{ d.titulo }}</span>
+                                    <small class="text-muted">{{ d.criado_em|date("d/m/Y") }}</small>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted">Sem documentos.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Últimos Utilizadores -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header"><strong>Últimos Utilizadores</strong></div>
+                <div class="card-body">
+                    {% if ultimosUsers is not empty %}
+                        <ul class="list-group">
+                            {% for u in ultimosUsers %}
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>{{ u.nome }}</span>
+                                    <small class="text-muted">{{ u.email }}</small>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted">Sem utilizadores.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===================== -->
+    <!--  F. ATIVIDADE RECENTE -->
+    <!-- ===================== -->
+    <div class="card">
+        <div class="card-header"><strong>Atividade Recente</strong></div>
+        <div class="card-body">
+
+            {% if ultimosLogs is not empty %}
+                {% for log in ultimosLogs %}
+                    <div class="activity-item mb-3 d-flex">
+                        <div class="activity-icon me-3">
+                            <i class="bi bi-activity"></i>
+                        </div>
+                        <div>
+                            <strong>{{ log.acao }}</strong><br>
+                            <small class="text-muted">{{ log.data }} — IP {{ log.ip }}</small>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">Sem atividade.</p>
+            {% endif %}
+
+        </div>
+    </div>
+
+</div>
+
+<!-- ===================== -->
+<!--  SCRIPTS DOS GRÁFICOS -->
+<!-- ===================== -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+new Chart(document.getElementById('graficoDonut'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Ativos', 'Pendentes', 'Bloqueados'],
+        datasets: [{
+            data: [{{ totalAtivos }}, {{ totalPendentes }}, {{ totalBloqueados }}],
+            backgroundColor: ['#198754', '#ffc107', '#dc3545']
+        }]
+    }
+});
+
+new Chart(document.getElementById('graficoLinha'), {
+    type: 'line',
+    data: {
+        labels: {{ meses|json_encode|raw }},
+        datasets: [{
+            label: 'Registos',
+            data: {{ registosPorMes|json_encode|raw }},
+            borderColor: '#0d6efd',
+            tension: 0.3
+        }]
+    }
+});
+</script>
+
+{% endblock %}

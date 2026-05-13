@@ -1,0 +1,13 @@
+{% extends "@site/layout.twig" %}
+
+{% block content %}
+<h2>Validar Autenticação 2FA</h2>
+
+<p>Introduza o código gerado pela sua aplicação de autenticação.</p>
+
+<form method="post" action="/2fa/validar">
+    <label>Código 2FA:</label>
+    <input type="text" name="codigo" required>
+    <button type="submit">Validar</button>
+</form>
+{% endblock %}

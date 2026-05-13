@@ -1,0 +1,56 @@
+{% extends "@admin/layout.twig" %}
+
+{% block title %}Perfis{% endblock %}
+{% block header %}Gestao de Perfis{% endblock %}
+
+{% block content %}
+
+    <h3 class="mb-3">Perfis</h3>
+
+    <a href="/admin/perfis/criar" class="btn btn-primary mb-3">Novo Perfil</a>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Descrição</th>
+                <th>Permissões</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in perfis %}
+                <tr>
+                    <td>{{ p.id }}</td>
+                    <td>{{ p.nome }}</td>
+                    <td>{{ p.descricao }}</td>
+
+                    <td>
+                        <a href="/admin/perfis/permissoes/{{ p.id }}" class="btn btn-sm btn-warning">
+                            Gerir Permissões
+                        </a>
+                    </td>
+
+                    <td class="d-flex gap-2">
+
+                        <a href="/admin/perfis/editar/{{ p.id }}" class="btn btn-sm btn-secondary">
+                            Editar
+                        </a>
+
+                        <!-- ⭐ APAGAR COM SEGURANÇA (POST + CSRF) -->
+                        <form method="post" action="/admin/perfis/apagar/{{ p.id }}" class="d-inline">
+                            {{ csrf_field() }}
+                            <button class="btn btn-sm btn-danger"
+                                    onclick="return confirm('Tem a certeza que deseja apagar este perfil?')">
+                                Apagar
+                            </button>
+                        </form>
+
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+{% endblock %}

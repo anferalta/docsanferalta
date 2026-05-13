@@ -1,0 +1,28 @@
+{% extends "@site/layout.twig" %}
+
+{% block title %}Recuperar Palavra-passe{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+
+        <h2 class="mb-4 text-center">Recuperar Palavra-passe</h2>
+
+        <form method="POST" action="/recuperar">
+            {{ csrf_field() }}
+
+            <div class="mb-3">
+                <label class="form-label">Email associado à conta</label>
+                <input type="email" name="email" class="form-control" required autofocus>
+            </div>
+
+            <button class="btn btn-warning w-100">Enviar Link de Recuperação</button>
+
+            <div class="text-center mt-3">
+                <a href="/login">Voltar ao Login</a>
+            </div>
+        </form>
+
+    </div>
+</div>
+{% endblock %}

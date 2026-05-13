@@ -1,0 +1,43 @@
+{% extends "@site/layout.twig" %}
+
+{% block title %}Criar Conta{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+
+        <h2 class="mb-4 text-center">Criar Conta</h2>
+
+        <form method="POST" action="/registar">
+            {{ csrf_field() }}
+
+            <div class="mb-3">
+                <label class="form-label">Nome</label>
+                <input type="text" name="nome" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Palavra-passe</label>
+                <input type="password" name="password" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Confirmar Palavra-passe</label>
+                <input type="password" name="password_confirm" class="form-control" required>
+            </div>
+
+            <button class="btn btn-success w-100">Criar Conta</button>
+
+            <div class="text-center mt-3">
+                <a href="/login">Já tenho conta</a>
+            </div>
+        </form>
+
+    </div>
+</div>
+{% endblock %}

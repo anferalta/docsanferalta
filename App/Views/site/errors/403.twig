@@ -1,0 +1,33 @@
+{% extends "@site/layout.twig" %}
+
+{% block title %}Acesso negado{% endblock %}
+
+{% block content %}
+
+<div class="card" style="padding: 40px; text-align: center;">
+
+    <h1 style="font-size: 3rem; color: #dc2626; margin-bottom: 10px;">
+        403
+    </h1>
+
+    <h2 style="font-size: 1.6rem; margin-bottom: 15px;">
+        Acesso negado
+    </h2>
+
+    {% if flash %}
+        <div class="alert alert-{{ flash.tipo }}" style="margin-bottom: 20px;">
+            {{ flash.mensagem }}
+        </div>
+    {% endif %}
+
+    <p style="color: #6b7280; font-size: 1rem; margin-bottom: 25px;">
+        Não tem permissão para aceder a esta área do sistema.
+    </p>
+
+    <a href="{{ url('/admin') }}" class="btn-primary">
+        Voltar ao painel
+    </a>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,125 @@
+{% extends "@admin/layout.twig" %}
+
+{% block content %}
+    <h3 class="mb-3">Auditoria</h3>
+
+    <form method="GET" class="row g-3 mb-4">
+
+        <div class="col-md-3">
+            <label class="form-label">Utilizador</label>
+            <input type="text" name="utilizador" value="{{ filtros.utilizador }}" class="form-control">
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">IP</label>
+            <input type="text" name="ip" value="{{ filtros.ip }}" class="form-control">
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Ação</label>
+            <input type="text" name="acao" value="{{ filtros.acao }}" class="form-control">
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">Data início</label>
+            <input type="date" name="data_inicio" value="{{ filtros.data_inicio }}" class="form-control">
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">Data fim</label>
+            <input type="date" name="data_fim" value="{{ filtros.data_fim }}" class="form-control">
+        </div>
+
+        <div class="col-12">
+            <button class="btn btn-primary">Filtrar</button>
+            <a href="/admin/auditoria" class="btn btn-secondary">Limpar</a>
+        </div>
+
+    </form>
+
+    <input type="text" id="pesquisaRapida" class="form-control mb-3" placeholder="Pesquisa rápida...">
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th><a href="?ordem=id&dir={{ dir == 'ASC' ? 'DESC' : 'ASC' }}">ID</a></th>
+
+                <th><a href="?ordem=utilizador_id&dir={{ dir == 'ASC' ? 'DESC' : 'ASC' }}">Utilizador</a></th>
+
+                <th><a href="?ordem=acao&dir={{ dir == 'ASC' ? 'DESC' : 'ASC' }}">Ação</a></th>
+
+                <th><a href="?ordem=ip&dir={{ dir == 'ASC' ? 'DESC' : 'ASC' }}">IP</a></th>
+
+                <th><a href="?ordem=criado_em&dir={{ dir == 'ASC' ? 'DESC' : 'ASC' }}">Data</a></th>
+
+                <th>Origem</th>
+
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for log in logs %}
+                <tr>
+                    <td>{{ log.id }}</td>
+
+                    <td>{{ log.utilizador_nome ?: 'N/A' }}</td>
+
+                    <td>
+                        {% set acao = log.acao ? log.acao|lower : '' %}
+
+                        {% if 'criou' in acao %}
+                            <span class="badge-auditoria badge-criou">🟢 {{ log.acao }}</span>
+
+                        {% elseif 'editou' in acao %}
+                            <span class="badge-auditoria badge-editou">🟡 {{ log.acao }}</span>
+
+                        {% elseif 'apagou' in acao or 'eliminou' in acao %}
+                            <span class="badge-auditoria badge-apagou">🔴 {{ log.acao }}</span>
+
+                        {% else %}
+                            {{ log.acao ?: 'N/A' }}
+                        {% endif %}
+                    </td>
+
+                    <td>{{ log.ip }}</td>
+                    <td>{{ log.criado_em }}</td>
+
+                    <td>
+                        {% if log.origem == 'auditoria' %}
+                            <span class="badge bg-primary">Geral</span>
+                        {% else %}
+                            <span class="badge bg-danger">Eliminação</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <a href="/admin/auditoria/{{ log.id }}?origem={{ log.origem }}" class="btn btn-sm btn-secondary">
+                            Detalhes
+                        </a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <nav>
+        <ul class="pagination">
+
+            <li class="page-item {{ pagina == 1 ? 'disabled' : '' }}">
+                <a class="page-link" href="?p={{ pagina - 1 }}">Anterior</a>
+            </li>
+
+            {% for p in 1..paginas %}
+                <li class="page-item {{ p == pagina ? 'active' : '' }}">
+                    <a class="page-link" href="?p={{ p }}">{{ p }}</a>
+                </li>
+            {% endfor %}
+
+            <li class="page-item {{ pagina == paginas ? 'disabled' : '' }}">
+                <a class="page-link" href="?p={{ pagina + 1 }}">Seguinte</a>
+            </li>
+
+        </ul>
+    </nav>
+{% endblock %}

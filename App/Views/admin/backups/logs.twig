@@ -1,0 +1,40 @@
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Data</th>
+            <th>Mensagem</th>
+            <th>Tipo</th>
+            <th class="text-end">Ação</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for l in logs %}
+            <tr>
+                <td>{{ l.criado_em }}</td>
+                <td>{{ l.mensagem }}</td>
+                <td>
+                    {% set tipos = {
+        'sucesso': {'label': 'Sucesso', 'cor': 'success'},
+        'erro': {'label': 'Erro', 'cor': 'danger'},
+        'exception': {'label': 'Exceção', 'cor': 'warning'},
+        'backup_erro': {'label': 'Erro de Backup', 'cor': 'danger'},
+        'backup_sucesso': {'label': 'Backup concluído', 'cor': 'success'}
+    } %}
+
+                    {% set info = tipos[l.tipo] ?? {'label': l.tipo, 'cor': 'secondary'} %}
+
+                    <span class="badge bg-{{ info.cor }}">{{ info.label }}</span>
+                </td>
+                <td class="text-end">
+                    <a href="/admin/logs/{{ l.id }}" class="btn btn-sm btn-secondary">
+                        Ver erro
+                    </a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="4" class="text-center text-muted">Sem registos.</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>

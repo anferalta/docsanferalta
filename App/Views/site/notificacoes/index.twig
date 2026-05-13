@@ -1,0 +1,69 @@
+{% extends "@site/layout.twig" %}
+
+{% block title %}Notificações{% endblock %}
+
+{% block content %}
+
+<h1 class="page-title">Notificações</h1>
+
+{% include 'partials/flash.twig' %}
+
+<div class="notifications-page">
+
+    <div class="actions mb-3">
+        <a href="{{ url('/notificacoes/marcar-todas') }}" class="btn btn-sm btn-primary">
+            Marcar todas como lidas
+        </a>
+    </div>
+
+    {% if notificacoes is empty %}
+        <div class="alert alert-info">
+            Não tens notificações.
+        </div>
+    {% else %}
+
+        <div class="notifications-list">
+
+            {% for n in notificacoes %}
+                <div class="notification-item {{ n.lida ? 'lida' : 'nao-lida' }}">
+
+                    <div class="notification-header">
+                        <strong class="notification-title">{{ n.titulo }}</strong>
+
+                        <div class="notification-actions">
+                            {% if not n.lida %}
+                                <a href="{{ url('/notificacoes/marcar/' ~ n.id) }}"
+                                   class="btn btn-sm btn-success">
+                                    Marcar como lida
+                                </a>
+                            {% endif %}
+
+                            <a href="{{ url('/notificacoes/apagar/' ~ n.id) }}"
+                               class="btn btn-sm btn-danger"
+                               onclick="return confirm('Apagar esta notificação?')">
+                                Apagar
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="notification-message">
+                        {{ n.mensagem }}
+                    </div>
+
+                    <div class="notification-meta">
+                        <small>{{ n.criado_em }}</small>
+                        {% if n.lida %}
+                            <small class="text-muted">• Lida em {{ n.lida_em }}</small>
+                        {% endif %}
+                    </div>
+
+                </div>
+            {% endfor %}
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

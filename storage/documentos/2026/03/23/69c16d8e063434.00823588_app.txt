@@ -1,0 +1,53 @@
+app/
+ └── Controllers/
+      ├── HomeController.php
+      ├── AuthController.php
+      ├── Painel/
+      │     ├── DashboardController.php
+      │     ├── DocumentosController.php
+      │     └── PerfilController.php
+      └── Admin/
+            ├── DashboardController.php
+            ├── UtilizadoresController.php
+            ├── PerfisController.php
+            ├── DocumentosController.php
+            ├── AuditoriaController.php
+            └── NotificacoesController.php
+
+
+app/Views/
+ ├── home/
+ ├── auth/
+ ├── painel/
+ └── admin/
+      ├── dashboard.twig
+      ├── utilizadores/
+      ├── perfis/
+      ├── documentos/
+      ├── auditoria/
+      └── notificacoes/
+
+routes/
+ ├── public.php
+ ├── auth.php
+ ├── painel.php
+ └── admin.php
+
+
+novo caminho das views
+Views/
+    admin/          ← layout do admin
+    dashboard/      ← dashboard principal
+    documentos/
+    utilizadores/
+    perfis/
+    permissoes/
+    auditoria/
+    notificacoes/
+    2fa/
+    auth/
+    home/
+    errors/
+    components/
+    partials/
+    layouts/

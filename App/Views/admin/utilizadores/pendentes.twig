@@ -1,0 +1,180 @@
+{% extends 'admin/layout.twig' %}
+
+{% block content %}
+
+    <h1 class="titulo mb-4">Utilizadores Pendentes</h1>
+
+    {# ============================
+       FILTROS
+       ============================ #}
+    <form method="get" class="filtros mb-3">
+        <div class="row g-2">
+            <div class="col-md-4">
+                <input type="text" name="nome" value="{{ nome }}" class="form-control" placeholder="Filtrar por nome">
+            </div>
+            <div class="col-md-4">
+                <input type="text" name="email" value="{{ email }}" class="form-control" placeholder="Filtrar por email">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Filtrar
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <div class="card p-3">
+
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Email</th>
+                    <th>Perfil</th>
+                    <th>Registado em</th>
+                    <th>Aprovado por</th>
+                    <th>Aprovado em</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for u in pendentes %}
+                    <tr>
+                        <td>{{ u.nome }}</td>
+                        <td>{{ u.email }}</td>
+                        <td>{{ u.perfil_nome }}</td>
+
+                        <td>
+                            {% if u.criado_em %}
+                                {{ u.criado_em|date("d/m/Y H:i") }}
+                            {% else %} — {% endif %}
+                        </td>
+
+                        <td>{{ u.aprovado_por_nome ?? '—' }}</td>
+
+                        <td>
+                            {% if u.aprovado_em %}
+                                {{ u.aprovado_em|date("d/m/Y H:i") }}
+                            {% else %} — {% endif %}
+                        </td>
+
+                        <td class="d-flex gap-2">
+
+                            {# VER DETALHES #}
+                            <a href="/admin/utilizadores/editar/{{ u.id }}" 
+                               class="btn btn-sm btn-outline-primary" 
+                               title="Ver detalhes">
+                                <i class="bi bi-eye"></i>
+                            </a>
+
+                            {# APROVAR #}
+                            <button class="btn btn-sm btn-outline-success"
+                                    title="Aprovar utilizador"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#aprovar{{ u.id }}">
+                                <i class="bi bi-check-circle"></i>
+                            </button>
+
+                            {# REJEITAR #}
+                            <button class="btn btn-sm btn-outline-danger"
+                                    title="Rejeitar utilizador"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#rejeitar{{ u.id }}">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-3">Nenhum utilizador pendente.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {# ============================
+           PAGINAÇÃO
+           ============================ #}
+        <nav>
+            <ul class="pagination justify-content-center">
+                {% for p in 1..total_paginas %}
+                    <li class="page-item {% if p == pagina %}active{% endif %}">
+                        <a class="page-link" href="?page={{ p }}&nome={{ nome }}&email={{ email }}">{{ p }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </nav>
+
+    </div>
+
+
+    {# ============================================================
+       MODAIS — FORA DA TABELA (HTML VÁLIDO)
+       ============================================================ #}
+
+    {% for u in pendentes %}
+
+        {# MODAL APROVAR #}
+        <div class="modal fade" id="aprovar{{ u.id }}">
+            <div class="modal-dialog">
+                <div class="modal-content">
+
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">Aprovar Utilizador</h5>
+                    </div>
+
+                    <form method="post" action="/admin/utilizadores/aprovar/{{ u.id }}">
+                        <div class="modal-body">
+
+                            {{ csrf_field() }}
+
+                            <p>Selecione o perfil para <strong>{{ u.nome }}</strong>:</p>
+
+                            <select name="perfil_id" class="form-select" required>
+                                {% for p in perfis %}
+                                    <option value="{{ p.id }}">{{ p.nome }}</option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+                        <div class="modal-footer">
+                            <button class="btn btn-success">Aprovar</button>
+                            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+
+        {# MODAL REJEITAR #}
+        <div class="modal fade" id="rejeitar{{ u.id }}">
+            <div class="modal-dialog">
+                <div class="modal-content">
+
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">Rejeitar Utilizador</h5>
+                    </div>
+
+                    <div class="modal-body">
+                        Tem a certeza que deseja rejeitar <strong>{{ u.nome }}</strong>?
+                    </div>
+
+                    <div class="modal-footer">
+                        <form method="post" action="/admin/utilizadores/rejeitar/{{ u.id }}">
+                            {{ csrf_field() }}
+                            <button class="btn btn-danger">Rejeitar</button>
+                        </form>
+                        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    {% endfor %}
+
+{% endblock %}

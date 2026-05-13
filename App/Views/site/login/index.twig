@@ -1,0 +1,37 @@
+{% extends "@site/layout.twig" %}
+
+{% block title %}Entrar{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+
+        <h2 class="mb-4 text-center">Entrar</h2>
+
+        <form method="POST" action="/login">
+            {{ csrf_field() }}
+
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-control" required autofocus>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Palavra-passe</label>
+                <input type="password" name="password" class="form-control" required>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <a href="/recuperar">Esqueci-me da palavra-passe</a>
+            </div>
+
+            <button class="btn btn-primary w-100">Entrar</button>
+
+            <div class="text-center mt-3">
+                <a href="/registar">Criar conta</a>
+            </div>
+        </form>
+
+    </div>
+</div>
+{% endblock %}

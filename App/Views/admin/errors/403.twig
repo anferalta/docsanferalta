@@ -1,0 +1,31 @@
+{% extends "@admin/layout.twig" %}
+
+{% block page_title %}
+    <i class="fa fa-lock"></i> Acesso negado
+{% endblock %}
+
+{% block content %}
+
+<div class="card p-5 text-center">
+
+    <h1 class="text-danger mb-3" style="font-size: 3rem;">
+        403
+    </h1>
+
+    <h2 class="mb-3">Acesso negado</h2>
+
+    <p class="text-muted mb-4">
+        Não tem permissão para aceder a esta funcionalidade.
+    </p>
+
+    <a href="/admin" class="btn btn-primary">
+        <i class="fa fa-home"></i> Voltar ao painel
+    </a>
+
+    <a href="javascript:history.back()" class="btn btn-secondary ms-2">
+        <i class="fa fa-arrow-left"></i> Voltar atrás
+    </a>
+
+</div>
+
+{% endblock %}

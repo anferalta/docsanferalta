@@ -1,0 +1,9 @@
+# Permitir apenas imagens
+<FilesMatch "\.(jpg|jpeg|png|gif|webp)$">
+    Require all granted
+</FilesMatch>
+
+# Bloquear qualquer outro tipo de ficheiro
+<FilesMatch ".*">
+    Require all denied
+</FilesMatch>

@@ -1,0 +1,96 @@
+{% extends "@admin/layout.twig" %}
+
+{% block content %}
+
+<h3 class="mb-4">Permissões</h3>
+
+<form method="GET" class="mb-3">
+    <div class="input-group">
+        <input type="text" name="q" value="{{ pesquisa }}" class="form-control" placeholder="Pesquisar...">
+        <button class="btn btn-outline-secondary">Pesquisar</button>
+    </div>
+</form>
+
+<div class="d-flex justify-content-between mb-3">
+    <a href="/admin/permissoes/criar" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Nova Permissão
+    </a>
+
+    <a href="/admin/permissoes/sincronizar" class="btn btn-warning"
+       onclick="return confirm('Sincronizar irá substituir todas as permissões pela lista do ficheiro. Continuar?')">
+        <i class="bi bi-arrow-repeat"></i> Sincronizar com ficheiro
+    </a>
+</div>
+
+<table class="table table-hover table-striped align-middle">
+    <thead class="table-dark">
+        <tr>
+            <th>
+                <a href="?ordem=codigo&dir={{ dir == 'ASC' ? 'DESC' : 'ASC' }}" class="text-white text-decoration-none">
+                    Código
+                    {% if ordem == 'codigo' %}
+                        <i class="bi bi-caret-{{ dir == 'ASC' ? 'up' : 'down' }}-fill"></i>
+                    {% endif %}
+                </a>
+            </th>
+
+            <th>
+                <a href="?ordem=descricao&dir={{ dir == 'ASC' ? 'DESC' : 'ASC' }}" class="text-white text-decoration-none">
+                    Descrição
+                    {% if ordem == 'descricao' %}
+                        <i class="bi bi-caret-{{ dir == 'ASC' ? 'up' : 'down' }}-fill"></i>
+                    {% endif %}
+                </a>
+            </th>
+
+            <th style="width: 150px;">Ações</th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+        {% set moduloAtual = '' %}
+
+        {% for p in permissoes %}
+            {% set modulo = p.codigo|split('.')|slice(0,2)|join('.') %}
+
+            {% if modulo != moduloAtual %}
+                <tr class="table-info">
+                    <td colspan="3"><strong>{{ modulo|upper }}</strong></td>
+                </tr>
+                {% set moduloAtual = modulo %}
+            {% endif %}
+
+            <tr>
+                <td>{{ p.codigo }}</td>
+                <td>{{ p.descricao }}</td>
+                <td>
+                    <a href="/admin/permissoes/editar/{{ p.id }}" class="btn btn-sm btn-secondary">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+
+                    <a href="/admin/permissoes/apagar/{{ p.id }}" class="btn btn-sm btn-danger"
+                       onclick="return confirm('Apagar permissão?')">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                </td>
+            </tr>
+
+        {% endfor %}
+
+    </tbody>
+</table>
+
+{% if paginas > 1 %}
+<nav>
+    <ul class="pagination">
+        {% for p in 1..paginas %}
+            <li class="page-item {% if p == pagina %}active{% endif %}">
+                <a class="page-link" href="?p={{ p }}&q={{ pesquisa }}&ordem={{ ordem }}&dir={{ dir }}">{{ p }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+</nav>
+{% endif %}
+
+{% endblock %}

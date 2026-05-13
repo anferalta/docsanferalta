@@ -1,0 +1,40 @@
+{% extends "@admin/layout.twig" %}
+
+{% block page_title %}Editar Área{% endblock %}
+
+{% block content %}
+
+<div class="card">
+    <div class="card-body">
+
+        <form method="POST" action="{{ route('admin.documento_areas.update', {id: area.id}) }}">
+            {{ csrf_field() }}
+
+            <div class="mb-3">
+                <label class="form-label">Nome</label>
+                <input type="text" name="nome" class="form-control" value="{{ area.nome }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Código</label>
+                <input type="text" name="codigo" class="form-control" value="{{ area.codigo }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Descrição</label>
+                <textarea name="descricao" class="form-control">{{ area.descricao }}</textarea>
+            </div>
+
+            <div class="form-check mb-3">
+                <input type="checkbox" name="ativo" class="form-check-input" {% if area.ativo %}checked{% endif %}>
+                <label class="form-check-label">Ativo</label>
+            </div>
+
+            <button class="btn btn-warning">Guardar Alterações</button>
+        </form>
+
+    </div>
+</div>
+
+{% endblock %}
+

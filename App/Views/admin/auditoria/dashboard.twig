@@ -1,0 +1,68 @@
+{% extends "@admin/layout.twig" %}
+
+{% block content %}
+<h3 class="mb-4">Dashboard da Auditoria</h3>
+
+<a href="/admin/auditoria" class="btn btn-secondary mb-4">Voltar</a>
+
+<div class="row">
+    <div class="col-md-6">
+        <h5>Ações</h5>
+        <canvas id="graficoAcoes" height="150"></canvas>
+    </div>
+
+    <div class="col-md-6">
+        <h5>Registos por Dia</h5>
+        <canvas id="graficoDias" height="150"></canvas>
+    </div>
+</div>
+
+<script>
+// ----------------------
+// GRÁFICO POR AÇÃO
+// ----------------------
+new Chart(document.getElementById('graficoAcoes'), {
+    type: 'pie',
+    data: {
+        labels: [
+            {% for item in porAcao %}
+                "{{ item.acao }}"{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ],
+        datasets: [{
+            data: [
+                {% for item in porAcao %}
+                    {{ item.total }}{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ],
+            backgroundColor: ['#22c55e', '#facc15', '#ef4444', '#3b82f6', '#a855f7']
+        }]
+    }
+});
+
+// ----------------------
+// GRÁFICO POR DIA
+// ----------------------
+new Chart(document.getElementById('graficoDias'), {
+    type: 'line',
+    data: {
+        labels: [
+            {% for item in porDia %}
+                "{{ item.dia }}"{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ],
+        datasets: [{
+            label: 'Registos por dia',
+            data: [
+                {% for item in porDia %}
+                    {{ item.total }}{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ],
+            borderColor: '#0d6efd',
+            tension: 0.3
+        }]
+    }
+});
+</script>
+
+{% endblock %}

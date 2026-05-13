@@ -1,0 +1,85 @@
+{% extends "@admin/layout.twig" %}
+
+{% block title %}Utilizadores Bloqueados{% endblock %}
+
+{% block page_title %}
+    <i class="bi bi-person-x"></i> Utilizadores Bloqueados
+{% endblock %}
+
+{% block content %}
+
+    <div class="card">
+        <div class="card-body">
+
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Email</th>
+                        <th>Perfil</th>
+                        <th>Bloqueado em</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for u in bloqueados %}
+                        <tr>
+                            <td>{{ u.nome }}</td>
+                            <td>{{ u.email }}</td>
+                            <td>{{ u.perfil_nome }}</td>
+                            <td>{{ u.aprovado_em|date("d/m/Y H:i") }}</td>
+
+                            <td class="d-flex gap-2">
+
+                                {# VER DETALHES #}
+                                <a href="/admin/utilizadores/editar/{{ u.id }}"
+                                   class="btn btn-sm btn-outline-primary"
+                                   title="Ver detalhes">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+
+                                {# DESBLOQUEAR #}
+                                <button class="btn btn-sm btn-outline-success"
+                                        title="Desbloquear utilizador"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#desbloquear{{ u.id }}">
+                                    <i class="bi bi-unlock"></i>
+                                </button>
+
+                            </td>
+                        </tr>
+
+                        <!-- MODAL DESBLOQUEAR -->
+                    <div class="modal fade" id="desbloquear{{ u.id }}">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-success text-white">
+                                    <h5 class="modal-title">Desbloquear Utilizador</h5>
+                                </div>
+                                <div class="modal-body">
+                                    Tem a certeza que deseja desbloquear <strong>{{ u.nome }}</strong>?
+                                </div>
+                                <div class="modal-footer">
+                                    <form method="post" action="/admin/utilizadores/desbloquear/{{ u.id }}">
+                                        {{ csrf_field() }}
+                                        <button class="btn btn-success">Desbloquear</button>
+                                    </form>
+                                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">Nenhum utilizador bloqueado.</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+
+{% endblock %}

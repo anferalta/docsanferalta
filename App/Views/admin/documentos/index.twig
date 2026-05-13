@@ -1,0 +1,245 @@
+{% extends "@admin/layout.twig" %}
+
+{% block page_title %}
+    <i class="fa fa-folder-open"></i> Gestão de Documentos
+{% endblock %}
+
+{% block content %}
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">Documentos</h4>
+
+        <a href="/admin/documentos/criar" class="btn btn-primary">
+            <i class="fa fa-upload"></i> Novo Documento
+        </a>
+    </div>
+
+    {# ============================
+       FILTROS
+    ============================ #}
+    <div class="card mb-4">
+        <div class="card-body">
+
+            <form method="get" class="row g-3 align-items-end">
+
+                <div class="col-md-3">
+                    <label class="form-label">Tipo</label>
+                    <select name="tipo_id" class="form-select">
+                        <option value="">-- Todos os tipos --</option>
+                        {% for tipo in tipos %}
+                            <option value="{{ tipo.id }}"
+                                    {{ app.request.get('tipo_id') == tipo.id ? 'selected' : '' }}>
+                                {{ tipo.nome }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                {% if acl.has('admin.documentos.ver_todos') %}
+                    <div class="col-md-3">
+                        <label class="form-label">Criado por</label>
+                        <select name="utilizador" class="form-select">
+                            <option value="">-- Todos --</option>
+                            {% for u in utilizadores %}
+                                <option value="{{ u.id }}"
+                                        {{ app.request.get('utilizador') == u.id ? 'selected' : '' }}>
+                                    {{ u.nome }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                {% endif %}
+
+                <div class="col-md-2">
+                    <label class="form-label">Data inicial</label>
+                    <input type="date" name="data_inicio" class="form-control"
+                           value="{{ app.request.get('data_inicio') }}">
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">Data final</label>
+                    <input type="date" name="data_fim" class="form-control"
+                           value="{{ app.request.get('data_fim') }}">
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">Pesquisa</label>
+                    <input type="text" name="q" class="form-control"
+                           placeholder="Título ou ficheiro..."
+                           value="{{ app.request.get('q') }}">
+                </div>
+
+                {# ============================
+                   NOVOS FILTROS — ESTADO + ÁREA
+                ============================ #}
+
+                <div class="col-md-3">
+                    <label class="form-label">Estado</label>
+                    <select name="estado_atual" class="form-select">
+                        <option value="">-- Todos --</option>
+                        <option value="pendente"       {{ app.request.get('estado_atual') == 'pendente' ? 'selected' : '' }}>Pendente</option>
+                        <option value="em_tramitacao"  {{ app.request.get('estado_atual') == 'em_tramitacao' ? 'selected' : '' }}>Em Tramitação</option>
+                        <option value="analise"        {{ app.request.get('estado_atual') == 'analise' ? 'selected' : '' }}>Em Análise</option>
+                        <option value="concluido"      {{ app.request.get('estado_atual') == 'concluido' ? 'selected' : '' }}>Concluído</option>
+                        <option value="arquivado"      {{ app.request.get('estado_atual') == 'arquivado' ? 'selected' : '' }}>Arquivado</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Área Atual</label>
+                    <select name="area_atual_id" class="form-select">
+                        <option value="">-- Todas --</option>
+                        {% for area in areas %}
+                            <option value="{{ area.id }}"
+                                    {{ app.request.get('area_atual_id') == area.id ? 'selected' : '' }}>
+                                {{ area.nome }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-primary w-100">
+                        <i class="fa fa-filter"></i> Filtrar
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+    {# ============================
+       LISTA DE DOCUMENTOS
+    ============================ #}
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="tabelaDocs">
+
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 25%">Ficheiro</th>
+                        <th>Título</th>
+                        <th>Tipo</th>
+                        <th>Estado</th>
+                        <th>Área Atual</th>
+                        <th>Tamanho</th>
+
+                        {% if auth.user.perfil != 'utilizador' %}
+                            <th>Criado por</th>
+                            {% endif %}
+
+                        <th>Criado em</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% if documentos is empty %}
+                        <tr>
+                            <td colspan="9" class="text-center py-4 text-muted">
+                                Nenhum documento encontrado.
+                            </td>
+                        </tr>
+                    {% else %}
+                        {% for doc in documentos %}
+                            <tr>
+
+                                <td>
+                                    <i class="fa {{ doc.icon() }} me-2 text-primary" style="font-size:22px;"></i>
+                                    <span class="fw-semibold">{{ doc.ficheiro_original }}</span>
+                                </td>
+
+                                <td>{{ doc.titulo }}</td>
+
+                                <td>{{ doc.tipo_nome }}</td>
+
+                                <td>
+                                    {% if doc.estado_atual == 'pendente' %}
+                                        <span class="badge bg-secondary">Pendente</span>
+                                    {% elseif doc.estado_atual == 'em_tramitacao' %}
+                                        <span class="badge bg-warning text-dark">Em Tramitação</span>
+                                    {% elseif doc.estado_atual == 'analise' %}
+                                        <span class="badge bg-info text-dark">Em Análise</span>
+                                    {% elseif doc.estado_atual == 'concluido' %}
+                                        <span class="badge bg-success">Concluído</span>
+                                    {% elseif doc.estado_atual == 'arquivado' %}
+                                        <span class="badge bg-dark">Arquivado</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>{{ doc.area_nome ?? '-' }}</td>
+
+                                <td>{{ (doc.tamanho / 1024)|number_format(1) }} KB</td>
+
+                                {% if auth.user.perfil != 'utilizador' %}
+                                    <td>
+                                        <img src="{{ doc.criador_avatar() }}"
+                                             width="32" height="32"
+                                             class="rounded-circle me-2">
+                                        {{ doc.criador_nome() }}
+                                    </td>
+                                {% endif %}
+
+                                <td>{{ doc.criado_em_formatado() }}</td>
+
+                                <td class="text-end">
+                                    <div class="btn-group">
+
+                                        {# VER — agora abre o detalhe com abas #}
+                                        <a href="/admin/documentos/ver/{{ doc.caminho|trim('/') }}/{{ doc.ficheiro }}"
+                                           target="_blank"
+                                           class="btn btn-sm btn-secondary">
+                                            <i class="fa fa-eye"></i> Ver
+                                        </a>
+
+                                        <a href="/admin/documentos/download/{{ doc.id }}"
+                                           class="btn btn-sm btn-success">
+                                            <i class="fa fa-download"></i> Download
+                                        </a>
+
+                                        {% if isGranted('admin.tramitacao.ver') %}
+                                            <a href="/admin/documentos/editar/{{ doc.id }}#tabTramitacao"
+                                               class="btn btn-sm btn-warning">
+                                                <i class="fa fa-random"></i> Tramitar
+                                            </a>
+                                        {% endif %}
+
+                                        {% if isGranted('admin.documentos.apagar') %}
+                                            <a href="/admin/documentos/eliminar/{{ doc.id }}"
+                                               class="btn btn-sm btn-danger"
+                                               onclick="return confirm('Eliminar documento?')">
+                                                <i class="fa fa-trash"></i> Apagar
+                                            </a>
+                                        {% endif %}
+
+                                    </div>
+                                </td>
+
+                            </tr>
+                        {% endfor %}
+                    {% endif %}
+                </tbody>
+
+            </table>
+        </div>
+
+        <div class="p-3">
+            {{ paginacao|raw }}
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+    <script src="/assets/js/documentos/index.js"></script>
+
+    <style>
+        table td {            vertical-align: middle !important;
+        }
+        .table-hover tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+{% endblock %}
+

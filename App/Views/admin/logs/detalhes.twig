@@ -1,0 +1,26 @@
+{% extends "@admin/layout.twig" %}
+
+{% block header %} Gestão de Logs {% endblock %}
+
+{% block content %}
+<h3>Detalhes do Log</h3>
+
+<div class="card">
+    <div class="card-body">
+
+        <p><strong>Tipo:</strong> {{ log.tipo }}</p>
+        <p><strong>Mensagem:</strong> {{ log.mensagem }}</p>
+        <p><strong>Ficheiro:</strong> {{ log.ficheiro }}</p>
+        <p><strong>Linha:</strong> {{ log.linha }}</p>
+        <p><strong>IP:</strong> {{ log.ip }}</p>
+        <p><strong>Data:</strong> {{ log.criado_em }}</p>
+
+        {% if log.detalhes %}
+        <p><strong>Detalhes:</strong></p>
+        <pre>{{ log.detalhes }}</pre>
+        {% endif %}
+
+        <a href="/admin/logs" class="btn btn-secondary mt-3">Voltar</a>
+    </div>
+</div>
+{% endblock %}

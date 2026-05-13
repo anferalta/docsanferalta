@@ -1,0 +1,41 @@
+{% extends "@admin/layout.twig" %}
+
+{% block content %}
+<h3 class="mb-4">Detalhes da Auditoria</h3>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <p><strong>ID do Registo:</strong><br>{{ log.id }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Utilizador:</strong><br>{{ user ? user.nome : 'N/A' }}</p>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <p><strong>Ação:</strong><br>{{ log.acao }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>IP:</strong><br>{{ log.ip }}</p>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <p><strong>Data:</strong><br>{{ log.criado_em }}</p>
+        </div>
+
+        {% if log.detalhes %}
+        <div class="mb-3">
+            <p><strong>Detalhes:</strong></p>
+            <pre class="p-3 bg-light border rounded">{{ log.detalhes }}</pre>
+        </div>
+        {% endif %}
+
+        <a href="/admin/auditoria" class="btn btn-secondary mt-3">Voltar</a>
+    </div>
+</div>
+{% endblock %}

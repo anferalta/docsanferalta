@@ -1,0 +1,61 @@
+{# app/Views/admin/partials/navbar.twig #}
+
+<header class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm px-3">
+
+    <!-- LEFT SIDE -->
+    <div class="navbar-left d-flex align-items-center">
+        <h1 class="h5 m-0 fw-semibold text-primary">
+            {% block page_title %}{% endblock %}
+        </h1>
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div class="navbar-right ms-auto d-flex align-items-center">
+
+        {% if session.user %}
+
+            <!-- USER DROPDOWN -->
+            <div class="dropdown">
+
+                <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle"
+                   data-bs-toggle="dropdown">
+
+                    <img src="/assets/img/avatar.png"
+                         class="rounded-circle me-2"
+                         width="32" height="32" alt="avatar">
+
+                    <span class="fw-semibold">
+                        {{ session.user.nome }}
+                    </span>
+                </a>
+
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+
+                    <li>
+                        <a class="dropdown-item" href="/admin/perfil">
+                            <i class="fa fa-user me-2"></i> Meu Perfil
+                        </a>
+                    </li>
+
+                    <li><hr class="dropdown-divider"></li>
+
+                    <li>
+                        <a class="dropdown-item text-danger" href="{{ url('logout') }}">
+                            <i class="fa fa-sign-out-alt me-2"></i> Sair
+                        </a>
+                    </li>
+
+                </ul>
+            </div>
+
+        {% else %}
+
+            <a href="/login" class="btn btn-outline-primary btn-sm">
+                <i class="fa fa-sign-in-alt"></i> Login
+            </a>
+
+        {% endif %}
+
+    </div>
+
+</header>

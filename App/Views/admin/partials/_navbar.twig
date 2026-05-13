@@ -1,0 +1,98 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+  <div class="container-fluid">
+
+    <!-- LOGO -->
+    <a class="navbar-brand fw-bold" href="/admin">
+      <i class="fa fa-folder-open"></i> Gestão Documental
+    </a>
+
+    <!-- Mobile toggle -->
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+
+      <!-- LEFT SIDE -->
+      <ul class="navbar-nav me-auto">
+
+        {% if usuario %}
+
+          <!-- Documentos -->
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/documentos">
+              <i class="fa fa-file"></i> Documentos
+            </a>
+          </li>
+
+          <!-- Tipos de Documento (apenas admin/gestor/supervisor) -->
+          {% if usuario.perfil_id in [1,3,9] %}
+          <li class="nav-item">
+            <a class="nav-link" href="/admin/documento-tipos">
+              <i class="fa fa-tags"></i> Tipos
+            </a>
+          </li>
+          {% endif %}
+
+          <!-- Backups (apenas admin) -->
+          {% if usuario.perfil_id == 1 %}
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+              <i class="fa fa-database"></i> Backups
+            </a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="/admin/backups">Gerir Backups</a></li>
+              <li><a class="dropdown-item" href="/admin/backups/bd/criar">Criar Backup BD</a></li>
+              <li><a class="dropdown-item" href="/admin/backups/files/criar">Criar Backup Ficheiros</a></li>
+            </ul>
+          </li>
+          {% endif %}
+
+        {% endif %}
+      </ul>
+
+      <!-- RIGHT SIDE -->
+      <ul class="navbar-nav ms-auto">
+
+        {% if usuario %}
+
+          <!-- Nome + Avatar -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" data-bs-toggle="dropdown">
+              <img src="/assets/img/avatar.png" class="rounded-circle me-2" width="28">
+              {{ usuario.nome }}
+            </a>
+
+            <ul class="dropdown-menu dropdown-menu-end">
+
+              <li>
+                <a class="dropdown-item" href="/admin/perfil">
+                  <i class="fa fa-user"></i> Meu Perfil
+                </a>
+              </li>
+
+              <li><hr class="dropdown-divider"></li>
+
+              <li>
+                <a class="dropdown-item text-danger" href="/logout">
+                  <i class="fa fa-sign-out-alt"></i> Logout
+                </a>
+              </li>
+
+            </ul>
+          </li>
+
+        {% else %}
+
+          <li class="nav-item">
+            <a class="nav-link" href="/login">
+              <i class="fa fa-sign-in-alt"></i> Login
+            </a>
+          </li>
+
+        {% endif %}
+      </ul>
+
+    </div>
+  </div>
+</nav>

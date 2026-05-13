@@ -1,0 +1,102 @@
+<header class="topbar d-flex align-items-center justify-content-between px-3 shadow-sm">
+
+    <!-- LEFT: Toggle Sidebar -->
+    <div class="topbar-left d-flex align-items-center">
+        <button class="btn btn-sm btn-outline-primary me-3"
+                onclick="document.body.classList.toggle('sidebar-collapsed')">
+            <i class="fa fa-bars"></i>
+        </button>
+
+        <h1 class="h5 m-0 fw-semibold text-primary">
+            {% block page_title %}{% endblock %}
+        </h1>
+    </div>
+
+    <!-- RIGHT: Notifications + User -->
+    <div class="topbar-right d-flex align-items-center">
+
+        {# ============================
+           NOTIFICAÇÕES
+        ============================ #}
+
+        {% set notificacoes = notificacoes_unread %}
+
+        <div class="dropdown me-3 notifications-wrapper">
+
+            <button class="btn btn-light position-relative" data-bs-toggle="dropdown">
+                <i class="fa fa-bell"></i>
+
+                {% if notificacoes|length > 0 %}
+                    <span class="badge bg-danger position-absolute top-0 start-100 translate-middle">
+                        {{ notificacoes|length }}
+                    </span>
+                {% endif %}
+            </button>
+
+            <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg notifications-menu">
+
+                {% if notificacoes %}
+                    <div class="list-group list-group-flush">
+
+                        {% for n in notificacoes %}
+                            <div class="list-group-item notification-item">
+                                <div class="fw-semibold">{{ n.titulo }}</div>
+                                <div class="small text-muted">{{ n.mensagem }}</div>
+                                <div class="small text-secondary">{{ n.criado_em }}</div>
+                            </div>
+                        {% endfor %}
+
+                    </div>
+
+                    <a href="{{ admin_url('notificacoes') }}"
+                       class="dropdown-item text-center fw-semibold text-primary py-2">
+                        Ver todas
+                    </a>
+
+                {% else %}
+                    <div class="p-3 text-center text-muted small">
+                        Sem novas notificações
+                    </div>
+                {% endif %}
+
+            </div>
+        </div>
+
+        {# ============================
+           USER DROPDOWN
+        ============================ #}
+
+        <div class="dropdown">
+
+            <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle"
+               data-bs-toggle="dropdown">
+
+                <img src="/assets/img/avatar.png"
+                     class="rounded-circle me-2"
+                     width="32" height="32">
+
+                <span class="fw-semibold">{{ usuario_nome }}</span>
+            </a>
+
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+
+                <li>
+                    <a class="dropdown-item" href="/admin/perfil">
+                        <i class="fa fa-user me-2"></i> Meu Perfil
+                    </a>
+                </li>
+
+                <li><hr class="dropdown-divider"></li>
+
+                <li>
+                    <a class="dropdown-item text-danger" href="{{ url('/logout') }}">
+                        <i class="fa fa-sign-out-alt me-2"></i> Sair
+                    </a>
+                </li>
+
+            </ul>
+        </div>
+
+    </div>
+
+</header>

@@ -1,0 +1,50 @@
+{% extends "@admin/layout.twig" %}
+{% block title %}Agendamento: {{ ficheiro }}{% endblock %}
+{% block page_title %}Detalhes do Agendamento{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+
+        <p><strong>Nome:</strong> {{ dados.nome }}</p>
+        <p><strong>Frequência:</strong> {{ dados.frequencia }}</p>
+
+        <p><strong>Estado:</strong>
+            {% if dados.ativo %}
+                <span class="badge bg-success">Ativo</span>
+            {% else %}
+                <span class="badge bg-secondary">Inativo</span>
+            {% endif %}
+        </p>
+
+        <p><strong>Última Execução:</strong> {{ dados.ultima_execucao ?? '—' }}</p>
+        <p><strong>Próxima Execução:</strong> {{ dados.proxima_execucao ?? '—' }}</p>
+
+        <hr>
+
+        <a href="/admin/agendamentos/editar/{{ ficheiro }}" class="btn btn-warning">Editar</a>
+
+        {% if dados.ativo %}
+            <form action="/admin/agendamentos/desativar/{{ ficheiro }}" method="post" class="d-inline">
+                {{ csrf_field() }}
+                <button class="btn btn-secondary">Desativar</button>
+            </form>
+        {% else %}
+            <form action="/admin/agendamentos/ativar/{{ ficheiro }}" method="post" class="d-inline">
+                {{ csrf_field() }}
+                <button class="btn btn-success">Ativar</button>
+            </form>
+        {% endif %}
+
+        <form action="/admin/agendamentos/eliminar/{{ ficheiro }}" method="post" class="d-inline">
+            {{ csrf_field() }}
+            <button class="btn btn-danger" onclick="return confirm('Eliminar este agendamento?');">
+                Eliminar
+            </button>
+        </form>
+
+        <a href="/admin/backups#cron" class="btn btn-light">Voltar</a>
+
+    </div>
+</div>
+{% endblock %}

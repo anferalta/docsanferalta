@@ -1,0 +1,15 @@
+{% set sucesso = sessao.flash('sucesso') %}
+{% if sucesso %}
+    <div class="alert alert-success alert-dismissible fade show mb-3">
+        {{ sucesso }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+{% endif %}
+
+{% set erro = sessao.flash('erro') %}
+{% if erro %}
+    <div class="alert alert-danger alert-dismissible fade show mb-3">
+        {{ erro }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+{% endif %}

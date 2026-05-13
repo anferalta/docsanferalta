@@ -1,0 +1,20 @@
+RewriteEngine On
+
+# 1. Permitir assets diretamente
+RewriteCond %{REQUEST_URI} ^/assets/ [OR]
+RewriteCond %{REQUEST_URI} ^/uploads_publicos/
+RewriteRule .* - [L]
+
+# 2. Proteger ficheiros sensíveis
+<FilesMatch "\.(env|ini|log|sql|sh|bak|config)$">
+    Require all denied
+</FilesMatch>
+
+# 3. Se o ficheiro não existir, envia para index.php com a URI
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.+)$ index.php?url=$1 [QSA,L]
+
+# 4. Se for a raiz, envia para index.php
+RewriteRule ^$ index.php [L]
+

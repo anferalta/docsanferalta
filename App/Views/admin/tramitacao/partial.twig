@@ -1,0 +1,132 @@
+<!-- CARTÃO DO DOCUMENTO -->
+<div class="card mb-4">
+    <div class="card-body">
+
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Tipo:</strong> {{ documento.tipo.nome }}</p>
+                <p><strong>Estado atual:</strong>
+                    <span class="badge bg-primary">{{ documento.estado_atual|upper }}</span>
+                </p>
+            </div>
+
+            <div class="col-md-6">
+                <p><strong>Área atual:</strong> {{ documento.area_atual_nome }}</p>
+                <p><strong>Criado por:</strong> {{ documento.criador.nome }}</p>
+            </div>
+        </div>
+
+        <a href="/admin/documentos/ver/{{ documento.caminho|trim('/') }}/{{ documento.ficheiro }}"
+           target="_blank"
+           class="btn btn-outline-primary mt-2">
+            <i class="fa fa-file me-1"></i> Ver Documento
+        </a>
+
+    </div>
+</div>
+
+<!-- TIMELINE -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fa fa-history me-2"></i> Histórico de Tramitação</h5>
+    </div>
+
+    <div class="card-body">
+
+        {% if historico is empty %}
+            <p class="text-muted">Ainda não existem movimentos neste documento.</p>
+        {% else %}
+
+            <div class="timeline">
+
+                {% for h in historico %}
+                    <div class="timeline-item">
+
+                        <div class="timeline-icon bg-primary text-white">
+                            {% if h.acao == 'ENCAMINHADO' %}
+                                <i class="fa fa-random"></i>
+                            {% elseif h.acao == 'COMENTARIO' %}
+                                <i class="fa fa-comment"></i>
+                            {% elseif h.acao == 'ESTADO' %}
+                                <i class="fa fa-flag"></i>
+                            {% else %}
+                                <i class="fa fa-circle"></i>
+                            {% endif %}
+                        </div>
+
+                        <div class="timeline-content">
+
+                            <h6 class="mb-1">
+                                {{ h.utilizador.nome }}
+                                <small class="text-muted">— {{ h.criado_em|date("d/m/Y H:i") }}</small>
+                            </h6>
+
+                            <p class="mb-1">
+                                {% if h.acao == 'ENCAMINHADO' %}
+                                    Documento encaminhado para <strong>{{ h.area.nome }}</strong>.
+                                {% elseif h.acao == 'COMENTARIO' %}
+                                    Comentário adicionado.
+                                {% elseif h.acao == 'ESTADO' %}
+                                    Estado alterado para <strong>{{ h.estado|upper }}</strong>.
+                                {% endif %}
+                            </p>
+
+                            {% if h.comentario %}
+                                <div class="alert alert-secondary py-2 px-3 mb-2">
+                                    {{ h.comentario }}
+                                </div>
+                            {% endif %}
+
+                            {% if h.anexos %}
+                                <div class="mt-2">
+                                    <strong>Anexos:</strong>
+                                    <ul class="list-unstyled ms-2">
+                                        {% for a in h.anexos %}
+                                            <li>
+                                                <a href="/admin/tramitacao/anexo/{{ h.id }}/{{ a.ficheiro }}"
+                                                   target="_blank">
+                                                    <i class="fa fa-paperclip me-1"></i>
+                                                    {{ a.nome_original }}
+                                                </a>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+
+                        </div>
+                    </div>
+                {% endfor %}
+
+            </div>
+
+        {% endif %}
+
+    </div>
+</div>
+
+<!-- BOTÕES -->
+<div class="d-flex gap-2 mb-4">
+
+    {% if user.hasPermissao('admin.tramitacao.encaminhar') %}
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalTramitar">
+            <i class="fa fa-random me-1"></i> Encaminhar
+        </button>
+    {% endif %}
+
+    {% if user.hasPermissao('admin.tramitacao.comentar') %}
+        <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modalComentar">
+            <i class="fa fa-comment me-1"></i> Comentar
+        </button>
+    {% endif %}
+
+    {% if user.hasPermissao('admin.tramitacao.estado') %}
+        <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalEstado">
+            <i class="fa fa-flag me-1"></i> Alterar Estado
+        </button>
+    {% endif %}
+
+</div>
+
+{% include "@admin/tramitacao/modais.twig" %}
+

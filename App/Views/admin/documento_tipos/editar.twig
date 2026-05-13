@@ -1,0 +1,45 @@
+{% extends "@admin/layout.twig" %}
+
+{% block page_title %}
+    <i class="bi bi-tags"></i> Editar Tipo de Documento
+{% endblock %}
+
+{% block content %}
+
+    <div class="card p-4">
+
+        <h4 class="mb-3">Editar Tipo</h4>
+
+        {# MENSAGENS FLASH #}
+        {% if flash.erro %}
+            <div class="alert alert-danger">{{ flash.erro }}</div>
+        {% endif %}
+
+        {% if flash.sucesso %}
+            <div class="alert alert-success">{{ flash.sucesso }}</div>
+        {% endif %}
+
+        <form method="post" action="/admin/documento-tipos/editar/{{ tipo.id }}">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
+            <div class="mb-3">
+                <label class="form-label">Nome do Tipo</label>
+                <input type="text" name="nome" value="{{ tipo.nome }}" class="form-control" required>
+            </div>
+
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-check-lg"></i> Guardar
+            </button>
+
+            <a href="/admin/documento-tipos" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+        </form>
+
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+    <script src="/assets/js/documentos/tipos.js"></script>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "@admin/layout.twig" %}
+
+{% block content %}
+
+<h3 class="mb-3">Detalhes da Auditoria</h3>
+
+<p><strong>ID:</strong> {{ registo.id }}</p>
+<p><strong>Utilizador:</strong> {{ registo.utilizador_nome ?: 'N/A' }}</p>
+<p><strong>Ação:</strong> {{ registo.acao }}</p>
+<p><strong>IP:</strong> {{ registo.ip }}</p>
+<p><strong>Data:</strong> {{ registo.criado_em }}</p>
+<p><strong>Origem:</strong> 
+    {% if origem == 'auditoria' %}
+        <span class="badge bg-primary">Geral</span>
+    {% else %}
+        <span class="badge bg-danger">Eliminação</span>
+    {% endif %}
+</p>
+
+<hr>
+
+{% if origem == 'auditoria' %}
+    <h4>Detalhes</h4>
+    <pre>{{ registo.detalhes }}</pre>
+
+{% else %}
+    <h4>Dados do registo eliminado</h4>
+    <pre>{{ registo.detalhes|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
+
+    <a href="/admin/auditoria/restaurar/{{ registo.id }}" class="btn btn-success"
+       onclick="return confirm('Restaurar este registo?')">
+        Restaurar
+    </a>
+{% endif %}
+
+<br><br>
+
+<a href="/admin/auditoria" class="btn btn-secondary">Voltar</a>
+
+{% endblock %}

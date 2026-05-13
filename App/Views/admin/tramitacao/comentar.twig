@@ -1,0 +1,65 @@
+<!-- MODAL COMENTAR -->
+<div class="modal fade" id="modalComentar" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <form method="POST"
+              action="/admin/tramitacao/comentar"
+              enctype="multipart/form-data"
+              class="modal-content"
+              id="formComentar">
+
+            {{ csrf_field() }}
+
+            <input type="hidden" name="documento_id" value="{{ documento.id }}">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa fa-comment me-2"></i> Adicionar Comentário
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <!-- COMENTÁRIO -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Comentário</label>
+                    <textarea name="comentario"
+                              class="form-control"
+                              rows="4"
+                              placeholder="Escreva o seu comentário..."
+                              required></textarea>
+                </div>
+
+                <!-- ANEXOS -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Anexos (opcional)</label>
+                    <input type="file"
+                           name="anexos[]"
+                           class="form-control"
+                           multiple
+                           accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.zip,.rar">
+
+                    <small class="text-muted">
+                        Pode anexar vários ficheiros. Tamanho máximo por ficheiro: 20MB.
+                    </small>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="btnComentar">
+                    <i class="fa fa-paper-plane me-1"></i> Enviar Comentário
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById('formComentar').addEventListener('submit', function () {
+    const btn = document.getElementById('btnComentar');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> A enviar...';
+});
+</script>

@@ -1,0 +1,27 @@
+SHOW CREATE TABLE documentos;
+
+UPDATE documentos
+SET criado_por = 1
+WHERE criado_por IS NULL;
+
+UPDATE documentos
+SET ficheiro_original = ficheiro
+WHERE ficheiro_original IS NULL;
+
+muito importante
+ALTER TABLE documentos AUTO_INCREMENT = 1;
+
+ALTER TABLE documentos DROP COLUMN utilizador_id;
+
+ALTER TABLE documentos ADD COLUMN caminho VARCHAR(255) NULL AFTER ficheiro;
+------------------------------------------------------------------------
+muito importante
+INSERT INTO utilizadores_permissoes (utilizador_id, permissao_id)
+SELECT 2, id
+FROM permissoes;
+
+DELETE FROM utilizadores_permissoes WHERE utilizador_id = 2;
+
+INSERT INTO utilizadores_permissoes (utilizador_id, permissao_id)
+SELECT 2, id FROM permissoes;
+----------------------------------------------------------------------------------

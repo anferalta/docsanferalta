@@ -1,0 +1,56 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+    <div class="container-fluid">
+
+        <!-- LOGO -->
+        <a class="navbar-brand fw-bold d-flex align-items-center" href="/">
+            <i class="fa fa-folder-open me-2"></i>
+            Gestão Documental
+        </a>
+
+        <!-- Mobile toggle -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- NAV ITEMS -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+
+                {% if usuario_nome %}
+
+                    <!-- Saudação -->
+                    <li class="nav-item d-flex align-items-center me-2 text-white">
+                        <i class="fa fa-user-circle me-1"></i>
+                        Olá, {{ usuario_nome }}
+                    </li>
+
+                    <!-- Painel -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="/painel">
+                            <i class="fa fa-tachometer-alt me-1"></i> Painel
+                        </a>
+                    </li>
+
+                    <!-- Logout -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">
+                            <i class="fa fa-sign-out-alt me-1"></i> Sair
+                        </a>
+                    </li>
+
+                {% else %}
+
+                    <!-- Login -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="/login">
+                            <i class="fa fa-sign-in-alt me-1"></i> Login
+                        </a>
+                    </li>
+
+                {% endif %}
+
+            </ul>
+        </div>
+
+    </div>
+</nav>

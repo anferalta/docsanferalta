@@ -1,0 +1,35 @@
+Ficheiro: teste teste.txt
+TMP: C:\wamp64\tmp\phpA11D.tmp
+Existe TMP: NAO
+TMPFinal: 
+Existe TMPFinal: NAO
+Hash: 6dc194de8cc4b23cee34be53470a68103a6887c6b94dfeb9cd958b90a41b6661
+
+Ficheiro: teste teste.txt
+TMP: C:\wamp64\tmp\php4B1A.tmp
+Existe TMP: NAO
+TMPFinal: 
+Existe TMPFinal: NAO
+Hash: 6dc194de8cc4b23cee34be53470a68103a6887c6b94dfeb9cd958b90a41b6661
+
+Ficheiro: teste teste.txt
+TMP: C:\wamp64\tmp\phpE009.tmp
+Existe TMP: NAO
+TMPFinal: 
+Existe TMPFinal: NAO
+Hash: 6dc194de8cc4b23cee34be53470a68103a6887c6b94dfeb9cd958b90a41b6661
+
+Ficheiro: teste teste.txt
+TMP: C:\wamp64\tmp\phpE1E4.tmp
+Existe TMP: NAO
+TMPFinal: 
+Existe TMPFinal: NAO
+Hash: 6dc194de8cc4b23cee34be53470a68103a6887c6b94dfeb9cd958b90a41b6661
+
+Ficheiro: teste teste.txt
+TMP: C:\wamp64\tmp\phpB091.tmp
+Existe TMP: NAO
+TMPFinal: 
+Existe TMPFinal: NAO
+Hash: 6dc194de8cc4b23cee34be53470a68103a6887c6b94dfeb9cd958b90a41b6661
+

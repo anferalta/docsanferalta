@@ -1,0 +1,55 @@
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <h2 class="sidebar-title">Painel</h2>
+    </div>
+
+    <nav class="sidebar-nav">
+
+        <a href="{{ admin_url('') }}"
+           class="sidebar-item {{ app_route == '/admin' ? 'active' : '' }}">
+            <span class="icon">🏠</span>
+            <span>Dashboard</span>
+        </a>
+
+        {% if can('admin.utilizadores.ver') %}
+            <a href="{{ admin_url('utilizadores') }}"
+               class="sidebar-item {{ app_route starts with '/admin/utilizadores' ? 'active' : '' }}">
+                <span class="icon">👤</span>
+                <span>Utilizadores</span>
+            </a>
+        {% endif %}
+
+        {% if can('admin.perfis.ver') %}
+            <a href="{{ admin_url('perfis') }}"
+               class="sidebar-item {{ app_route starts with '/admin/perfis' ? 'active' : '' }}">
+                <span class="icon">🛡️</span>
+                <span>Perfis</span>
+            </a>
+        {% endif %}
+
+        {% if can('admin.documentos.ver') %}
+            <a href="{{ admin_url('documentos') }}"
+               class="sidebar-item {{ app_route starts with '/admin/documentos' ? 'active' : '' }}">
+                <span class="icon">📁</span>
+                <span>Documentos</span>
+            </a>
+        {% endif %}
+
+        {% if can('admin.auditoria.ver') %}
+            <a href="{{ admin_url('auditoria') }}"
+               class="sidebar-item {{ app_route starts with '/admin/auditoria' ? 'active' : '' }}">
+                <span class="icon">📜</span>
+                <span>Auditoria</span>
+            </a>
+        {% endif %}
+
+        {% if can('admin.notificacoes.ver') %}
+            <a href="{{ admin_url('notificacoes') }}"
+               class="sidebar-item {{ app_route starts with '/admin/notificacoes' ? 'active' : '' }}">
+                <span class="icon">🔔</span>
+                <span>Notificações</span>
+            </a>
+        {% endif %}
+
+    </nav>
+</aside>

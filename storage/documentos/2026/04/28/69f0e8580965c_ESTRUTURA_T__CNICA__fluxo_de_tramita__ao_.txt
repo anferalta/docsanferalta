@@ -1,0 +1,99 @@
+⭐ ESTRUTURA TÉCNICA (cirúrgica e limpa)
+📌 Tabela 1 — documento_areas
+Semelhante a documento_tipos.
+
+id
+nome
+descricao
+ativo
+criado_em
+
+
+📌 Tabela 2 — documento_tramitacao
+Regista cada passo do fluxo.
+
+id
+documento_id
+area_id
+utilizador_id        -- quem encaminhou
+comentario
+estado               -- recebido, em_analise, concluido, devolvido, arquivado
+criado_em
+
+
+⭐ FLUXO REAL (como vai funcionar)
+1) Utilizador faz upload
+Documento entra com:
+
+estado_atual = 'novo'
+area_atual_id = NULL
+
+
+2) Gestor/Supervisor/Admin abre “Documentos Pendentes”
+Vê documentos sem área atribuída.
+
+3) Gestor encaminha para uma área
+Cria registo em documento_tramitacao:
+
+estado = 'recebido'
+area_id = X
+comentario = 'Encaminhado para RH'
+
+estado_atual = 'em_analise'
+area_atual_id = X
+
+4) Área recebe documento
+Os utilizadores dessa área veem:
+
+Documentos atribuídos à sua área
+
+Podem comentar
+
+Podem devolver
+
+Podem reencaminhar
+
+Podem concluir
+
+5) Comentários
+Cada comentário cria um registo em documento_tramitacao.
+
+O utilizador que fez upload vê tudo.
+
+6) Arquivamento
+Quando a área finaliza:
+
+estado = 'arquivado'
+
+estado_atual = 'arquivado'
+arquivado_em = NOW()
+
+⭐ INTERFACE (cirúrgico, sem invenções)
+No menu admin:
+Adicionar:
+
+Tramitação
+- Documentos Pendentes
+- Em Análise
+- Arquivados
+- Áreas (CRUD)
+
+Tramitação
+- Histórico
+- Comentários
+- Encaminhar
+- Arquivar
+
+
+⭐ PERMISSÕES (ACL)
+Criar:
+
+admin.tramitacao.ver
+admin.tramitacao.encaminhar
+admin.tramitacao.comentar
+admin.tramitacao.arquivar
+admin.tramitacao.areas.ver
+admin.tramitacao.areas.criar
+
+
+

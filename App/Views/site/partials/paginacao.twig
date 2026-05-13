@@ -1,0 +1,11 @@
+{% set paginas = (total / porPagina)|round(0, 'ceil') %}
+
+<nav>
+    <ul class="pagination">
+        {% for p in 1..paginas %}
+            <li class="page-item {% if p == pagina %}active{% endif %}">
+                <a class="page-link" href="?p={{ p }}&q={{ pesquisa }}">{{ p }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+</nav>sim

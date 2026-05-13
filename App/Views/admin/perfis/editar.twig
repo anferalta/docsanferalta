@@ -1,0 +1,36 @@
+{% extends "@admin/layout.twig" %}
+{% block header %}Gestão de Perfis{% endblock %}
+
+{% block content %}
+
+<h3 class="mb-4">Editar Perfil</h3>
+
+<form method="POST">
+
+    {{ csrf_field() }}
+
+    <div class="mb-3">
+        <label class="form-label">Nome</label>
+        <input type="text" name="nome" class="form-control" value="{{ perfil.nome }}" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Descrição</label>
+        <select name="descricao" class="form-select" required>
+            <option value="">Selecione...</option>
+
+            {% for p in perfis %}
+                <option value="{{ p.descricao }}"
+                        {{ perfil.descricao == p.descricao ? 'selected' }}>
+                    {{ p.descricao }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <button class="btn btn-primary">Guardar</button>
+    <a href="/admin/perfis" class="btn btn-secondary">Cancelar</a>
+
+</form>
+
+{% endblock %}

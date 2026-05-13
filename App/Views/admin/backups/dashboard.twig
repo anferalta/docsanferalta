@@ -1,0 +1,43 @@
+<div class="row">
+
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3>{{ dashboard.totalBD + dashboard.totalFiles }}</h3>
+                <p>Total de Backups</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3>{{ dashboard.totalBD }} BD / {{ dashboard.totalFiles }} Ficheiros</h3>
+                <p>Distribuição</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+
+                <h5>Último Backup BD</h5>
+                <span class="badge bg-{{ dashboard.estadoBD.cor }} fs-6">
+                    {{ dashboard.ultimoBD ?? '—' }}
+                </span>
+                <p class="text-muted mt-1">{{ dashboard.estadoBD.mensagem }}</p>
+
+                <hr>
+
+                <h5>Último Backup Ficheiros</h5>
+                <span class="badge bg-{{ dashboard.estadoFiles.cor }} fs-6">
+                    {{ dashboard.ultimoFiles ?? '—' }}
+                </span>
+                <p class="text-muted mt-1">{{ dashboard.estadoFiles.mensagem }}</p>
+
+            </div>
+        </div>
+    </div>           
+
+</div>

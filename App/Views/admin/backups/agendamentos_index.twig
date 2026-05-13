@@ -1,0 +1,72 @@
+{% extends "@admin/layout.twig" %}
+{% block title %}Agendamentos{% endblock %}
+{% block page_title %}Gestão de Agendamentos{% endblock %}
+
+{% block content %}
+
+<a href="/admin/agendamentos/criar" class="btn btn-primary mb-3">Criar novo agendamento</a>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Frequência</th>
+            <th>Estado</th>
+            <th>Última Execução</th>
+            <th>Próxima Execução</th>
+            <th class="text-end">Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for nome, dados in cron %}
+            <tr>
+                <td>{{ dados.nome }}</td>
+                <td>{{ dados.frequencia }}</td>
+
+                <td>
+                    {% if dados.ativo %}
+                        <span class="badge bg-success">Ativo</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Inativo</span>
+                    {% endif %}
+                </td>
+
+                <td>{{ dados.ultima_execucao ?? '—' }}</td>
+                <td>{{ dados.proxima_execucao ?? '—' }}</td>
+
+                <td class="text-end">
+
+                    <a href="/admin/agendamentos/ver/{{ nome }}" class="btn btn-sm btn-primary">Ver</a>
+                    <a href="/admin/agendamentos/editar/{{ nome }}" class="btn btn-sm btn-warning">Editar</a>
+
+                    {% if dados.ativo %}
+                        <form action="/admin/agendamentos/desativar/{{ nome }}" method="post" class="d-inline">
+                            {{ csrf_field() }}
+                            <button class="btn btn-sm btn-secondary">Desativar</button>
+                        </form>
+                    {% else %}
+                        <form action="/admin/agendamentos/ativar/{{ nome }}" method="post" class="d-inline">
+                            {{ csrf_field() }}
+                            <button class="btn btn-sm btn-success">Ativar</button>
+                        </form>
+                    {% endif %}
+
+                    <form action="/admin/agendamentos/eliminar/{{ nome }}" method="post" class="d-inline">
+                        {{ csrf_field() }}
+                        <button class="btn btn-sm btn-danger"
+                                onclick="return confirm('Eliminar este agendamento?');">
+                            Eliminar
+                        </button>
+                    </form>
+
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="6" class="text-center text-muted">Nenhum agendamento configurado.</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

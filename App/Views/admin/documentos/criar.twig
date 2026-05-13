@@ -1,0 +1,77 @@
+{% extends "@admin/layout.twig" %}
+
+{% block page_title %}Novo Documento{% endblock page_title %}
+
+{% block content %}
+
+<form id="upload-form"
+      method="post"
+      action="/admin/documentos/criar"
+      enctype="multipart/form-data"
+      class="card p-4 shadow-sm"
+      novalidate>
+
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
+    <div class="alert alert-info">
+        <strong>Informações importantes:</strong>
+        <ul class="mb-0">
+            <li>Pode enviar vários ficheiros ao mesmo tempo.</li>
+            <li>Tamanho máximo por ficheiro: <strong>10 MB</strong>.</li>
+            <li>Máximo de <strong>10 ficheiros</strong>.</li>
+            <li>Tipos permitidos: <strong>PDF, DOCX, XLSX, JPG, PNG, TXT</strong>.</li>
+        </ul>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label"><strong>Título:</strong></label>
+        <input type="text" name="titulo" id="titulo" class="form-control" required>
+        <div id="tituloErro" class="text-danger mt-1 d-none">O título é obrigatório.</div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Tipo de Documento</label>
+        <div class="input-group">
+            <select name="tipo_id" id="tipo_id" class="form-select" required>
+                <option value="">-- Selecione --</option>
+                {% for tipo in tipos %}
+                    <option value="{{ tipo.id }}">{{ tipo.nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div id="dropZone" class="drop-zone mb-3">
+        <div class="dz-content">
+            <i class="fa fa-cloud-upload-alt dz-icon"></i>
+            <p class="dz-title">Arraste ficheiros aqui</p>
+            <p class="dz-subtitle">ou clique para selecionar</p>
+        </div>
+    </div>
+
+    <div id="fileCounter" class="text-muted small mb-2 d-none"></div>
+
+    <ul id="fileList" class="file-list list-group mb-3"></ul>
+
+    <div id="fileLimitWarning" class="alert alert-warning d-none">
+        Máximo de 10 ficheiros. Remova alguns para continuar.
+    </div>
+
+    <input type="file"
+           name="ficheiros[]"
+           id="ficheiros"
+           multiple
+           class="d-none">
+
+    <button type="submit" id="btnGuardar" class="btn btn-primary mt-3">
+        <i class="fa fa-check"></i> Guardar
+    </button>
+
+</form>
+
+{% endblock content %}
+
+{% block scripts %}
+    <script src="/assets/js/documentos/upload.js?v=316113716"></script>
+    <script src="/assets/js/documentos/tipos.js?v=258413354"></script>
+{% endblock scripts %}

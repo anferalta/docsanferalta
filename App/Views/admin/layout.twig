@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% block title %}Admin{% endblock title %}</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/admin.css">
+    <link rel="stylesheet" href="/assets/css/logs.css">
+
+    {% block head %}{% endblock head %}
+</head>
+
+<body>
+
+<div class="admin-wrapper">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="logo">Painel Admin</div>
+
+        <nav class="menu">
+            <ul class="menu-list">
+
+                {% for item in menuAdmin %}
+
+                    {% if item.header is defined %}
+                        <li class="menu-header">{{ item.header }}</li>
+
+                    {% else %}
+                        {% if auth.user.hasPermissao(item.permissao) %}
+                            <li class="menu-item">
+                                <a href="{{ item.url }}" class="menu-link">
+                                    {% if item.icone %}
+                                        <i class="bi {{ item.icone }} me-2"></i>
+                                    {% endif %}
+                                    {{ item.titulo }}
+
+                                    {% if item.badge is defined and item.badge > 0 %}
+                                        <span class="badge bg-danger ms-auto">{{ item.badge }}</span>
+                                    {% endif %}
+                                </a>
+
+                                {% if item.sub is defined and item.sub|length > 0 %}
+                                    <ul class="submenu-list">
+                                        {% for sub in item.sub %}
+                                            {% if auth.user.hasPermissao(sub.permissao) %}
+                                                <li class="submenu-item">
+                                                    <a href="{{ sub.url }}" class="submenu-link">
+                                                        {% if sub.icone %}
+                                                            <i class="bi {{ sub.icone }} me-2"></i>
+                                                        {% endif %}
+                                                        {{ sub.titulo }}
+
+                                                        {% if sub.badge is defined and sub.badge > 0 %}
+                                                            <span class="badge bg-danger ms-auto">{{ sub.badge }}</span>
+                                                        {% endif %}
+                                                    </a>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </ul>
+                                {% endif %}
+                            </li>
+                        {% endif %}
+                    {% endif %}
+
+                {% endfor %}
+
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="content-area">
+
+        <!-- HEADER -->
+        <header class="topbar">
+            <div class="page-header">
+                <div class="page-title">
+                    {% block page_title %}{% endblock page_title %}
+                </div>
+
+                <nav class="breadcrumb">
+                    {% block breadcrumb %}{% endblock breadcrumb %}
+                </nav>
+            </div>
+
+            <div class="user-box">
+                <span>{{ auth.user.nome }}</span>
+                <img src="/assets/img/avatar.png" class="avatar">
+            </div>
+        </header>
+
+        <!-- PAGE CONTENT -->
+        <section class="page-content">
+            {% include "@admin/flash.twig" %}
+            {% block content %}{% endblock content %}
+        </section>
+
+    </main>
+
+</div>
+
+<!-- JS -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+{% block scripts %}{% endblock %}
+{% block modals %}{% endblock %}
+
+
+</body>
+</html>

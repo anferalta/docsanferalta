@@ -1,0 +1,59 @@
+{% extends "@admin/layout.twig" %}
+
+{% block page_title %}Dashboard de Tramitação{% endblock %}
+
+{% block content %}
+
+<h4 class="mb-4">Estado da Tramitação</h4>
+
+<div class="row">
+
+    <div class="col-md-3">
+        <div class="card text-center border-primary">
+            <div class="card-body">
+                <h6>Pendentes</h6>
+                <h2 class="text-primary">{{ pendentes }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-center border-warning">
+            <div class="card-body">
+                <h6>Em Tramitação</h6>
+                <h2 class="text-warning">{{ em_tramitacao }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-center border-info">
+            <div class="card-body">
+                <h6>Em Análise</h6>
+                <h2 class="text-info">{{ em_analise }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-center border-success">
+            <div class="card-body">
+                <h6>Concluídos</h6>
+                <h2 class="text-success">{{ concluidos }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mt-4">
+        <div class="card text-center border-dark">
+            <div class="card-body">
+                <h6>Arquivados</h6>
+                <h2 class="text-dark">{{ arquivados }}</h2>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
+

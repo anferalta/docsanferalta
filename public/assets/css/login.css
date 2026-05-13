@@ -1,0 +1,160 @@
+/* RESET */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body.login-body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #4f46e5, #3b82f6);
+    font-family: "Inter", sans-serif;
+}
+
+/* CONTAINER */
+.login-container {
+    width: 100%;
+    max-width: 420px;
+    padding: 20px;
+}
+
+/* CARD */
+.login-box {
+    background: #ffffff;
+    padding: 35px 30px;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    animation: fadeIn .4s ease;
+}
+
+/* HEADER */
+.login-header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.login-header h1 {
+    font-size: 1.8rem;
+    color: #1f2937;
+    margin-bottom: 5px;
+}
+
+.login-header p {
+    color: #6b7280;
+    font-size: 0.95rem;
+}
+
+/* FORM */
+.login-content form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.login-content label {
+    font-size: 0.9rem;
+    color: #374151;
+}
+
+.login-content input {
+    padding: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color .2s;
+}
+
+.login-content input:focus {
+    border-color: #3b82f6;
+    outline: none;
+}
+
+/* BUTTON */
+.btn-login {
+    background: #3b82f6;
+    color: white;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background .2s;
+}
+
+.btn-login:hover {
+    background: #2563eb;
+}
+
+/* LINKS */
+.forgot-link {
+    display: block;
+    text-align: center;
+    margin-top: 10px;
+    color: #3b82f6;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.login-links {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.login-links a {
+    color: #007bff;
+    text-decoration: none;
+    font-size: 14px;
+    display: inline-block;
+    margin-top: 5px;
+}
+
+.login-links a:hover {
+    text-decoration: underline;
+}
+.login-form button {
+    margin-bottom: 10px;
+}
+.login-links {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+
+.forgot-link:hover {
+    text-decoration: underline;
+}
+
+/* ANIMATION */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to   {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.backup-tabs .nav-tabs .nav-link {
+    font-weight: 600;
+    padding: 10px 18px;
+}
+
+.backup-tabs .card {
+    border-radius: 8px;
+    border: 1px solid #e3e3e3;
+}
+
+.backup-tabs h4 {
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.table td, .table th {
+    vertical-align: middle;
+}

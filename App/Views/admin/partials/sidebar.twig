@@ -1,0 +1,79 @@
+<aside class="sidebar">
+
+    <div class="sidebar-header">
+        <h2>Painel Admin</h2>
+    </div>
+
+    <nav class="sidebar-nav">
+        <ul>
+
+            {% for item in menuAdmin %}
+
+                {# ============================
+                   HEADERS (sem permissões)
+                   ============================ #}
+                {% if item.header is defined %}
+                    <li class="sidebar-section">{{ item.header }}</li>
+                    {% continue %}
+                {% endif %}
+
+                {# ============================
+                   PERMISSÕES
+                   ============================ #}
+                {% if not auth.user.isAdmin() and not auth.user.hasPermissao(item.permissao) %}
+                    {% continue %}
+                {% endif %}
+
+                {# ============================
+                   ACTIVE STATE AUTOMÁTICO
+                   ============================ #}
+                {% set active = (app.request.path starts with item.url) ? 'active' : '' %}
+
+                <li class="sidebar-item {{ active }}">
+
+                    <a href="{{ item.url }}" class="sidebar-link">
+
+                        {% if item.icone is defined %}
+                            <i class="bi {{ item.icone }}"></i>
+                        {% endif %}
+
+                        <span>{{ item.titulo }}</span>
+
+                        {% if item.badge is defined and item.badge > 0 %}
+                            <span class="badge">{{ item.badge }}</span>
+                        {% endif %}
+                    </a>
+
+                    {# ============================
+                       SUBMENUS
+                       ============================ #}
+                    {% if item.sub is defined %}
+                        <ul class="sidebar-submenu">
+
+                            {% for sub in item.sub %}
+
+                                {% if auth.user.isAdmin() or auth.user.hasPermissao(sub.permissao) %}
+
+                                    {% set subActive = (app.request.path == sub.url) ? 'active' : '' %}
+
+                                    <li class="{{ subActive }}">
+                                        <a href="{{ sub.url }}">
+                                            {{ sub.titulo }}
+                                        </a>
+                                    </li>
+
+                                {% endif %}
+
+                            {% endfor %}
+
+                        </ul>
+                    {% endif %}
+
+                </li>
+
+            {% endfor %}
+
+        </ul>
+    </nav>
+
+</aside>

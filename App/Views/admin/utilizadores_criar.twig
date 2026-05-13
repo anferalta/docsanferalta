@@ -1,0 +1,16 @@
+{% extends "base.twig" %}
+
+{% block content %}
+
+{% include "components/form.twig" with {
+    titulo_form: "Criar Utilizador",
+    action: "/admin/utilizadores/criar",
+    fields: [
+        { label: "Nome", name: "nome", type: "text", value: "" },
+        { label: "Email", name: "email", type: "email", value: "" },
+        { label: "Password", name: "password", type: "password", value: "" },
+        { label: "Perfil", name: "perfil_id", type: "select", value: "", options: perfis }
+    ]
+} %}
+
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "@admin/layout.twig" %}
+
+{% block page_title %}Criar Área{% endblock %}
+
+{% block content %}
+
+<div class="card">
+    <div class="card-body">
+
+        <form method="POST" action="{{ route('admin.documento_areas.store') }}">
+            {{ csrf_field() }}
+
+            <div class="mb-3">
+                <label class="form-label">Nome</label>
+                <input type="text" name="nome" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Código</label>
+                <input type="text" name="codigo" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Descrição</label>
+                <textarea name="descricao" class="form-control"></textarea>
+            </div>
+
+            <div class="form-check mb-3">
+                <input type="checkbox" name="ativo" class="form-check-input" checked>
+                <label class="form-check-label">Ativo</label>
+            </div>
+
+            <button class="btn btn-success">Criar</button>
+        </form>
+
+    </div>
+</div>
+
+{% endblock %}
+

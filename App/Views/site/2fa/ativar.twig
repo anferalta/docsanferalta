@@ -1,0 +1,18 @@
+{% extends "@site/layout.twig" %}
+
+{% block content %}
+<h2>Ativar Autenticação de Dois Fatores</h2>
+
+<p>Digitalize o QR Code abaixo com o Google Authenticator:</p>
+
+<img src="{{ qrCode }}" alt="QR Code 2FA">
+
+<p>Ou introduza este código manualmente:</p>
+<pre>{{ secret }}</pre>
+
+<form method="post" action="/2fa/confirmar">
+    <label>Código de verificação:</label>
+    <input type="text" name="codigo" required>
+    <button type="submit">Confirmar</button>
+</form>
+{% endblock %}

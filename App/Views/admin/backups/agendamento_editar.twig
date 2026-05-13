@@ -1,0 +1,52 @@
+{% extends "@admin/layout.twig" %}
+{% block title %}Editar Agendamento{% endblock %}
+{% block page_title %}Editar Agendamento{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+
+        <form method="post">
+
+            {{ csrf_field() }}
+
+            <div class="mb-3">
+                <label class="form-label">Nome</label>
+                <input type="text" name="nome" class="form-control" value="{{ dados.nome }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Frequência</label>
+                <select name="frequencia" class="form-select">
+                    <option value="diario"   {% if dados.frequencia == 'diario' %}selected{% endif %}>Diário</option>
+                    <option value="semanal"  {% if dados.frequencia == 'semanal' %}selected{% endif %}>Semanal</option>
+                    <option value="mensal"   {% if dados.frequencia == 'mensal' %}selected{% endif %}>Mensal</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Última Execução</label>
+                <input type="text" name="ultima_execucao" class="form-control" value="{{ dados.ultima_execucao }}">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Próxima Execução</label>
+                <input type="text" name="proxima_execucao" class="form-control" value="{{ dados.proxima_execucao }}">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Ativo</label>
+                <select name="ativo" class="form-select">
+                    <option value="1" {% if dados.ativo %}selected{% endif %}>Ativo</option>
+                    <option value="0" {% if not dados.ativo %}selected{% endif %}>Inativo</option>
+                </select>
+            </div>
+
+            <button class="btn btn-primary">Guardar</button>
+            <a href="/admin/backups#cron" class="btn btn-light">Cancelar</a>
+
+        </form>
+
+    </div>
+</div>
+{% endblock %}

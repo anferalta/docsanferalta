@@ -1,0 +1,42 @@
+<header class="topbar">
+
+    <div class="topbar-left">
+        <button class="btn-toggle" onclick="document.body.classList.toggle('sidebar-collapsed')">
+            ☰
+        </button>
+    </div>
+
+    <div class="topbar-right">
+
+        {# NOTIFICAÇÕES #}
+        {% set notificacoes = notificacoes_nao_lidas ?? [] %}
+
+        <div class="notifications-dropdown">
+            <button class="notifications-button">
+                🔔
+                {% if notificacoes|length > 0 %}
+                    <span class="badge badge-danger">{{ notificacoes|length }}</span>
+                {% endif %}
+            </button>
+
+            {% if notificacoes %}
+                <div class="notifications-menu">
+                    {% for n in notificacoes %}
+                        <div class="notification-item">
+                            <div class="notification-title">{{ n.titulo }}</div>
+                            <div class="notification-message">{{ n.mensagem }}</div>
+                            <div class="notification-meta">{{ n.criado_em }}</div>
+                        </div>
+                    {% endfor %}
+                    <a href="{{ url('/notificacoes') }}" class="notifications-link">Ver todas</a>
+                </div>
+            {% endif %}
+        </div>
+
+        {# UTILIZADOR #}
+        <span class="user">{{ usuario_nome }}</span>
+
+        <a href="{{ url('/logout') }}" class="logout">Sair</a>
+    </div>
+
+</header>
