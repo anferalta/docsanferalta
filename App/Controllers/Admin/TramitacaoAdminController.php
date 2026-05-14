@@ -173,7 +173,7 @@ class TramitacaoAdminController extends BaseController
 
         // Sucesso + redirect
         Sessao::flash('sucesso', 'Documento encaminhado com sucesso.');
-        return $this->redirect("/admin/documentos/editar/{$documento->id}#tabTramitacao");
+        return $this->redirect("/admin/documentos/editar/{$documento->id}?tab=tramitacao");
     }
 
     public function verAnexo($historicoId, $ficheiro)

@@ -81,6 +81,7 @@
                         <option value="em_tramitacao"  {{ app.request.get('estado_atual') == 'em_tramitacao' ? 'selected' : '' }}>Em Tramitação</option>
                         <option value="analise"        {{ app.request.get('estado_atual') == 'analise' ? 'selected' : '' }}>Em Análise</option>
                         <option value="concluido"      {{ app.request.get('estado_atual') == 'concluido' ? 'selected' : '' }}>Concluído</option>
+                        <option value="devolvido"      {{ app.request.get('estado_atual') == 'devolvido' ? 'selected' : '' }}>Devolvido</option>
                         <option value="arquivado"      {{ app.request.get('estado_atual') == 'arquivado' ? 'selected' : '' }}>Arquivado</option>
                     </select>
                 </div>
@@ -111,135 +112,129 @@
 
     {# ============================
        LISTA DE DOCUMENTOS
-    ============================ #}
-    <div class="card">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" id="tabelaDocs">
+============================ #}
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="tabelaDocs">
 
-                <thead class="table-light">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 25%">Ficheiro</th>
+                    <th>Título</th>
+                    <th>Tipo</th>
+                    <th>Estado</th>
+                    <th>Área Atual</th>
+                    <th>Tamanho</th>
+
+                    {% if auth.user.perfil != 'utilizador' %}
+                        <th>Criado por</th>
+                    {% endif %}
+
+                    <th>Criado em</th>
+                    <th class="text-end">Ações</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% if documentos is empty %}
                     <tr>
-                        <th style="width: 25%">Ficheiro</th>
-                        <th>Título</th>
-                        <th>Tipo</th>
-                        <th>Estado</th>
-                        <th>Área Atual</th>
-                        <th>Tamanho</th>
+                        <td colspan="9" class="text-center py-4 text-muted">
+                            Nenhum documento encontrado.
+                        </td>
+                    </tr>
+                {% else %}
+                    {% for doc in documentos %}
+                        <tr>
 
-                        {% if auth.user.perfil != 'utilizador' %}
-                            <th>Criado por</th>
+                            <td>
+                                <i class="fa {{ doc.icon() }} me-2 text-primary" style="font-size:22px;"></i>
+                                <span class="fw-semibold">{{ doc.ficheiro_original }}</span>
+                            </td>
+
+                            <td>{{ doc.titulo }}</td>
+
+                            <td>{{ doc.tipo_nome }}</td>
+
+                            <td>
+                                <span class="badge-estado badge-{{ doc.estado_atual }}">
+                                    {{ doc.estado_atual|replace({'_':' '})|upper }}
+                                </span>
+                            </td>
+
+                            <td>{{ doc.area_nome ?? '-' }}</td>
+
+                            <td>{{ (doc.tamanho / 1024)|number_format(1) }} KB</td>
+
+                            {% if auth.user.perfil != 'utilizador' %}
+                                <td>
+                                    <img src="{{ doc.criador_avatar() }}"
+                                         width="32" height="32"
+                                         class="rounded-circle me-2">
+                                    {{ doc.criador_nome() }}
+                                </td>
                             {% endif %}
 
-                        <th>Criado em</th>
-                        <th class="text-end">Ações</th>
-                    </tr>
-                </thead>
+                            <td>{{ doc.criado_em_formatado() }}</td>
 
-                <tbody>
-                    {% if documentos is empty %}
-                        <tr>
-                            <td colspan="9" class="text-center py-4 text-muted">
-                                Nenhum documento encontrado.
-                            </td>
-                        </tr>
-                    {% else %}
-                        {% for doc in documentos %}
-                            <tr>
+                            <td class="text-end">
+                                <div class="btn-group">
 
-                                <td>
-                                    <i class="fa {{ doc.icon() }} me-2 text-primary" style="font-size:22px;"></i>
-                                    <span class="fw-semibold">{{ doc.ficheiro_original }}</span>
-                                </td>
+                                    {# VER — detalhe com abas #}
+                                    <a href="/admin/documentos/ver/{{ doc.caminho|trim('/') }}/{{ doc.ficheiro }}"
+                                       target="_blank"
+                                       class="btn btn-sm btn-secondary">
+                                        <i class="fa fa-eye"></i> Ver
+                                    </a>
 
-                                <td>{{ doc.titulo }}</td>
+                                    <a href="/admin/documentos/download/{{ doc.id }}"
+                                       class="btn btn-sm btn-success">
+                                        <i class="fa fa-download"></i> Download
+                                    </a>
 
-                                <td>{{ doc.tipo_nome }}</td>
-
-                                <td>
-                                    {% if doc.estado_atual == 'pendente' %}
-                                        <span class="badge bg-secondary">Pendente</span>
-                                    {% elseif doc.estado_atual == 'em_tramitacao' %}
-                                        <span class="badge bg-warning text-dark">Em Tramitação</span>
-                                    {% elseif doc.estado_atual == 'analise' %}
-                                        <span class="badge bg-info text-dark">Em Análise</span>
-                                    {% elseif doc.estado_atual == 'concluido' %}
-                                        <span class="badge bg-success">Concluído</span>
-                                    {% elseif doc.estado_atual == 'arquivado' %}
-                                        <span class="badge bg-dark">Arquivado</span>
+                                    {% if isGranted('admin.tramitacao.ver') %}
+                                        <a href="/admin/documentos/editar/{{ doc.id }}?tab=tramitacao"
+                                           class="btn btn-sm btn-warning">
+                                            <i class="fa fa-random"></i> Tramitar
+                                        </a>
                                     {% endif %}
-                                </td>
 
-                                <td>{{ doc.area_nome ?? '-' }}</td>
-
-                                <td>{{ (doc.tamanho / 1024)|number_format(1) }} KB</td>
-
-                                {% if auth.user.perfil != 'utilizador' %}
-                                    <td>
-                                        <img src="{{ doc.criador_avatar() }}"
-                                             width="32" height="32"
-                                             class="rounded-circle me-2">
-                                        {{ doc.criador_nome() }}
-                                    </td>
-                                {% endif %}
-
-                                <td>{{ doc.criado_em_formatado() }}</td>
-
-                                <td class="text-end">
-                                    <div class="btn-group">
-
-                                        {# VER — agora abre o detalhe com abas #}
-                                        <a href="/admin/documentos/ver/{{ doc.caminho|trim('/') }}/{{ doc.ficheiro }}"
-                                           target="_blank"
-                                           class="btn btn-sm btn-secondary">
-                                            <i class="fa fa-eye"></i> Ver
+                                    {% if isGranted('admin.documentos.apagar') %}
+                                        <a href="/admin/documentos/eliminar/{{ doc.id }}"
+                                           class="btn btn-sm btn-danger"
+                                           onclick="return confirm('Eliminar documento?')">
+                                            <i class="fa fa-trash"></i> Apagar
                                         </a>
+                                    {% endif %}
 
-                                        <a href="/admin/documentos/download/{{ doc.id }}"
-                                           class="btn btn-sm btn-success">
-                                            <i class="fa fa-download"></i> Download
-                                        </a>
+                                </div>
+                            </td>
 
-                                        {% if isGranted('admin.tramitacao.ver') %}
-                                            <a href="/admin/documentos/editar/{{ doc.id }}#tabTramitacao"
-                                               class="btn btn-sm btn-warning">
-                                                <i class="fa fa-random"></i> Tramitar
-                                            </a>
-                                        {% endif %}
+                        </tr>
+                    {% endfor %}
+                {% endif %}
+            </tbody>
 
-                                        {% if isGranted('admin.documentos.apagar') %}
-                                            <a href="/admin/documentos/eliminar/{{ doc.id }}"
-                                               class="btn btn-sm btn-danger"
-                                               onclick="return confirm('Eliminar documento?')">
-                                                <i class="fa fa-trash"></i> Apagar
-                                            </a>
-                                        {% endif %}
-
-                                    </div>
-                                </td>
-
-                            </tr>
-                        {% endfor %}
-                    {% endif %}
-                </tbody>
-
-            </table>
-        </div>
-
-        <div class="p-3">
-            {{ paginacao|raw }}
-        </div>
+        </table>
     </div>
+
+    <div class="p-3">
+        {{ paginacao|raw }}
+    </div>
+</div>
 
 {% endblock %}
 
 {% block scripts %}
-    <script src="/assets/js/documentos/index.js"></script>
+<script src="/assets/js/documentos/index.js"></script>
 
-    <style>
-        table td {            vertical-align: middle !important;
-        }
-        .table-hover tbody tr:hover {
-            background-color: #f8f9fa;
-        }
-    </style>
+<style>
+    table td {
+        vertical-align: middle !important;
+    }
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+</style>
 {% endblock %}
+
 

@@ -4,9 +4,6 @@
 
 <div class="container-fluid">
 
-    <!-- ALERTA GLOBAL (para notificações AJAX) -->
-    <div id="alerta-global" class="alert d-none" style="display:none;"></div>
-
     <!-- TÍTULO -->
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="mb-0">
@@ -42,15 +39,13 @@
                                 <tr>
                                     <td>{{ d.id }}</td>
 
-                                    <td>
-                                        <strong>{{ d.titulo }}</strong>
-                                    </td>
+                                    <td><strong>{{ d.titulo }}</strong></td>
 
                                     <td>{{ d.tipo_nome }}</td>
 
                                     <td>
-                                        <span class="badge bg-primary">
-                                            {{ d.estado_atual|upper }}
+                                        <span class="badge-estado badge-{{ d.estado_atual }}">
+                                            {{ d.estado_atual|replace({'_':' '})|upper }}
                                         </span>
                                     </td>
 
@@ -91,74 +86,6 @@
 
 {% endblock %}
 
-
 {% block scripts %}
-<script>
-// ===============================================
-//  TRAMITAÇÃO — SUBMISSÃO DO MODAL ENCAMINHAR
-// ===============================================
-
-$(document).ready(function () {
-
-    $('#formEncaminhar').on('submit', function (e) {
-        e.preventDefault();
-
-        let dados = $(this).serialize();
-
-        $.ajax({
-            url: '/admin/tramitacao/encaminhar',
-            method: 'POST',
-            data: dados,
-            dataType: 'json',
-
-            success: function (res) {
-
-                if (res.sucesso) {
-
-                    mostrarNotificacao('success', 'Documento encaminhado com sucesso.');
-
-                    $('#modalEncaminhar').modal('hide');
-
-                    $('#formEncaminhar')[0].reset();
-
-                    if (typeof atualizarTabela === 'function') {
-                        atualizarTabela();
-                    }
-
-                    return;
-                }
-
-                if (res.erro) {
-                    mostrarNotificacao('danger', res.erro);
-                }
-            },
-
-            error: function () {
-                mostrarNotificacao('danger', 'Ocorreu um erro inesperado.');
-            }
-        });
-    });
-});
-
-
-// ===============================================
-//  FUNÇÃO GLOBAL DE NOTIFICAÇÃO
-// ===============================================
-
-function mostrarNotificacao(tipo, mensagem) {
-
-    let alerta = $('#alerta-global');
-
-    alerta
-        .removeClass('d-none alert-success alert-danger alert-warning alert-info')
-        .addClass('alert-' + tipo)
-        .text(mensagem)
-        .fadeIn(200);
-
-    setTimeout(() => {
-        alerta.fadeOut(300);
-    }, 3000);
-}
-
-</script>
+<!-- Este módulo NÃO usa AJAX nem modais -->
 {% endblock %}

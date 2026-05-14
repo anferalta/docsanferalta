@@ -39,19 +39,6 @@
                               placeholder="Descreva o motivo do encaminhamento..."></textarea>
                 </div>
 
-                <!-- ANEXOS -->
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Anexos (opcional)</label>
-                    <input type="file"
-                           name="anexos[]"
-                           class="form-control"
-                           multiple>
-
-                    <small class="text-muted">
-                        Pode anexar vários ficheiros. Tamanho máximo por ficheiro: 20MB.
-                    </small>
-                </div>
-
             </div>
 
             <div class="modal-footer">
@@ -64,26 +51,27 @@
     </div>
 </div>
 
-<!-- JS ANTI-DUPLICAÇÃO (FINAL E FUNCIONAL) -->
+<!-- JS ANTI-DUPLICAÇÃO + FECHAR MODAL -->
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
     const form = document.getElementById('formEncaminhar');
     const btn = document.getElementById('btnTramitar');
+    const modalEl = document.getElementById('modalTramitar');
 
-    if (!form || !btn) return;
+    if (!form || !btn || !modalEl) return;
 
-    form.addEventListener('submit', function (e) {
+    form.addEventListener('submit', function () {
 
-        // Se já foi clicado → cancela
-        if (btn.disabled) {
-            e.preventDefault();
-            return false;
-        }
+        // FECHA O MODAL ANTES DO SUBMIT
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
 
-        // Bloqueia imediatamente ao primeiro clique
+        // BLOQUEIA O BOTÃO
         btn.disabled = true;
         btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> A enviar...';
+
+        // Deixa o submit seguir normalmente
     });
 });
 </script>
