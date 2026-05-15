@@ -1,45 +1,60 @@
-document.addEventListener("DOMContentLoaded", () => {
+function getValue(selector) {
+    const el = document.querySelector(selector);
+    return el ? el.value : "";
+}
 
-    const filtroTipo = document.getElementById("filtroTipo");
-    const filtroUser = document.getElementById("filtroUser");
-    const filtroDataInicio = document.getElementById("filtroDataInicio");
-    const filtroDataFim = document.getElementById("filtroDataFim");
-    const pesquisa = document.getElementById("pesquisa");
+function construirQuery(page = 1) {
+    const params = new URLSearchParams();
 
-    function aplicarFiltros(page = 1) {
-        const params = new URLSearchParams();
+    const tipo = getValue("select[name='tipo_id']");
+    if (tipo) params.set("tipo_id", tipo);
 
-        if (filtroTipo?.value) params.set("tipo_id", filtroTipo.value);
-        if (filtroUser?.value) params.set("utilizador", filtroUser.value);
-        if (filtroDataInicio?.value) params.set("data_inicio", filtroDataInicio.value);
-        if (filtroDataFim?.value) params.set("data_fim", filtroDataFim.value);
-        if (pesquisa?.value.trim() !== "") params.set("q", pesquisa.value.trim());
+    const utilizador = getValue("select[name='utilizador']");
+    if (utilizador) params.set("utilizador", utilizador);
 
-        params.set("page", page);
+    const dataInicio = getValue("input[name='data_inicio']");
+    if (dataInicio) params.set("data_inicio", dataInicio);
 
-        window.location.search = params.toString();
-    }
+    const dataFim = getValue("input[name='data_fim']");
+    if (dataFim) params.set("data_fim", dataFim);
 
-    if (filtroTipo) filtroTipo.addEventListener("change", () => aplicarFiltros());
-    if (filtroUser) filtroUser.addEventListener("change", () => aplicarFiltros());
-    if (filtroDataInicio) filtroDataInicio.addEventListener("change", () => aplicarFiltros());
-    if (filtroDataFim) filtroDataFim.addEventListener("change", () => aplicarFiltros());
+    const q = getValue("input[name='q']");
+    if (q) params.set("q", q);
 
-    if (pesquisa) {
-        pesquisa.addEventListener("keydown", e => {
-            if (e.key === "Enter") {
-                e.preventDefault();
-                aplicarFiltros();
-            }
-        });
-    }
+    const estado = getValue("select[name='estado_atual']");
+    if (estado) params.set("estado_atual", estado);
+
+    const area = getValue("select[name='area_atual_id']");
+    if (area) params.set("area_atual_id", area);
+
+    params.set("page", page);
+
+    return params.toString();
+}
+
+function aplicarFiltros(page = 1) {
+    const query = construirQuery(page);
+    window.location.href = "/admin/documentos?" + query;
+}
+
+function initPaginacao() {
+    const temFiltros = document.querySelector("form[method='get']");
 
     document.querySelectorAll(".pagination a.page-link").forEach(a => {
         a.addEventListener("click", e => {
+
+            if (!temFiltros) return;
+
             e.preventDefault();
+
             const url = new URL(a.href);
             const page = url.searchParams.get("page") || 1;
+
             aplicarFiltros(page);
         });
     });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    initPaginacao();
 });

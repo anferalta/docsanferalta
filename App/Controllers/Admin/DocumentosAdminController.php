@@ -406,9 +406,35 @@ class DocumentosAdminController extends BaseController
             return $this->redirect('/admin/documentos');
         }
 
-        return $this->render('@admin/documentos/editar.twig', [
-                    'documento' => $documento
-        ]);
+        $caminho = rtrim($documento->caminho, '/') . '/' . $documento->ficheiro;
+
+        if (!file_exists($caminho)) {
+            http_response_code(404);
+            exit("Ficheiro não encontrado.");
+        }
+
+        $ficheiro = basename($caminho);
+        $ext = strtolower(pathinfo($ficheiro, PATHINFO_EXTENSION));
+
+        // MIME types corretos para Chrome
+        $mime = [
+            'pdf' => 'application/pdf',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'txt' => 'text/plain',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+        ];
+
+        header("Content-Type: " . ($mime[$ext] ?? 'application/octet-stream'));
+        header("Content-Disposition: inline; filename=\"$ficheiro\"");
+        header("Content-Length: " . filesize($caminho));
+
+        readfile($caminho);
+        exit;
     }
 
     public function download($id)
@@ -420,18 +446,20 @@ class DocumentosAdminController extends BaseController
             return $this->redirect('/admin/documentos');
         }
 
-        $ficheiro = __DIR__ . '/../../../storage/documentos/' . $documento->caminho . $documento->ficheiro;
+        $caminho = rtrim($documento->caminho, '/') . '/' . $documento->ficheiro;
 
-        if (!file_exists($ficheiro)) {
-            Sessao::flash('erro', 'Ficheiro não encontrado no servidor.');
-            return $this->redirect('/admin/documentos');
+        if (!file_exists($caminho)) {
+            http_response_code(404);
+            exit("Ficheiro não encontrado.");
         }
 
-        header('Content-Type: ' . $documento->mime_type);
-        header('Content-Disposition: attachment; filename="' . $documento->ficheiro_original . '"');
-        header('Content-Length: ' . filesize($ficheiro));
+        $ficheiro = basename($caminho);
 
-        readfile($ficheiro);
+        header("Content-Type: application/octet-stream");
+        header("Content-Disposition: attachment; filename=\"$ficheiro\"");
+        header("Content-Length: " . filesize($caminho));
+
+        readfile($caminho);
         exit;
     }
 
@@ -488,12 +516,22 @@ class DocumentosAdminController extends BaseController
         if ($totalPaginas <= 1)
             return '';
 
+        // Copiar GET mas remover o "url" que o router injeta
+        $params = $_GET;
+        unset($params['url'], $params['page']);
+
+        // Construir query string limpa
+        $baseQuery = http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+
         $html = '<nav><ul class="pagination">';
 
         for ($i = 1; $i <= $totalPaginas; $i++) {
             $active = $i == $paginaAtual ? 'active' : '';
+
+            $query = $baseQuery ? $baseQuery . '&page=' . $i : 'page=' . $i;
+
             $html .= "<li class='page-item $active'>
-                    <a class='page-link' href='/admin/documentos?page=$i'>$i</a>
+                    <a class='page-link' href='/admin/documentos?$query'>$i</a>
                   </li>";
         }
 

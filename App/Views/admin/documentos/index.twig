@@ -226,6 +226,15 @@
 
 {% block scripts %}
 <script src="/assets/js/documentos/index.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    // Remove qualquer listener antigo que esteja a bloquear a paginação
+    document.querySelectorAll(".pagination a.page-link").forEach(a => {
+        const clone = a.cloneNode(true);
+        a.parentNode.replaceChild(clone, a);
+    });
+});
+</script>
 
 <style>
     table td {

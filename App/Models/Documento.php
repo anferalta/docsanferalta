@@ -8,8 +8,8 @@ use App\Core\Conexao;
 
 class Documento extends Model
 {
-
     protected string $table = 'documentos';
+
     // ============================================================
     //  PROPRIEDADES DA TABELA DOCUMENTOS
     // ============================================================
@@ -24,6 +24,7 @@ class Documento extends Model
     public ?string $criado_em = null;
     public ?string $caminho = null;
     public ?int $tipo_id = null;
+
     // ============================================================
     //  CAMPOS DO MÓDULO DE TRAMITAÇÃO
     // ============================================================
@@ -32,6 +33,7 @@ class Documento extends Model
     public ?string $arquivado_em = null;
     public ?int $arquivado_por_id = null;
     public ?string $estado = null;
+
     // ============================================================
     //  CAMPOS DERIVADOS (JOINs)
     // ============================================================
@@ -39,6 +41,7 @@ class Documento extends Model
     public ?string $criador_nome = null;
     public ?string $criador_avatar = null;
     public ?string $area_nome = null;
+
     protected array $fillable = [
         'titulo',
         'ficheiro',
@@ -67,10 +70,12 @@ class Documento extends Model
         return $u ? $u->nome : 'Desconhecido';
     }
 
+    /**
+     * Avatar seguro — SEM depender de $u->avatar (que não existe)
+     */
     public function criador_avatar(): string
     {
-        $u = $this->utilizador();
-        return $u && $u->avatar ? '/uploads/avatars/' . $u->avatar : '/assets/img/avatar-default.png';
+        return '/assets/img/avatar-default.png';
     }
 
     /* ============================================================

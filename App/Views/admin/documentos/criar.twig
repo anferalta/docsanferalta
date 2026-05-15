@@ -63,6 +63,12 @@
            multiple
            class="d-none">
 
+    {# --- ÁREA DE PRÉ‑VISUALIZAÇÃO --- #}
+    <div id="previewContainer" class="mb-3 d-none">
+        <label class="form-label"><strong>Pré‑visualização:</strong></label>
+        <div id="previewArea" class="border rounded p-3 text-center"></div>
+    </div>
+
     <button type="submit" id="btnGuardar" class="btn btn-primary mt-3">
         <i class="fa fa-check"></i> Guardar
     </button>
@@ -74,4 +80,66 @@
 {% block scripts %}
     <script src="/assets/js/documentos/upload.js?v=316113716"></script>
     <script src="/assets/js/documentos/tipos.js?v=258413354"></script>
+
+    <script>
+        function atualizarPreview() {
+            const input = document.getElementById('ficheiros');
+            const previewContainer = document.getElementById('previewContainer');
+            const previewArea = document.getElementById('previewArea');
+
+            previewArea.innerHTML = '';
+
+            if (input.files.length === 0) {
+                previewContainer.classList.add('d-none');
+                return;
+            }
+
+            previewContainer.classList.remove('d-none');
+
+            [...input.files].forEach(file => {
+                const ext = file.name.split('.').pop().toLowerCase();
+
+                // IMAGENS
+                if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = "img-fluid mb-2";
+                        img.style.maxHeight = "250px";
+                        previewArea.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                }
+
+                // PDF
+                else if (ext === 'pdf') {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        previewArea.innerHTML += `
+                            <div class="mb-3">
+                                <embed src="${e.target.result}" type="application/pdf" width="100%" height="400px" />
+                                <div class="small text-muted mt-1">${file.name}</div>
+                            </div>`;
+                    };
+                    reader.readAsDataURL(file);
+                }
+
+                // DOCX / XLSX / TXT → ícone
+                else {
+                    previewArea.innerHTML += `
+                        <div class="mb-2">
+                            <i class="fa fa-file-alt fa-3x text-secondary"></i><br>
+                            ${file.name}
+                        </div>`;
+                }
+            });
+        }
+
+        // Quando o input muda
+        document.getElementById('ficheiros').addEventListener('change', atualizarPreview);
+
+        // Quando o dropZone atualiza a lista (evento disparado pelo upload.js)
+        document.addEventListener('ficheirosAtualizados', atualizarPreview);
+    </script>
 {% endblock scripts %}
