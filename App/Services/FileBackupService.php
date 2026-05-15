@@ -6,26 +6,32 @@ class FileBackupService
 {
     private string $baseDir;
     private string $sourceDir;
-    private string $logFile;
+    private string $hashFile;
 
     public function __construct()
     {
-        // Diretório onde os backups de ficheiros são guardados
-        $this->baseDir = realpath(__DIR__ . '/../../backups/Ficheiros') ?: (__DIR__ . '/../../backups/Ficheiros');
-        if (!is_dir($this->baseDir)) mkdir($this->baseDir, 0777, true);
-        $this->baseDir = rtrim(str_replace('\\', '/', $this->baseDir), '/') . '/';
+        // Pasta correta dos ficheiros a fazer backup
+        $this->sourceDir = realpath(__DIR__ . '/../../storage/uploads/documentos')
+            ?: (__DIR__ . '/../../storage/uploads/documentos');
 
-        // Diretório REAL dos ficheiros do site (uploads)
-        $this->sourceDir = realpath(__DIR__ . '/../../storage/uploads');
-        if (!$this->sourceDir) {
-            throw new \Exception("Pasta de ficheiros não encontrada.");
-        }
         $this->sourceDir = rtrim(str_replace('\\', '/', $this->sourceDir), '/') . '/';
 
-        // Logs
-        $logDir = __DIR__ . '/../../backups/logs';
-        if (!is_dir($logDir)) mkdir($logDir, 0777, true);
-        $this->logFile = rtrim(str_replace('\\', '/', realpath($logDir)), '/') . '/backup_files.log';
+        if (!is_dir($this->sourceDir)) {
+            throw new \Exception("A pasta de origem para backup não existe: {$this->sourceDir}");
+        }
+
+        // Pasta base dos backups
+        $this->baseDir = realpath(__DIR__ . '/../../backups/Ficheiros')
+            ?: (__DIR__ . '/../../backups/Ficheiros');
+
+        if (!is_dir($this->baseDir)) {
+            mkdir($this->baseDir, 0777, true);
+        }
+
+        $this->baseDir = rtrim(str_replace('\\', '/', $this->baseDir), '/') . '/';
+
+        // Ficheiro de hashes para backup incremental
+        $this->hashFile = __DIR__ . '/../../backups/hashes_files.json';
     }
 
     public function criar(): string
@@ -33,53 +39,79 @@ class FileBackupService
         // Subpastas ano/mês
         $ano = date('Y');
         $mes = date('m');
+
         $dir = "{$this->baseDir}{$ano}/{$mes}/";
 
-        if (!is_dir($dir)) mkdir($dir, 0777, true);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
         $dir = rtrim(str_replace('\\', '/', realpath($dir)), '/') . '/';
 
         // Nome do ZIP
         $nome = 'backup_files_' . date('Y-m-d_H-i-s') . '.zip';
-        $ficheiroZIP = $dir . $nome;
+        $zipPath = $dir . $nome;
 
-        // Criar ZIP
         $zip = new \ZipArchive();
-        if ($zip->open($ficheiroZIP, \ZipArchive::CREATE) !== true) {
-            throw new \Exception("Não foi possível criar o ZIP.");
+        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            throw new \Exception("Não foi possível criar o ZIP de backup.");
         }
 
-        // Adicionar ficheiros ao ZIP
-        $this->adicionarPastaAoZip($this->sourceDir, $zip);
+        $files = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($this->sourceDir, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::LEAVES_ONLY
+        );
+
+        foreach ($files as $file) {
+            if ($file->isDir()) continue;
+
+            $filePath = $file->getRealPath();
+            if (!$filePath) continue;
+
+            $filePath = str_replace('\\', '/', $filePath);
+            $relative = substr($filePath, strlen($this->sourceDir));
+
+            // --- BACKUP INCREMENTAL ---
+            $hashAtual = md5_file($filePath);
+            $hashAnterior = $this->lerHashAnterior($relative);
+
+            if ($hashAtual === $hashAnterior) {
+                continue; // ficheiro não mudou
+            }
+
+            $this->guardarHash($relative, $hashAtual);
+            // --------------------------
+
+            $zip->addFile($filePath, $relative);
+        }
 
         $zip->close();
 
         // Limpeza automática (30 dias)
         $this->limparAntigos($this->baseDir, 30);
 
-        $this->log("Backup de ficheiros criado: $ficheiroZIP");
-
-        return $ficheiroZIP;
+        return $zipPath;
     }
 
-    private function adicionarPastaAoZip(string $pasta, \ZipArchive $zip): void
+    private function lerHashAnterior(string $ficheiro): ?string
     {
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($pasta, \FilesystemIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::SELF_FIRST
-        );
+        if (!file_exists($this->hashFile)) return null;
 
-        foreach ($iterator as $ficheiro) {
-            $path = str_replace('\\', '/', $ficheiro->getPathname());
+        $hashes = json_decode(file_get_contents($this->hashFile), true);
+        return $hashes[$ficheiro] ?? null;
+    }
 
-            // Caminho relativo correto
-            $local = ltrim(str_replace($this->sourceDir, '', $path), '/');
+    private function guardarHash(string $ficheiro, string $hash): void
+    {
+        $hashes = [];
 
-            if ($ficheiro->isDir()) {
-                $zip->addEmptyDir($local);
-            } else {
-                $zip->addFile($path, $local);
-            }
+        if (file_exists($this->hashFile)) {
+            $hashes = json_decode(file_get_contents($this->hashFile), true) ?? [];
         }
+
+        $hashes[$ficheiro] = $hash;
+
+        file_put_contents($this->hashFile, json_encode($hashes, JSON_PRETTY_PRINT));
     }
 
     private function limparAntigos(string $baseDir, int $dias): void
@@ -97,12 +129,10 @@ class FileBackupService
                     unlink($ficheiro->getPathname());
                 }
             }
-        }
-    }
 
-    private function log(string $msg): void
-    {
-        $linha = '[' . date('Y-m-d H:i:s') . '] ' . $msg . PHP_EOL;
-        file_put_contents($this->logFile, $linha, FILE_APPEND);
+            if ($ficheiro->isDir()) {
+                @rmdir($ficheiro->getPathname());
+            }
+        }
     }
 }

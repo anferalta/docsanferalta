@@ -64,6 +64,13 @@
                                         <a href="/admin/backups/bd/restaurar/{{ b.path|replace({'/':'---'}) }}"
                                            class="btn btn-sm btn-warning">Restaurar</a>
 
+                                        {# RESTAURAR + REINICIAR SERVIÇO #}
+                                        <a href="/admin/backups/restaurar-reiniciar/{{ b.path|replace({'/':'---'}) }}"
+                                           class="btn btn-sm btn-danger"
+                                           onclick="return confirm('Tem a certeza? Isto vai restaurar a BD e reiniciar o servidor?');">
+                                            Restaurar + Reiniciar
+                                        </a>
+
                                         {# ELIMINAR BD #}
                                         <a href="/admin/backups/bd/delete/{{ b.path|replace({'/':'---'}) }}"
                                            class="btn btn-sm btn-danger"

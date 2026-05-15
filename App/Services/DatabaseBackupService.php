@@ -4,6 +4,7 @@ namespace App\Services;
 
 class DatabaseBackupService
 {
+
     private string $baseDir;
     private string $logFile;
 
@@ -47,7 +48,7 @@ class DatabaseBackupService
 
         // Credenciais — SEM Env::get()
         $host = $_ENV['DB_HOST'] ?? 'localhost';
-        $db   = $_ENV['DB_NAME'] ?? 'anferaltadocs';
+        $db = $_ENV['DB_NAME'] ?? 'anferaltadocs';
         $user = $_ENV['DB_USER'] ?? 'root';
         $pass = $_ENV['DB_PASS'] ?? '';
 
@@ -65,13 +66,13 @@ class DatabaseBackupService
             $cmd = "\"{$mysqldump}\" --host={$host} --user={$user} --password={$pass} {$db} > \"{$ficheiroSQL}\"";
         } else {
             $cmd = sprintf(
-                '%s -h%s -u%s -p%s %s > %s',
-                escapeshellarg($mysqldump),
-                escapeshellarg($host),
-                escapeshellarg($user),
-                escapeshellarg($pass),
-                escapeshellarg($db),
-                escapeshellarg($ficheiroSQL)
+                    '%s -h%s -u%s -p%s %s > %s',
+                    escapeshellarg($mysqldump),
+                    escapeshellarg($host),
+                    escapeshellarg($user),
+                    escapeshellarg($pass),
+                    escapeshellarg($db),
+                    escapeshellarg($ficheiroSQL)
             );
         }
 
@@ -89,12 +90,41 @@ class DatabaseBackupService
         // Criar ZIP
         $ficheiroZIP = $this->comprimirZip($ficheiroSQL);
 
+        // Encriptar ZIP (AES‑256)
+        $ficheiroFinal = $this->encriptar($ficheiroZIP);
+
         // Limpeza automática (manter 30 dias)
         $this->limparAntigos($this->baseDir, 30);
 
-        $this->log("Backup criado e comprimido com sucesso: $ficheiroZIP");
+        $this->log("Backup criado com sucesso: $ficheiroFinal");
 
-        return $ficheiroZIP;
+        return $ficheiroFinal;
+    }
+
+    private function encriptar(string $zipPath): string
+    {
+        $password = $_ENV['BACKUP_PASSWORD'] ?? null;
+
+        // Se não houver password → devolve o ZIP normal
+        if (!$password) {
+            return $zipPath;
+        }
+
+        $zipEnc = $zipPath . '.enc';
+
+        // Comando OpenSSL para encriptar AES‑256
+        $cmd = "openssl enc -aes-256-cbc -salt -in \"$zipPath\" -out \"$zipEnc\" -k \"$password\"";
+
+        exec($cmd, $out, $code);
+
+        if ($code !== 0 || !file_exists($zipEnc)) {
+            throw new \Exception("Falha ao encriptar o backup.");
+        }
+
+        // Apagar o ZIP original
+        unlink($zipPath);
+
+        return $zipEnc;
     }
 
     private function detetarMysqldump(): ?string
@@ -107,6 +137,7 @@ class DatabaseBackupService
 
         // 2) Caminhos típicos do WAMP/XAMPP
         $possiveis = [
+            'C:\\wamp\\bin\\mysql\\mysql9.1.0\\bin\\mysqldump.exe', // O TEU CAMINHO REAL
             'C:\\wamp64\\bin\\mysql\\mysql9.1.0\\bin\\mysqldump.exe',
             'C:\\wamp64\\bin\\mysql\\mysql8.0.31\\bin\\mysqldump.exe',
             'C:\\wamp64\\bin\\mysql\\mysql8.0.30\\bin\\mysqldump.exe',
@@ -151,8 +182,8 @@ class DatabaseBackupService
         $limite = strtotime("-{$dias} days");
 
         $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($baseDir, \FilesystemIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::CHILD_FIRST
+                new \RecursiveDirectoryIterator($baseDir, \FilesystemIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::CHILD_FIRST
         );
 
         foreach ($iterator as $ficheiro) {
@@ -160,6 +191,11 @@ class DatabaseBackupService
                 if ($ficheiro->getMTime() < $limite) {
                     unlink($ficheiro->getPathname());
                 }
+            }
+
+            // Apagar pastas vazias
+            if ($ficheiro->isDir()) {
+                @rmdir($ficheiro->getPathname());
             }
         }
     }

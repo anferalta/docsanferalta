@@ -11,6 +11,7 @@ use App\Core\Sessao;
 
 class BackupsAdminController extends BaseController
 {
+
     private string $dirBD;
     private string $dirFiles;
 
@@ -61,11 +62,11 @@ class BackupsAdminController extends BaseController
         $cron = $agendamentosService->listar();
 
         return $this->render('admin/backups/index.twig', [
-            'backupsDB' => $backupsDB,
-            'backupsFiles' => $backupsFiles,
-            'dashboard' => $dashboard,
-            'logs' => $logs,
-            'cron' => $cron,
+                    'backupsDB' => $backupsDB,
+                    'backupsFiles' => $backupsFiles,
+                    'dashboard' => $dashboard,
+                    'logs' => $logs,
+                    'cron' => $cron,
         ]);
     }
 
@@ -130,7 +131,7 @@ class BackupsAdminController extends BaseController
         $ficheiro = $this->decodePath($ficheiro);
 
         return $this->render('admin/backups/restaurar_confirmar.twig', [
-            'ficheiro' => $ficheiro,
+                    'ficheiro' => $ficheiro,
         ]);
     }
 
@@ -177,6 +178,27 @@ class BackupsAdminController extends BaseController
         return $this->redirect('/admin/backups');
     }
 
+    public function restaurarEReiniciar(string $ficheiro)
+    {
+        $this->authorize('admin.backups.bd.restaurar.executar');
+
+        try {
+            (new RestoreService())->restaurarBD($ficheiro);
+
+            // Reiniciar serviços
+            exec("net stop wampapache64");
+            exec("net start wampapache64");
+            exec("net stop wampmysqld64");
+            exec("net start wampmysqld64");
+
+            Sessao::flash('sucesso', 'Restaurado e serviços reiniciados.');
+        } catch (\Exception $e) {
+            Sessao::flash('erro', 'Erro: ' . $e->getMessage());
+        }
+
+        return $this->redirect('/admin/backups');
+    }
+
     private function listar(string $baseDir): array
     {
         $lista = [];
@@ -186,7 +208,7 @@ class BackupsAdminController extends BaseController
         }
 
         $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($baseDir, \FilesystemIterator::SKIP_DOTS)
+                new \RecursiveDirectoryIterator($baseDir, \FilesystemIterator::SKIP_DOTS)
         );
 
         foreach ($iterator as $ficheiro) {
@@ -226,7 +248,7 @@ class BackupsAdminController extends BaseController
             }
 
             $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($pasta, \FilesystemIterator::SKIP_DOTS)
+                    new \RecursiveDirectoryIterator($pasta, \FilesystemIterator::SKIP_DOTS)
             );
 
             foreach ($iterator as $f) {
