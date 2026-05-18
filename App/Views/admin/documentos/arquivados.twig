@@ -1,0 +1,55 @@
+{% extends "admin/layout.twig" %}
+
+{% block conteudo %}
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Documentos Arquivados</h5>
+        </div>
+
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Título</th>
+                        <th>Tipo</th>
+                        <th>Arquivado em</th>
+                        <th style="width: 160px;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in documentos %}
+                        <tr>
+                            <td>{{ doc.titulo }}</td>
+                            <td>{{ doc.tipo_nome ?? '—' }}</td>
+                            <td>{{ doc.arquivado_em|date("d/m/Y H:i") }}</td>
+                            <td>
+                                <a href="/admin/documentos/arquivado/{{ doc.id }}" 
+                                   class="btn btn-sm btn-primary">
+                                    Ver
+                                </a>
+
+                                <form action="/admin/documentos/arquivado/{{ doc.id }}/recuperar"
+                                      method="post" class="d-inline">
+                                    <button class="btn btn-sm btn-warning"
+                                            onclick="return confirm('Recuperar este documento para produção?')">
+                                        Recuperar
+                                    </button>
+                                </form>
+
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">
+                                Nenhum documento arquivado.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+{% endblock %}
+

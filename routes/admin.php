@@ -86,6 +86,14 @@ $router->group([
             $router->post('/documentos/editar/{id:\d+}', 'Admin\DocumentosAdminController@editarSubmit')
                     ->name('admin.documentos.editar.submit');
 
+            // ABRIR DOCUMENTO INLINE OU GOOGLE DOCS
+            $router->get('/documentos/abrir/{id:\d+}', 'Admin\DocumentosAdminController@abrir')
+                    ->name('admin.documentos.abrir');
+
+            // ABRIR RAW PARA GOOGLE DOCS VIEWER
+            $router->get('/documentos/abrir_raw/{id:\d+}', 'Admin\DocumentosAdminController@abrir_raw')
+                    ->name('admin.documentos.abrir_raw');
+
             // VER DOCUMENTO POR ID (DINÂMICA SIMPLES — ANTES DA ROTA POR DATA)
             $router->get('/documentos/ver/{id:\d+}', 'Admin\DocumentosAdminController@ver')
                     ->name('admin.documentos.ver_detalhe');
@@ -93,6 +101,18 @@ $router->group([
             // VER FICHEIRO POR DATA (ROTA COMPLEXA — COM REGEX)
             $router->get('/documentos/ver/{ano:\d+}/{mes:\d+}/{dia:\d+}/{ficheiro:.+}',
                     'Admin\DocumentosAdminController@verFicheiro');
+
+            // LISTAR ARQUIVADOS
+            $router->get('/documentos/arquivados', 'Admin\DocumentosAdminController@arquivados')
+                    ->name('admin.documentos.arquivados');
+
+            // VER DOCUMENTO ARQUIVADO
+            $router->get('/documentos/arquivado/{id:\d+}', 'Admin\DocumentosAdminController@verArquivado')
+                    ->name('admin.documentos.arquivado.ver');
+
+            // RECUPERAR DOCUMENTO ARQUIVADO
+            $router->post('/documentos/arquivado/{id:\d+}/recuperar', 'Admin\DocumentosAdminController@recuperarArquivado')
+                    ->name('admin.documentos.arquivado.recuperar');
 
             // ELIMINAR
             $router->get('/documentos/eliminar/{id:\d+}', 'Admin\DocumentosAdminController@eliminar')

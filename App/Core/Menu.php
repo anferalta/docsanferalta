@@ -4,22 +4,23 @@ namespace App\Core;
 
 use App\Core\Conexao;
 
-class Menu {
+class Menu
+{
 
-    public function getMenu(): array {
+    public function getMenu(): array
+    {
         $db = Conexao::getInstancia();
 
         // ============================
         // CONTADORES
         // ============================
         $pendentes = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'pendente'")->fetchColumn();
-        $analise   = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'analise'")->fetchColumn();
-        $tram      = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'em_tramitacao'")->fetchColumn();
-        $concl     = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'concluido'")->fetchColumn();
-        $arquiv    = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'arquivado'")->fetchColumn();
+        $analise = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'analise'")->fetchColumn();
+        $tram = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'em_tramitacao'")->fetchColumn();
+        $concl = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'concluido'")->fetchColumn();
+        $arquiv = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'arquivado'")->fetchColumn();
 
         return [
-
             // ============================
             // GERAL
             // ============================
@@ -30,7 +31,6 @@ class Menu {
                 'url' => '/admin/dashboard',
                 'permissao' => 'admin.dashboard.ver'
             ],
-
             // ============================
             // UTILIZADORES
             // ============================
@@ -66,10 +66,9 @@ class Menu {
                 'url' => '/admin/utilizadores/criar',
                 'permissao' => 'admin.utilizadores.criar'
             ],
-
             // ============================
-            // DOCUMENTOS
-            // ============================
+// DOCUMENTOS
+// ============================
             ['header' => 'DOCUMENTOS'],
             [
                 'titulo' => 'Documentos',
@@ -89,34 +88,36 @@ class Menu {
                 'url' => '/admin/documento-tipos',
                 'permissao' => 'admin.documento-tipos.ver'
             ],
-
+            [
+                'titulo' => 'Arquivados',
+                'icone' => 'bi-archive',
+                'url' => '/admin/documentos/arquivados',
+                'permissao' => 'admin.documentos.arquivados.ver',
+                'badge' => $arquiv
+            ],
             // ============================
             // TRAMITAÇÃO
             // ============================
             ['header' => 'TRAMITAÇÃO'],
-
             [
                 'titulo' => 'Dashboard de Tramitação',
                 'icone' => 'bi-graph-up',
                 'url' => '/admin/tramitacao/dashboard',
                 'permissao' => 'admin.tramitacao.dashboard'
             ],
-
             [
                 'titulo' => 'Tramitação',
                 'icone' => 'bi-diagram-3',
-                'url' => '/admin/tramitacao',   // AGORA FUNCIONAL
+                'url' => '/admin/tramitacao',
                 'permissao' => 'admin.tramitacao.ver',
                 'badge' => $tram
             ],
-
             [
                 'titulo' => 'Áreas de Tramitação',
                 'icone' => 'bi-diagram-2',
-                'url' => '/admin/tramitacao/areas',   // CORRIGIDO
+                'url' => '/admin/tramitacao/areas',
                 'permissao' => 'admin.tramitacao.areas.ver'
             ],
-
             // ============================
             // SISTEMA
             // ============================
@@ -157,9 +158,11 @@ class Menu {
     /**
      * Filtrar menu por permissões
      */
-    public function filtrarMenu(array $menu): array {
+    public function filtrarMenu(array $menu): array
+    {
         $uid = $_SESSION['user_id'] ?? null;
-        if (!$uid) return [];
+        if (!$uid)
+            return [];
 
         $user = \App\Core\Auth::user();
         $resultado = [];
@@ -179,9 +182,11 @@ class Menu {
             }
 
             // Sem permissão → não mostra
-            if (!isset($item['permissao'])) continue;
+            if (!isset($item['permissao']))
+                continue;
 
-            if (!\App\Core\Permission::tem($item['permissao'])) continue;
+            if (!\App\Core\Permission::tem($item['permissao']))
+                continue;
 
             $resultado[] = $item;
         }

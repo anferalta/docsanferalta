@@ -17,13 +17,13 @@
     {# ============================
        FILTROS
     ============================ #}
-    <div class="card mb-4">
+    <div class="card mb-4 shadow-sm">
         <div class="card-body">
 
-            <form method="get" class="row g-3 align-items-end">
+            <form method="get" class="row g-3">
 
                 <div class="col-md-3">
-                    <label class="form-label">Tipo</label>
+                    <label class="form-label fw-semibold">Tipo</label>
                     <select name="tipo_id" class="form-select">
                         <option value="">-- Todos os tipos --</option>
                         {% for tipo in tipos %}
@@ -37,7 +37,7 @@
 
                 {% if acl.has('admin.documentos.ver_todos') %}
                     <div class="col-md-3">
-                        <label class="form-label">Criado por</label>
+                        <label class="form-label fw-semibold">Criado por</label>
                         <select name="utilizador" class="form-select">
                             <option value="">-- Todos --</option>
                             {% for u in utilizadores %}
@@ -51,19 +51,19 @@
                 {% endif %}
 
                 <div class="col-md-2">
-                    <label class="form-label">Data inicial</label>
+                    <label class="form-label fw-semibold">Data inicial</label>
                     <input type="date" name="data_inicio" class="form-control"
                            value="{{ app.request.get('data_inicio') }}">
                 </div>
 
                 <div class="col-md-2">
-                    <label class="form-label">Data final</label>
+                    <label class="form-label fw-semibold">Data final</label>
                     <input type="date" name="data_fim" class="form-control"
                            value="{{ app.request.get('data_fim') }}">
                 </div>
 
                 <div class="col-md-2">
-                    <label class="form-label">Pesquisa</label>
+                    <label class="form-label fw-semibold">Pesquisa</label>
                     <input type="text" name="q" class="form-control"
                            placeholder="Título ou ficheiro..."
                            value="{{ app.request.get('q') }}">
@@ -74,7 +74,7 @@
                 ============================ #}
 
                 <div class="col-md-3">
-                    <label class="form-label">Estado</label>
+                    <label class="form-label fw-semibold">Estado</label>
                     <select name="estado_atual" class="form-select">
                         <option value="">-- Todos --</option>
                         <option value="pendente"       {{ app.request.get('estado_atual') == 'pendente' ? 'selected' : '' }}>Pendente</option>
@@ -87,7 +87,7 @@
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label">Área Atual</label>
+                    <label class="form-label fw-semibold">Área Atual</label>
                     <select name="area_atual_id" class="form-select">
                         <option value="">-- Todas --</option>
                         {% for area in areas %}
@@ -109,141 +109,277 @@
 
         </div>
     </div>
-
     {# ============================
-       LISTA DE DOCUMENTOS
-============================ #}
-<div class="card">
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0" id="tabelaDocs">
+           LISTA DE DOCUMENTOS
+        ============================ #}
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="tabelaDocs">
 
-            <thead class="table-light">
-                <tr>
-                    <th style="width: 25%">Ficheiro</th>
-                    <th>Título</th>
-                    <th>Tipo</th>
-                    <th>Estado</th>
-                    <th>Área Atual</th>
-                    <th>Tamanho</th>
-
-                    {% if auth.user.perfil != 'utilizador' %}
-                        <th>Criado por</th>
-                    {% endif %}
-
-                    <th>Criado em</th>
-                    <th class="text-end">Ações</th>
-                </tr>
-            </thead>
-
-            <tbody>
-                {% if documentos is empty %}
+                <thead class="table-light">
                     <tr>
-                        <td colspan="9" class="text-center py-4 text-muted">
-                            Nenhum documento encontrado.
-                        </td>
-                    </tr>
-                {% else %}
-                    {% for doc in documentos %}
-                        <tr>
+                        <th style="width: 25%">Ficheiro</th>
+                        <th>Título</th>
+                        <th>Tipo</th>
+                        <th>Estado</th>
+                        <th>Área Atual</th>
+                        <th>Tamanho</th>
 
-                            <td>
-                                <i class="fa {{ doc.icon() }} me-2 text-primary" style="font-size:22px;"></i>
-                                <span class="fw-semibold">{{ doc.ficheiro_original }}</span>
-                            </td>
-
-                            <td>{{ doc.titulo }}</td>
-
-                            <td>{{ doc.tipo_nome }}</td>
-
-                            <td>
-                                <span class="badge-estado badge-{{ doc.estado_atual }}">
-                                    {{ doc.estado_atual|replace({'_':' '})|upper }}
-                                </span>
-                            </td>
-
-                            <td>{{ doc.area_nome ?? '-' }}</td>
-
-                            <td>{{ (doc.tamanho / 1024)|number_format(1) }} KB</td>
-
-                            {% if auth.user.perfil != 'utilizador' %}
-                                <td>
-                                    <img src="{{ doc.criador_avatar() }}"
-                                         width="32" height="32"
-                                         class="rounded-circle me-2">
-                                    {{ doc.criador_nome() }}
-                                </td>
+                        {% if auth.user.perfil != 'utilizador' %}
+                            <th>Criado por</th>
                             {% endif %}
 
-                            <td>{{ doc.criado_em_formatado() }}</td>
+                        <th>Criado em</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
 
-                            <td class="text-end">
-                                <div class="btn-group">
-
-                                    {# VER — detalhe com abas #}
-                                    <a href="/admin/documentos/ver/{{ doc.caminho|trim('/') }}/{{ doc.ficheiro }}"
-                                       target="_blank"
-                                       class="btn btn-sm btn-secondary">
-                                        <i class="fa fa-eye"></i> Ver
-                                    </a>
-
-                                    <a href="/admin/documentos/download/{{ doc.id }}"
-                                       class="btn btn-sm btn-success">
-                                        <i class="fa fa-download"></i> Download
-                                    </a>
-
-                                    {% if isGranted('admin.tramitacao.ver') %}
-                                        <a href="/admin/documentos/editar/{{ doc.id }}?tab=tramitacao"
-                                           class="btn btn-sm btn-warning">
-                                            <i class="fa fa-random"></i> Tramitar
-                                        </a>
-                                    {% endif %}
-
-                                    {% if isGranted('admin.documentos.apagar') %}
-                                        <a href="/admin/documentos/eliminar/{{ doc.id }}"
-                                           class="btn btn-sm btn-danger"
-                                           onclick="return confirm('Eliminar documento?')">
-                                            <i class="fa fa-trash"></i> Apagar
-                                        </a>
-                                    {% endif %}
-
-                                </div>
+                <tbody>
+                    {% if documentos is empty %}
+                        <tr>
+                            <td colspan="9" class="text-center py-4 text-muted">
+                                <i class="fa fa-info-circle me-2"></i>
+                                Nenhum documento encontrado.
                             </td>
-
                         </tr>
-                    {% endfor %}
-                {% endif %}
-            </tbody>
+                    {% else %}
+                        {% for doc in documentos %}
+                            <tr>
 
-        </table>
-    </div>
+                                <td>
+                                    <i class="fa {{ doc.icon() }} me-2 text-primary" style="font-size:22px;"></i>
+                                    <span class="fw-semibold">{{ doc.ficheiro_original }}</span>
+                                </td>
 
-    <div class="p-3">
-        {{ paginacao|raw }}
+                                <td>{{ doc.titulo }}</td>
+
+                                <td>{{ doc.tipo_nome }}</td>
+
+                                <td>
+                                    <span class="badge badge-estado badge-{{ doc.estado_atual }}">
+                                        {{ doc.estado_atual|replace({'_':' '})|title }}
+                                    </span>
+                                </td>
+
+                                <td>{{ doc.area_nome ?? '-' }}</td>
+
+                                <td>{{ (doc.tamanho / 1024)|number_format(1) }} KB</td>
+
+                                {% if auth.user.perfil != 'utilizador' %}
+                                    <td>
+                                        <img src="{{ doc.criador_avatar() }}"
+                                             width="32" height="32"
+                                             class="rounded-circle me-2 shadow-sm">
+                                        {{ doc.criador_nome() }}
+                                    </td>
+                                {% endif %}
+
+                                <td>{{ doc.criado_em_formatado() }}</td>
+
+                                <td class="text-end">
+                                    <div class="btn-group">
+
+                                        {# VER — detalhe com abas #}
+                                        <a href="/admin/documentos/abrir/{{ doc.id }}" 
+                                           target="_blank"
+                                           class="btn btn-sm btn-secondary">
+                                            <i class="fa fa-eye"></i> Ver
+                                        </a>
+
+                                        <a href="/admin/documentos/download/{{ doc.id }}"
+                                           class="btn btn-sm btn-success">
+                                            <i class="fa fa-download"></i> Download
+                                        </a>
+
+                                        {% if isGranted('admin.tramitacao.ver') %}
+                                            <a href="/admin/documentos/editar/{{ doc.id }}?tab=tramitacao"
+                                               class="btn btn-sm btn-warning">
+                                                <i class="fa fa-random"></i> Tramitar
+                                            </a>
+                                        {% endif %}
+
+                                        {% if isGranted('admin.documentos.apagar') %}
+                                            <a href="/admin/documentos/eliminar/{{ doc.id }}"
+                                               class="btn btn-sm btn-danger"
+                                               onclick="return confirm('Eliminar documento?')">
+                                                <i class="fa fa-trash"></i> Apagar
+                                            </a>
+                                        {% endif %}
+
+                                    </div>
+                                </td>
+
+                            </tr>
+                        {% endfor %}
+                    {% endif %}
+                </tbody>
+
+            </table>
+        </div>
+
+        <div class="p-3">
+            {{ paginacao|raw }}
+        </div>
     </div>
-</div>
 
 {% endblock %}
 
 {% block scripts %}
-<script src="/assets/js/documentos/index.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-    // Remove qualquer listener antigo que esteja a bloquear a paginação
-    document.querySelectorAll(".pagination a.page-link").forEach(a => {
-        const clone = a.cloneNode(true);
-        a.parentNode.replaceChild(clone, a);
-    });
-});
-</script>
+    <script src="/assets/js/documentos/index.js?v={{ random() }}"></script>
 
-<style>
-    table td {
-        vertical-align: middle !important;
-    }
-    .table-hover tbody tr:hover {
-        background-color: #f8f9fa;
-    }
-</style>
+    <script>
+                                                   document.addEventListener("DOMContentLoaded", () => {
+                                                       // Remove listeners antigos que bloqueavam a paginação
+                                                       document.querySelectorAll(".pagination a.page-link").forEach(a => {
+                                                           const clone = a.cloneNode(true);
+                                                           a.parentNode.replaceChild(clone, a);
+                                                       });
+
+                                                       // Efeito dragover do dropzone (não altera o upload)
+                                                       const dz = document.getElementById("dropZone");
+                                                       if (dz) {
+                                                           dz.addEventListener("dragover", e => {
+                                                               e.preventDefault();
+                                                               dz.classList.add("dragover");
+                                                           });
+
+                                                           dz.addEventListener("dragleave", () => {
+                                                               dz.classList.remove("dragover");
+                                                           });
+
+                                                           dz.addEventListener("drop", () => {
+                                                               dz.classList.remove("dragover");
+                                                           });
+                                                       }
+                                                   });
+    </script>
+
+    <style>
+
+        /* ============================
+           DROPZONE PREMIUM
+        ============================ */
+        .drop-zone {
+            border: 2px dashed #b8b8ff;
+            border-radius: 14px;
+            padding: 45px 25px;
+            background: linear-gradient(135deg, #fafaff 0%, #ffffff 100%);
+            text-align: center;
+            cursor: pointer;
+            transition: all .25s ease;
+            color: #4b44e0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .drop-zone:hover {
+            border-color: #6c63ff;
+            background: #f3f2ff;
+            transform: scale(1.01);
+        }
+
+        .drop-zone.dragover {
+            border-color: #3a33d1;
+            background: #eceaff;
+            box-shadow: 0 0 18px rgba(108, 99, 255, 0.25);
+            transform: scale(1.02);
+        }
+
+        .dz-icon {
+            font-size: 48px;
+            color: #6c63ff;
+            margin-bottom: 10px;
+        }
+
+        .dz-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .dz-subtitle {
+            font-size: 14px;
+            color: #777;
+            margin: 0;
+        }
+
+        .drop-zone::after {
+            content: "";
+            position: absolute;
+            top: -100%;
+            left: 0;
+            width: 100%;
+            height: 200%;
+            background: linear-gradient(
+                120deg,
+                transparent 0%,
+                rgba(255,255,255,0.4) 50%,
+                transparent 100%
+                );
+            transform: rotate(25deg);
+            transition: 0.6s;
+            opacity: 0;
+        }
+
+        .drop-zone:hover::after {
+            top: -30%;
+            opacity: 1;
+        }
+
+
+        /* ============================
+           BADGES DE ESTADO
+        ============================ */
+        .badge-estado {
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        .badge-pendente       {
+            background: #e0e0e0;
+            color: #555;
+        }
+        .badge-em_tramitacao  {
+            background: #ffe08a;
+            color: #7a5a00;
+        }
+        .badge-analise        {
+            background: #bde0fe;
+            color: #084c8c;
+        }
+        .badge-concluido      {
+            background: #c8f7c5;
+            color: #1b6e1b;
+        }
+        .badge-devolvido      {
+            background: #ffd6d6;
+            color: #a10000;
+        }
+        .badge-arquivado      {
+            background: #d3d3d3;
+            color: #333;
+        }
+
+
+        /* ============================
+           TABELA
+        ============================ */
+        table td {
+            vertical-align: middle !important;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: #f5f7ff !important;
+        }
+
+        .rounded-circle {
+            border: 2px solid #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        }
+
+    </style>
+
 {% endblock %}
-
-

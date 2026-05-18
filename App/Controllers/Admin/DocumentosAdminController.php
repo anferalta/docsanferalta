@@ -13,6 +13,24 @@ use App\Models\Utilizador;
 class DocumentosAdminController extends BaseController
 {
 
+    private function autorizar(string $permissao)
+    {
+        $user = \App\Core\Auth::user();
+
+        // Admin tem acesso total
+        if ($user && $user->isAdmin()) {
+            return true;
+        }
+
+        // Verificar permissão
+        if (!\App\Core\Permission::tem($permissao)) {
+            http_response_code(403);
+            exit("Acesso negado. Permissão necessária: $permissao");
+        }
+
+        return true;
+    }
+
     private array $extensoesPermitidas = ['pdf', 'txt', 'doc', 'docx', 'xls', 'xlsx', 'png', 'jpg', 'jpeg'];
     private array $mimePermitidos = [
         'application/pdf',
@@ -416,25 +434,184 @@ class DocumentosAdminController extends BaseController
         $ficheiro = basename($caminho);
         $ext = strtolower(pathinfo($ficheiro, PATHINFO_EXTENSION));
 
-        // MIME types corretos para Chrome
+        // Extensões que DEVEM abrir no Google Docs Viewer
+        $usarGoogleDocs = ['docx', 'xlsx', 'pptx'];
+
+        if (in_array($ext, $usarGoogleDocs)) {
+
+            // URL pública para o ficheiro
+            $urlFicheiro = urlencode(url("/admin/documentos/download/$id"));
+
+            // Viewer do Google
+            $viewer = "https://docs.google.com/viewer?url={$urlFicheiro}&embedded=true";
+
+            header("Location: $viewer");
+            exit;
+        }
+
+        // MIME types corretos
         $mime = [
             'pdf' => 'application/pdf',
             'jpg' => 'image/jpeg',
             'jpeg' => 'image/jpeg',
             'png' => 'image/png',
             'gif' => 'image/gif',
-            'txt' => 'text/plain',
-            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+            'txt' => 'text/plain'
         ];
 
-        header("Content-Type: " . ($mime[$ext] ?? 'application/octet-stream'));
+        header("Content-Type: " . ($mime[$ext] ?? mime_content_type($caminho)));
         header("Content-Disposition: inline; filename=\"$ficheiro\"");
         header("Content-Length: " . filesize($caminho));
 
         readfile($caminho);
         exit;
+    }
+
+    public function abrir($id)
+    {
+        $documento = Documento::find($id);
+
+        if (!$documento) {
+            http_response_code(404);
+            exit("Documento não encontrado.");
+        }
+
+        // Caminho absoluto do ficheiro original
+        $base = realpath(__DIR__ . '/../../../storage/documentos');
+        $origem = $base . '/' . $documento->caminho . $documento->ficheiro;
+
+        if (!file_exists($origem)) {
+            http_response_code(404);
+            exit("Ficheiro não encontrado.");
+        }
+
+        $ext = strtolower(pathinfo($origem, PATHINFO_EXTENSION));
+        $ficheiro = basename($origem);
+
+        // Extensões que abrem inline
+        $inline = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'txt'];
+
+        if (in_array($ext, $inline)) {
+            header("Content-Type: " . mime_content_type($origem));
+            header("Content-Disposition: inline; filename=\"$ficheiro\"");
+            header("Content-Length: " . filesize($origem));
+            readfile($origem);
+            exit;
+        }
+
+        // Extensões que devem ser convertidas para PDF
+        $convertiveis = ['docx', 'xlsx', 'pptx'];
+
+        if (in_array($ext, $convertiveis)) {
+
+            // Caminho do PDF convertido
+            $pdfDestino = $base . '/' . $documento->caminho . $documento->id . '.pdf';
+
+            // Converter apenas se ainda não existir
+            if (!file_exists($pdfDestino)) {
+                $ok = $this->converterDocxParaPdf($origem, $pdfDestino);
+
+                if (!$ok) {
+                    // fallback → download direto
+                    header("Content-Type: application/octet-stream");
+                    header("Content-Disposition: attachment; filename=\"$ficheiro\"");
+                    header("Content-Length: " . filesize($origem));
+                    readfile($origem);
+                    exit;
+                }
+            }
+
+            // Abrir PDF inline
+            header("Content-Type: application/pdf");
+            header("Content-Disposition: inline; filename=\"preview.pdf\"");
+            header("Content-Length: " . filesize($pdfDestino));
+            readfile($pdfDestino);
+            exit;
+        }
+
+        // Fallback para qualquer outro tipo → download
+        header("Content-Type: application/octet-stream");
+        header("Content-Disposition: attachment; filename=\"$ficheiro\"");
+        header("Content-Length: " . filesize($origem));
+        readfile($origem);
+        exit;
+    }
+
+    public function abrir_raw($id)
+    {
+        // 1) Obter documento
+        $documento = Documento::find($id);
+
+        if (!$documento) {
+            http_response_code(404);
+            exit("Documento não encontrado.");
+        }
+
+        // 2) Caminho absoluto do ficheiro original
+        $base = realpath(__DIR__ . '/../../../storage/documentos');
+        $caminho = $base . '/' . $documento->caminho . $documento->ficheiro;
+
+        if (!file_exists($caminho)) {
+            http_response_code(404);
+            exit("Ficheiro não encontrado.");
+        }
+
+        // 3) Determinar MIME
+        $mime = mime_content_type($caminho);
+        $ficheiro = basename($caminho);
+
+        // 4) Headers seguros para entrega direta
+        header("Content-Type: $mime");
+        header("Content-Disposition: inline; filename=\"$ficheiro\"");
+        header("Content-Length: " . filesize($caminho));
+
+        // 5) Entregar ficheiro
+        readfile($caminho);
+        exit;
+    }
+
+    /**
+     * Converte DOCX/XLSX/PPTX para PDF usando LibreOffice (modo headless)
+     * com cache inteligente (não reconverte se já existir).
+     *
+     * @param string $origem  Caminho absoluto do ficheiro original
+     * @param string $pdfDestino Caminho absoluto do PDF final
+     * @return bool  true se o PDF foi criado ou já existia, false se falhou
+     */
+    private function converterDocxParaPdf($origem, $pdfDestino)
+    {
+        // Cache inteligente
+        if (file_exists($pdfDestino) && filesize($pdfDestino) > 0) {
+            return true;
+        }
+
+        $dir = dirname($pdfDestino);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
+        // Caminho do LibreOffice
+        $soffice = '"C:\Program Files\LibreOffice\program\soffice.exe"';
+
+        // Comando
+        $cmd = $soffice
+                . ' --headless --nologo --nofirststartwizard'
+                . ' --convert-to pdf'
+                . ' "' . $origem . '"'
+                . ' --outdir "' . $dir . '"';
+
+        // LOG para debug
+        file_put_contents(__DIR__ . '/../../../storage/logs/conversao.log',
+                date('Y-m-d H:i:s') . "\nCMD: $cmd\n", FILE_APPEND);
+
+        exec($cmd . " 2>&1", $output, $returnCode);
+
+        // LOG do output
+        file_put_contents(__DIR__ . '/../../../storage/logs/conversao.log',
+                "RETORNO: $returnCode\n" . print_r($output, true) . "\n\n", FILE_APPEND);
+
+        // Verificar se o PDF foi criado
+        return file_exists($pdfDestino) && filesize($pdfDestino) > 0;
     }
 
     public function download($id)
@@ -508,6 +685,76 @@ class DocumentosAdminController extends BaseController
         readfile($zipPath);
         unlink($zipPath);
         exit;
+    }
+
+    public function arquivados()
+    {
+        ini_set('display_errors', 1);
+        error_reporting(E_ALL);
+
+        $this->autorizar('admin.documentos.arquivados.ver');
+
+        $docModel = new Documento();
+        $docModel->where('estado_atual', '=', 'arquivado');
+        $docModel->orderBy('arquivado_em', 'DESC');
+
+        $documentos = $docModel->get();
+
+        return $this->render('admin/documentos/arquivados.twig', [
+                    'documentos' => $documentos
+        ]);
+    }
+
+    public function verArquivado($id)
+    {
+        $this->autorizar('admin.documentos.arquivados.ver');
+
+        $documento = Documento::find($id);
+
+        if (!$documento || $documento->estado_atual !== 'arquivado') {
+            http_response_code(404);
+            exit("Documento arquivado não encontrado.");
+        }
+
+        $historico = (new DocumentoTramitacao())
+                ->where('documento_id', '=', $id)
+                ->orderBy('criado_em', 'ASC')
+                ->get();
+
+        return $this->render('admin/documentos/ver_arquivado.twig', [
+                    'documento' => $documento,
+                    'historico' => $historico
+        ]);
+    }
+
+    public function recuperarArquivado($id)
+    {
+        $this->autorizar('admin.documentos.arquivados.recuperar');
+
+        $documento = Documento::find($id);
+
+        if (!$documento || $documento->estado_atual !== 'arquivado') {
+            http_response_code(404);
+            exit("Documento arquivado não encontrado.");
+        }
+
+        $documento->estado_atual = 'novo';
+        $documento->area_atual_id = null;
+        $documento->arquivado_em = null;
+        $documento->save();
+
+        DocumentoTramitacao::create([
+            'documento_id' => $id,
+            'area_id' => null,
+            'utilizador_id' => auth()->id(),
+            'comentario' => 'Documento recuperado do arquivo para produção.',
+            'estado' => 'recuperado',
+            'criado_em' => date('Y-m-d H:i:s')
+        ]);
+
+        return $this->render('admin/documentos/editar.twig', [
+                    'documento' => $documento
+        ]);
     }
 
     private function paginacao($total, $porPagina, $paginaAtual)

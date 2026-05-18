@@ -1,0 +1,78 @@
+{% extends "admin/layout.twig" %}
+
+{% block conteudo %}
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">Documento Arquivado</h4>
+
+        <form action="/admin/documentos/arquivado/{{ documento.id }}/recuperar" method="post">
+            <button class="btn btn-warning"
+                    onclick="return confirm('Tem a certeza que deseja recuperar este documento?')">
+                Recuperar para Produção
+            </button>
+        </form>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>Detalhes do Documento</strong>
+        </div>
+        <div class="card-body">
+            <p><strong>Título:</strong> {{ documento.titulo }}</p>
+            <p><strong>Tipo:</strong> {{ documento.tipo_nome ?? '—' }}</p>
+            <p><strong>Arquivado em:</strong> {{ documento.arquivado_em|date("d/m/Y H:i") }}</p>
+            <p><strong>Criado por:</strong> {{ documento.criador_nome ?? '—' }}</p>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>Ficheiro</strong>
+        </div>
+        <div class="card-body">
+            <a href="/admin/documentos/abrir/{{ documento.id }}"
+               target="_blank"
+               class="btn btn-primary">
+                Abrir Ficheiro
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <strong>Histórico de Tramitação</strong>
+        </div>
+        <div class="card-body p-0">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Área</th>
+                        <th>Utilizador</th>
+                        <th>Comentário</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in historico %}
+                        <tr>
+                            <td>{{ h.criado_em|date("d/m/Y H:i") }}</td>
+                            <td>{{ h.area_nome ?? '—' }}</td>
+                            <td>{{ h.utilizador_nome ?? '—' }}</td>
+                            <td>{{ h.comentario }}</td>
+                            <td>{{ h.estado }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                Sem histórico de tramitação.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+{% endblock %}
+
