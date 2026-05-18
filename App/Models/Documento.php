@@ -8,8 +8,8 @@ use App\Core\Conexao;
 
 class Documento extends Model
 {
-    protected string $table = 'documentos';
 
+    protected string $table = 'documentos';
     // ============================================================
     //  PROPRIEDADES DA TABELA DOCUMENTOS
     // ============================================================
@@ -24,7 +24,6 @@ class Documento extends Model
     public ?string $criado_em = null;
     public ?string $caminho = null;
     public ?int $tipo_id = null;
-
     // ============================================================
     //  CAMPOS DO MÓDULO DE TRAMITAÇÃO
     // ============================================================
@@ -33,7 +32,6 @@ class Documento extends Model
     public ?string $arquivado_em = null;
     public ?int $arquivado_por_id = null;
     public ?string $estado = null;
-
     // ============================================================
     //  CAMPOS DERIVADOS (JOINs)
     // ============================================================
@@ -41,7 +39,6 @@ class Documento extends Model
     public ?string $criador_nome = null;
     public ?string $criador_avatar = null;
     public ?string $area_nome = null;
-
     protected array $fillable = [
         'titulo',
         'ficheiro',
@@ -189,5 +186,49 @@ class Documento extends Model
 
         $stmt = $db->prepare($sql);
         $stmt->execute([$user_id, $id]);
+    }
+
+    /* ============================================================
+     *  MÉTODOS DE GRAVAÇÃO (save, update)
+     * ============================================================ */
+
+    public function save()
+    {
+        $db = Conexao::getInstancia();
+
+        // INSERT
+        if ($this->id === null) {
+
+            $campos = [];
+            $placeholders = [];
+            $valores = [];
+
+            foreach ($this->fillable as $campo) {
+                $campos[] = $campo;
+                $placeholders[] = ':' . $campo;
+                $valores[':' . $campo] = $this->$campo;
+            }
+
+            $sql = "INSERT INTO {$this->table} (" . implode(',', $campos) . ")
+                VALUES (" . implode(',', $placeholders) . ")";
+
+            $stmt = $db->prepare($sql);
+            $stmt->execute($valores);
+
+            $this->id = $db->lastInsertId();
+            return true;
+        }
+
+        // UPDATE (usa o update() da Model base)
+        $data = [];
+        foreach ($this->fillable as $campo) {
+            $data[$campo] = $this->$campo;
+        }
+
+        return parent::update(
+                        $data,
+                        "id = :id",
+                        [':id' => $this->id]
+                );
     }
 }

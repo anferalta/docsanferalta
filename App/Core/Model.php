@@ -6,6 +6,9 @@ use PDO;
 
 abstract class Model
 {
+    public ?string $nome = null;        // nome do tipo
+    public ?string $tipo_nome = null;   // alias opcional
+    
     protected string $table;
     protected string $primaryKey = 'id';
     protected array $wheres = [];

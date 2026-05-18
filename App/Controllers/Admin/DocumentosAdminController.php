@@ -9,6 +9,7 @@ use App\Core\Auth;
 use App\Core\Sessao;
 use App\Core\Conexao;
 use App\Models\Utilizador;
+use App\Models\DocumentoTramitacao;
 
 class DocumentosAdminController extends BaseController
 {
@@ -84,15 +85,15 @@ class DocumentosAdminController extends BaseController
         // ============================
         $sql = "
         SELECT SQL_CALC_FOUND_ROWS
-            d.*,
-            t.nome AS tipo_nome,
-            u.nome AS criador_nome,
-            a.nome AS area_nome
-        FROM documentos d
-        LEFT JOIN documento_tipos t ON t.id = d.tipo_id
-        LEFT JOIN utilizadores u ON u.id = d.criado_por
-        LEFT JOIN documento_areas a ON a.id = d.area_atual_id
-        WHERE 1=1
+    d.*,
+    t.nome AS tipo_nome,
+    u.nome AS criador_nome,
+    a.nome AS area_nome
+FROM documentos d
+LEFT JOIN documento_tipos t ON t.tipo_id = d.tipo_id
+LEFT JOIN utilizadores u ON u.id = d.criado_por
+LEFT JOIN documento_areas a ON a.id = d.area_atual_id
+WHERE 1=1
     ";
 
         // ============================
@@ -689,18 +690,23 @@ class DocumentosAdminController extends BaseController
 
     public function arquivados()
     {
-        ini_set('display_errors', 1);
-        error_reporting(E_ALL);
-
         $this->autorizar('admin.documentos.arquivados.ver');
 
         $docModel = new Documento();
-        $docModel->where('estado_atual', '=', 'arquivado');
-        $docModel->orderBy('arquivado_em', 'DESC');
+
+        $docModel->leftJoin(
+                'documento_tipos',
+                'documento_tipos.tipo_id',
+                '=',
+                'documentos.tipo_id'
+        );
+
+        $docModel->where('documentos.estado_atual', '=', 'arquivado');
+        $docModel->orderBy('documentos.arquivado_em', 'DESC');
 
         $documentos = $docModel->get();
 
-        return $this->render('admin/documentos/arquivados.twig', [
+        return $this->render('@admin/documentos/arquivados.twig', [
                     'documentos' => $documentos
         ]);
     }
@@ -716,12 +722,10 @@ class DocumentosAdminController extends BaseController
             exit("Documento arquivado não encontrado.");
         }
 
-        $historico = (new DocumentoTramitacao())
-                ->where('documento_id', '=', $id)
-                ->orderBy('criado_em', 'ASC')
-                ->get();
+        // AQUI ESTÁ A CORREÇÃO
+        $historico = DocumentoTramitacao::porDocumento($id);
 
-        return $this->render('admin/documentos/ver_arquivado.twig', [
+        return $this->render('@admin/documentos/ver_arquivado.twig', [
                     'documento' => $documento,
                     'historico' => $historico
         ]);
@@ -743,18 +747,49 @@ class DocumentosAdminController extends BaseController
         $documento->arquivado_em = null;
         $documento->save();
 
-        DocumentoTramitacao::create([
+        \App\Models\DocumentoTramitacao::create([
             'documento_id' => $id,
             'area_id' => null,
-            'utilizador_id' => auth()->id(),
-            'comentario' => 'Documento recuperado do arquivo para produção.',
+            'utilizador_id' => Auth::id(),
+            'acao' => 'RECUPERAR',
             'estado' => 'recuperado',
+            'comentario' => 'Documento recuperado do arquivo para produção.',
             'criado_em' => date('Y-m-d H:i:s')
         ]);
 
-        return $this->render('admin/documentos/editar.twig', [
-                    'documento' => $documento
+        return $this->redirect("/admin/documentos/editar/{$id}");
+    }
+
+    public function arquivar(int $id)
+    {
+        $this->autorizar('admin.documentos.arquivar');
+
+        $documento = Documento::find($id);
+
+        if (!$documento) {
+            http_response_code(404);
+            exit('Documento não encontrado.');
+        }
+
+        // Marcar como arquivado
+        $documento->estado_atual = 'arquivado';
+        $documento->arquivado_em = date('Y-m-d H:i:s');
+        $documento->arquivado_por_id = auth()->id(); // ajusta se usares outro helper
+        $documento->area_atual_id = null;
+
+        $documento->save();
+
+        // Registar no histórico
+        DocumentoTramitacao::create([
+            'documento_id' => $documento->id,
+            'area_id' => null,
+            'utilizador_id' => auth()->id(),
+            'comentario' => 'Documento arquivado.',
+            'estado' => 'arquivado',
+            'criado_em' => date('Y-m-d H:i:s'),
         ]);
+
+        return $this->redirect('/admin/documentos/arquivados');
     }
 
     private function paginacao($total, $porPagina, $paginaAtual)

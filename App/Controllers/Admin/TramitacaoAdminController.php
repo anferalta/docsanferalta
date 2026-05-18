@@ -509,7 +509,7 @@ class TramitacaoAdminController extends BaseController
             a.nome AS area_atual_nome,
             u.nome AS criador_nome
         FROM documentos d
-        LEFT JOIN documento_tipos t ON t.id = d.tipo_id
+        LEFT JOIN documento_tipos t ON t.tipo_id = d.tipo_id
         LEFT JOIN documento_areas a ON a.id = d.area_atual_id
         LEFT JOIN utilizadores u ON u.id = d.criado_por
         WHERE d.estado_atual != 'arquivado'

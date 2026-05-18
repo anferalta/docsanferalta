@@ -7,7 +7,10 @@ use App\Core\Conexao;
 class DocumentoTramitacao
 {
 
-    public static function registar($doc_id, $area_id, $user_id, $acao, $estado, $comentario)
+    /**
+     * Registo direto (usado em partes antigas do sistema)
+     */
+    public static function registarAntigo($doc_id, $area_id, $user_id, $acao, $estado, $comentario)
     {
         $db = Conexao::getInstancia();
 
@@ -29,15 +32,22 @@ class DocumentoTramitacao
     }
 
     /**
-     * Método create() — compatível com o que o teu controller espera
+     * Método create() — compatível com o controller
      */
     public static function create(array $data)
     {
         $db = Conexao::getInstancia();
 
+        file_put_contents(__DIR__ . '/debug_tramitacao.log', print_r($data, true), FILE_APPEND);
+
+        $data['acao'] = !empty($data['acao']) ? $data['acao'] : 'DESCONHECIDO';
+        $data['estado'] = $data['estado'] ?? 'indefinido';
+        $data['comentario'] = $data['comentario'] ?? null;
+        $data['criado_em'] = $data['criado_em'] ?? date('Y-m-d H:i:s');
+
         $sql = "INSERT INTO documento_tramitacao
-                (documento_id, area_id, utilizador_id, acao, estado, comentario, criado_em)
-                VALUES (?, ?, ?, ?, ?, ?, ?)";
+            (documento_id, area_id, utilizador_id, acao, estado, comentario, criado_em)
+            VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         $stmt = $db->prepare($sql);
         $stmt->execute([
@@ -45,14 +55,12 @@ class DocumentoTramitacao
             $data['area_id'] ?? null,
             $data['utilizador_id'],
             $data['acao'],
-            $data['estado'] ?? null,
-            $data['comentario'] ?? null,
-            $data['criado_em'] ?? date('Y-m-d H:i:s')
+            $data['estado'],
+            $data['comentario'],
+            $data['criado_em']
         ]);
 
-        return (object) [
-                    'id' => $db->lastInsertId()
-        ];
+        return (object) ['id' => $db->lastInsertId()];
     }
 
     public static function find($id)

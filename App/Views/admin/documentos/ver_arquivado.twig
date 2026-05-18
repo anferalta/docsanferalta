@@ -1,6 +1,6 @@
 {% extends "admin/layout.twig" %}
 
-{% block conteudo %}
+{% block content %}
 
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="mb-0">Documento Arquivado</h4>
@@ -42,35 +42,90 @@
         <div class="card-header">
             <strong>Histórico de Tramitação</strong>
         </div>
-        <div class="card-body p-0">
-            <table class="table mb-0">
-                <thead>
-                    <tr>
-                        <th>Data</th>
-                        <th>Área</th>
-                        <th>Utilizador</th>
-                        <th>Comentário</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-                <tbody>
+
+        <div class="card-body">
+
+            {% if historico is empty %}
+                <p class="text-muted text-center py-4">
+                    Sem histórico de tramitação.
+                </p>
+            {% else %}
+
+                <div class="timeline">
+
                     {% for h in historico %}
-                        <tr>
-                            <td>{{ h.criado_em|date("d/m/Y H:i") }}</td>
-                            <td>{{ h.area_nome ?? '—' }}</td>
-                            <td>{{ h.utilizador_nome ?? '—' }}</td>
-                            <td>{{ h.comentario }}</td>
-                            <td>{{ h.estado }}</td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="5" class="text-center py-4 text-muted">
-                                Sem histórico de tramitação.
-                            </td>
-                        </tr>
+
+                        <div class="timeline-item">
+
+                            {# ÍCONE + COR PADRONIZADOS #}
+                            <div class="timeline-icon 
+                                 {% if h.acao == 'ENCAMINHADO' %} bg-primary
+                                 {% elseif h.acao == 'COMENTARIO' %} bg-info
+                                 {% elseif h.acao == 'ESTADO' %} bg-success
+                                 {% elseif h.acao == 'RECUPERAR' %} bg-warning
+                                 {% else %} bg-secondary
+                                 {% endif %}
+                                 ">
+                                <i class="
+                                   {% if h.acao == 'ENCAMINHADO' %} fa fa-random
+                                   {% elseif h.acao == 'COMENTARIO' %} fa fa-comment
+                                   {% elseif h.acao == 'ESTADO' %} fa fa-flag
+                                   {% elseif h.acao == 'RECUPERAR' %} fa fa-undo
+                                   {% else %} fa fa-info-circle
+                                   {% endif %}
+                                   "></i>
+                            </div>
+
+                            <div class="timeline-content">
+
+                                {# TEXTO PADRONIZADO #}
+                                {% if h.acao == 'ENCAMINHADO' %}
+                                    <p>
+                                        <strong>{{ h.utilizador_nome }}</strong>
+                                        encaminhou o documento para a área
+                                        <strong>{{ h.area_nome ?: '—' }}</strong>.
+                                    </p>
+
+                                {% elseif h.acao == 'COMENTARIO' %}
+                                    <p>
+                                        <strong>{{ h.utilizador_nome }}</strong> adicionou um comentário:</p>
+                                    <div class="bg-light border rounded p-2">
+                                        {{ h.comentario|nl2br }}
+                                    </div>
+
+                                {% elseif h.acao == 'ESTADO' %}
+                                    <p>
+                                        <strong>{{ h.utilizador_nome }}</strong>
+                                        alterou o estado para
+                                        <strong>{{ h.estado|upper }}</strong>.
+                                    </p>
+
+                                {% elseif h.acao == 'RECUPERAR' %}
+                                    <p>
+                                        <strong>{{ h.utilizador_nome }}</strong>
+                                        recuperou o documento do arquivo.
+                                    </p>
+
+                                {% else %}
+                                    <p>
+                                        <strong>{{ h.utilizador_nome }}</strong>
+                                        realizou uma ação: <strong>{{ h.acao }}</strong>.
+                                    </p>
+                                {% endif %}
+
+                                <small class="text-muted">
+                                    {{ h.criado_em|date("d/m/Y H:i") }}
+                                </small>
+
+                            </div>
+                        </div>
+
                     {% endfor %}
-                </tbody>
-            </table>
+
+                </div>
+
+            {% endif %}
+
         </div>
     </div>
 

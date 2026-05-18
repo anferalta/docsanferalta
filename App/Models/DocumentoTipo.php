@@ -12,7 +12,7 @@ class DocumentoTipo {
 
     public static function all() {
         $db = Conexao::getInstancia();
-        $stmt = $db->query("SELECT id, nome FROM documento_tipos ORDER BY nome");
+        $stmt = $db->query("SELECT tipo_id AS id, nome FROM documento_tipos ORDER BY nome");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 

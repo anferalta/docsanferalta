@@ -59,7 +59,7 @@ class DashboardAdminController extends BaseController {
            t.nome AS tipo_nome,
            a.nome AS area_nome
             FROM documentos d
-            LEFT JOIN documento_tipos t ON t.id = d.tipo_id
+            LEFT JOIN documento_tipos t ON t.tipo_id = d.tipo_id
             LEFT JOIN documento_areas a ON a.id = d.area_atual_id
            ORDER BY d.id DESC
         ";
