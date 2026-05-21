@@ -1,11 +1,11 @@
 {% extends "@admin/layout.twig" %}
 
 {% block title %}Gestão de Utilizadores{% endblock %}
-{% block header %}Gestão de Utilizadores{% endblock %}
+{% block page_title %}Gestão de Utilizadores{% endblock %}
 
 {% block content %}
 
-<div class="container">
+<div class="page-content-inner">
 
     <!-- TÍTULO + BOTÃO -->
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -51,50 +51,57 @@
     <div class="card shadow-sm">
         <div class="card-body">
 
-            <table class="table table-striped table-hover align-middle">
-                <thead class="table-dark">
-                    <tr>
-                        <th>ID</th>
-                        <th>Nome</th>
-                        <th>Email</th>
-                        <th>Perfil</th>
-                        <th>Estado</th>
-                        <th class="text-end">Ações</th>
-                    </tr>
-                </thead>
+            <!-- WRAPPER RESPONSIVO (CORREÇÃO CRÍTICA) -->
+            <div class="table-responsive">
 
-                <tbody>
-                    {% for u in utilizadores %}
+                <table class="table table-striped table-hover align-middle">
+                    <thead class="table-dark">
                         <tr>
-                            <td>{{ u.id }}</td>
-                            <td>{{ u.nome }}</td>
-                            <td>{{ u.email }}</td>
-                            <td>{{ u.perfil_nome ?? '—' }}</td>
-
-                            <td>
-                                {% if u.ativo == 1 %}
-                                    <span class="badge bg-success">Ativo</span>
-                                {% else %}
-                                    <span class="badge bg-danger">Inativo</span>
-                                {% endif %}
-                            </td>
-
-                            <td class="text-end">
-
-                                <a href="{{ url('admin/utilizadores/editar/' ~ u.id) }}"
-                                   class="btn btn-sm btn-warning">Editar</a>
-
-                                <a href="{{ url('admin/utilizadores/eliminar/' ~ u.id) }}"
-                                   class="btn btn-sm btn-danger"
-                                   onclick="return confirm('Tem a certeza que deseja apagar?')">
-                                   Apagar
-                                </a>
-
-                            </td>
+                            <th>ID</th>
+                            <th>Nome</th>
+                            <th>Email</th>
+                            <th>Perfil</th>
+                            <th>Estado</th>
+                            <th class="text-end">Ações</th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </thead>
+
+                    <tbody>
+                        {% for u in utilizadores %}
+                            <tr>
+                                <td>{{ u.id }}</td>
+                                <td>{{ u.nome }}</td>
+                                <td>{{ u.email }}</td>
+                                <td>{{ u.perfil_nome ?? '—' }}</td>
+
+                                <td>
+                                    {% if u.ativo == 1 %}
+                                        <span class="badge bg-success">Ativo</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inativo</span>
+                                    {% endif %}
+                                </td>
+
+                                <td class="text-end">
+
+                                    <a href="{{ url('admin/utilizadores/editar/' ~ u.id) }}"
+                                       class="btn btn-sm btn-warning">
+                                        Editar
+                                    </a>
+
+                                    <a href="{{ url('admin/utilizadores/eliminar/' ~ u.id) }}"
+                                       class="btn btn-sm btn-danger"
+                                       onclick="return confirm('Tem a certeza que deseja apagar?')">
+                                       Apagar
+                                    </a>
+
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+            </div> <!-- /table-responsive -->
 
             <!-- PAGINAÇÃO -->
             <nav>

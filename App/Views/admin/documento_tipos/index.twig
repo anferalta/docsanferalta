@@ -35,16 +35,16 @@
                 {% else %}
                     {% for tipo in tipos %}
                         <tr>
-                            <td>{{ tipo.id }}</td>
+                            <td>{{ tipo.tipo_id }}</td>
                             <td>{{ tipo.nome }}</td>
 
                             <td class="text-end">
-                                <a href="/admin/documento-tipos/editar/{{ tipo.id }}"
+                                <a href="/admin/documento-tipos/editar/{{ tipo.tipo_id }}"
                                    class="btn btn-sm btn-warning">
                                     <i class="fa fa-pencil"></i> Editar
                                 </a>
 
-                                <a href="/admin/documento-tipos/apagar/{{ tipo.id }}"
+                                <a href="/admin/documento-tipos/apagar/{{ tipo.tipo_id }}"
                                    class="btn btn-sm btn-danger"
                                    onclick="return confirm('Apagar tipo?')">
                                     <i class="fa fa-trash"></i> Apagar

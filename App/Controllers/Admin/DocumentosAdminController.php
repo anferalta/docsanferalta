@@ -10,6 +10,7 @@ use App\Core\Sessao;
 use App\Core\Conexao;
 use App\Models\Utilizador;
 use App\Models\DocumentoTramitacao;
+use App\Models\DocumentoEstado;
 
 class DocumentosAdminController extends BaseController
 {
@@ -49,18 +50,30 @@ class DocumentosAdminController extends BaseController
         $user = Auth::user();
         $acl = new \App\Core\Acl();
 
+        // PERFIL DO UTILIZADOR
+        $perfil = strtolower($user->perfil->nome ?? '');
+
+        // PERFIS QUE PODEM VER TODOS OS DOCUMENTOS
+        $podeVerTodos = (
+                in_array($perfil, ['admin', 'gestor', 'supervisor']) || $acl->has('admin.documentos.ver_todos')
+        );
+
         // ============================
         // 1. Filtros
         // ============================
         $tipo_id = $_GET['tipo_id'] ?? null;
-        $utilizador_id = $_GET['utilizador'] ?? null;
+        $estado_atual = $_GET['estado_atual'] ?? null;
+        $area_atual_id = $_GET['area_atual_id'] ?? null;
         $data_inicio = $_GET['data_inicio'] ?? null;
         $data_fim = $_GET['data_fim'] ?? null;
         $pesquisa = $_GET['q'] ?? null;
-        $estado_atual = $_GET['estado_atual'] ?? null;
-        $area_atual_id = $_GET['area_atual_id'] ?? null;
 
-        // Ordenação
+        // CORREÇÃO CRÍTICA — garantir que só filtra se vier preenchido
+        $utilizador_id = (isset($_GET['utilizador']) && $_GET['utilizador'] !== '') ? intval($_GET['utilizador']) : null;
+
+        // ============================
+        // Ordenação segura
+        // ============================
         $ordenar = $_GET['sort'] ?? 'id';
         $direcao = strtolower($_GET['dir'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
 
@@ -85,21 +98,21 @@ class DocumentosAdminController extends BaseController
         // ============================
         $sql = "
         SELECT SQL_CALC_FOUND_ROWS
-    d.*,
-    t.nome AS tipo_nome,
-    u.nome AS criador_nome,
-    a.nome AS area_nome
-FROM documentos d
-LEFT JOIN documento_tipos t ON t.tipo_id = d.tipo_id
-LEFT JOIN utilizadores u ON u.id = d.criado_por
-LEFT JOIN documento_areas a ON a.id = d.area_atual_id
-WHERE 1=1
+            d.*,
+            t.nome AS tipo_nome,
+            u.nome AS criador_nome,
+            a.nome AS area_nome
+        FROM documentos d
+        LEFT JOIN documento_tipos t ON t.tipo_id = d.tipo_id
+        LEFT JOIN utilizadores u ON u.id = d.criado_por
+        LEFT JOIN documento_areas a ON a.id = d.area_atual_id
+        WHERE 1=1
     ";
 
         // ============================
-        // 3. ACL
+        // 3. ACL — aplicar filtro de visibilidade
         // ============================
-        if (!$acl->has('admin.documentos.ver_todos')) {
+        if (!$podeVerTodos) {
             $sql .= " AND d.criado_por = " . intval($user->id);
         }
 
@@ -110,7 +123,7 @@ WHERE 1=1
             $sql .= " AND d.tipo_id = " . intval($tipo_id);
         }
 
-        if ($utilizador_id && $acl->has('admin.documentos.ver_todos')) {
+        if ($utilizador_id !== null && $podeVerTodos) {
             $sql .= " AND d.criado_por = " . intval($utilizador_id);
         }
 
@@ -223,6 +236,7 @@ WHERE 1=1
     public function editar($id)
     {
         $documento = Documento::find($id);
+        $estados = DocumentoEstado::semArquivado();
 
         if (!$documento) {
             Sessao::flash('erro', 'Documento não encontrado.');
@@ -246,7 +260,7 @@ WHERE 1=1
         return $this->render('@admin/documentos/editar.twig', [
                     'documento' => $documento,
                     'tipos' => $tipos,
-                    'tramitacao' => $historico, //  ✔ CORRETO
+                    'historico' => $historico,
                     'areas' => $areas,
                     'estados' => $estados,
                     'user' => $user
@@ -789,7 +803,7 @@ WHERE 1=1
             'criado_em' => date('Y-m-d H:i:s'),
         ]);
 
-        return $this->redirect('/admin/documentos/arquivados');
+        return $this->redirect("/admin/documentos/editar/{$id}?tab=tramitacao");
     }
 
     private function paginacao($total, $porPagina, $paginaAtual)

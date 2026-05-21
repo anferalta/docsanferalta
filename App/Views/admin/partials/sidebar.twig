@@ -1,75 +1,69 @@
 <aside class="sidebar">
 
-    <div class="sidebar-header">
-        <h2>Painel Admin</h2>
-    </div>
+    <div class="logo">Painel Admin</div>
 
     <nav class="sidebar-nav">
         <ul>
 
             {% for item in menuAdmin %}
 
-                {# ============================
-                   HEADERS (sem permissões)
-                   ============================ #}
+                {# HEADER #}
                 {% if item.header is defined %}
-                    <li class="sidebar-section">{{ item.header }}</li>
-                    {% continue %}
-                {% endif %}
+                    <li class="menu-header">{{ item.header }}</li>
 
-                {# ============================
-                   PERMISSÕES
-                   ============================ #}
-                {% if not auth.user.isAdmin() and not auth.user.hasPermissao(item.permissao) %}
-                    {% continue %}
-                {% endif %}
+                {% else %}
 
-                {# ============================
-                   ACTIVE STATE AUTOMÁTICO
-                   ============================ #}
-                {% set active = (app.request.path starts with item.url) ? 'active' : '' %}
+                    {# PERMISSÕES #}
+                    {% if auth.user.isAdmin() or auth.user.hasPermissao(item.permissao) %}
 
-                <li class="sidebar-item {{ active }}">
+                        {# ACTIVE #}
+                        {% set active = (app.request.path starts with item.url) ? 'active' : '' %}
 
-                    <a href="{{ item.url }}" class="sidebar-link">
+                        <li class="menu-item {{ active }}">
 
-                        {% if item.icone is defined %}
-                            <i class="bi {{ item.icone }}"></i>
-                        {% endif %}
+                            <a href="{{ item.url }}" class="menu-link {% if item.principal is defined and item.principal %}main{% endif %}">
 
-                        <span>{{ item.titulo }}</span>
-
-                        {% if item.badge is defined and item.badge > 0 %}
-                            <span class="badge">{{ item.badge }}</span>
-                        {% endif %}
-                    </a>
-
-                    {# ============================
-                       SUBMENUS
-                       ============================ #}
-                    {% if item.sub is defined %}
-                        <ul class="sidebar-submenu">
-
-                            {% for sub in item.sub %}
-
-                                {% if auth.user.isAdmin() or auth.user.hasPermissao(sub.permissao) %}
-
-                                    {% set subActive = (app.request.path == sub.url) ? 'active' : '' %}
-
-                                    <li class="{{ subActive }}">
-                                        <a href="{{ sub.url }}">
-                                            {{ sub.titulo }}
-                                        </a>
-                                    </li>
-
+                                {% if item.icone is defined %}
+                                    <i class="bi {{ item.icone }}"></i>
                                 {% endif %}
 
-                            {% endfor %}
+                                <span>{{ item.titulo }}</span>
 
-                        </ul>
+                                {% if item.sub is defined %}
+                                    <i class="bi bi-chevron-right submenu-arrow"></i>
+                                {% endif %}
+
+
+                                {% if item.badge is defined and item.badge > 0 %}
+                                    <span class="badge">{{ item.badge }}</span>
+                                {% endif %}
+                            </a>
+
+                            {# SUBMENU #}
+                            {% if item.sub is defined %}
+                                <ul class="submenu-list">
+
+                                    {% for sub in item.sub %}
+                                        {% if auth.user.isAdmin() or auth.user.hasPermissao(sub.permissao) %}
+
+                                            {% set subActive = (app.request.path == sub.url) ? 'active' : '' %}
+
+                                            <li class="submenu-item {{ subActive }}">
+                                                <a href="{{ sub.url }}" class="submenu-link">
+                                                    {{ sub.titulo }}
+                                                </a>
+                                            </li>
+
+                                        {% endif %}
+                                    {% endfor %}
+
+                                </ul>
+                            {% endif %}
+
+                        </li>
+
                     {% endif %}
-
-                </li>
+                {% endif %}
 
             {% endfor %}
 

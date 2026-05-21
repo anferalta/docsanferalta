@@ -143,8 +143,8 @@ class TramitacaoAdminController extends BaseController
         $db = \App\Core\Conexao::getInstancia();
 
         $sql = "UPDATE documentos 
-            SET area_atual_id = ?, estado_atual = ? 
-            WHERE id = ?";
+        SET area_atual_id = ?, estado_atual = ? 
+        WHERE id = ?";
 
         $stmt = $db->prepare($sql);
         $stmt->execute([
@@ -153,15 +153,16 @@ class TramitacaoAdminController extends BaseController
             $id
         ]);
 
-        // Registar histórico
-        DocumentoTramitacao::registar(
-                $id,
-                $nova_area,
-                Auth::user()->id,
-                'ENCAMINHADO',
-                'em_tramitacao',
-                $comentario
-        );
+        // Registar histórico (CORRIGIDO)
+        DocumentoTramitacao::create([
+            'documento_id' => $id,
+            'area_id' => $nova_area,
+            'utilizador_id' => Auth::user()->id,
+            'acao' => 'ENCAMINHADO',
+            'estado' => 'em_tramitacao',
+            'comentario' => $comentario,
+            'criado_em' => date('Y-m-d H:i:s')
+        ]);
 
         // Notificar criador
         $this->notificar(
@@ -422,7 +423,7 @@ class TramitacaoAdminController extends BaseController
         // ============================
         // REGISTAR HISTÓRICO
         // ============================
-        DocumentoTramitacao::registar(
+        DocumentoTramitacao::create(
                 $doc_id,
                 $documento->area_atual_id, // ← ÁREA CORRETA
                 Auth::id(),
@@ -454,43 +455,76 @@ class TramitacaoAdminController extends BaseController
     /**
      * ARQUIVAR DOCUMENTO
      */
-    public function arquivar()
+    public function arquivar($id)
     {
-        $this->authorize('admin.tramitacao.arquivar');
+        $this->authorize('admin.documentos.arquivar');
 
-        $doc_id = (int) ($_POST['documento_id'] ?? 0);
-        $comentario = trim($_POST['comentario'] ?? '');
+        $documento = Documento::find($id);
 
-        if (!$doc_id) {
+        if (!$documento) {
+            Sessao::flash('erro', 'Documento não encontrado.');
             return $this->redirect('/admin/documentos');
         }
 
-        $documento = Documento::find($doc_id);
-
-        DocumentoTramitacao::registar(
-                $doc_id,
-                null,
-                Auth::id(),
-                'ARQUIVADO',
-                'arquivado',
-                $comentario
-        );
-
-        $tramitacao_id = DocumentoTramitacao::ultimoId();
-        $this->guardarAnexos($tramitacao_id);
-
-        Documento::arquivar($doc_id, Auth::id());
-
-        if ($documento) {
-            $this->notificar(
-                    $documento->criado_por,
-                    $doc_id,
-                    'arquivado',
-                    "O documento #{$doc_id} foi arquivado."
-            );
+        // Evitar arquivar duas vezes
+        if ($documento->estado_atual === 'arquivado') {
+            Sessao::flash('info', 'Este documento já se encontra arquivado.');
+            return $this->redirect("/admin/documentos/editar/{$id}");
         }
 
-        return $this->redirect("/admin/tramitacao/$doc_id");
+        // Atualizar documento
+        $documento->estado_atual = 'arquivado';
+        $documento->arquivado_em = date('Y-m-d H:i:s');
+        $documento->arquivado_por_id = Auth::user()->id;
+        $documento->area_atual_id = null;
+
+        $documento->save();
+
+        // Registar histórico
+        DocumentoTramitacao::create([
+            'documento_id' => $id,
+            'area_id' => null,
+            'utilizador_id' => Auth::user()->id,
+            'acao' => 'ARQUIVADO',
+            'estado' => 'arquivado',
+            'comentario' => 'Documento arquivado.',
+            'criado_em' => date('Y-m-d H:i:s')
+        ]);
+
+        Sessao::flash('sucesso', 'Documento arquivado com sucesso.');
+        return $this->redirect('/admin/documentos/arquivados');
+    }
+
+    public function recuperar($id)
+    {
+        $this->authorize('admin.documentos.recuperar');
+
+        $documento = Documento::find($id);
+
+        if (!$documento) {
+            Sessao::flash('erro', 'Documento não encontrado.');
+            return $this->redirect('/admin/documentos/arquivados');
+        }
+
+        $documento->estado_atual = 'analise';
+        $documento->arquivado_em = null;
+        $documento->arquivado_por_id = null;
+        $documento->save();
+
+        DocumentoTramitacao::create([
+            'documento_id' => $id,
+            'area_id' => $documento->area_atual_id,
+            'utilizador_id' => Auth::id(),
+            'acao' => 'RECUPERADO',
+            'estado' => 'analise',
+            'comentario' => 'Documento recuperado do arquivo.',
+            'criado_em' => date('Y-m-d H:i:s')
+        ]);
+
+        Sessao::flash('sucesso', 'Documento recuperado com sucesso.');
+
+        // 🔥 AQUI ESTÁ A SAÍDA DO LOOP
+        return $this->redirect("/admin/documentos/editar/{$id}?tab=tramitacao");
     }
 
     public function lista()

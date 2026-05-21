@@ -6,11 +6,13 @@
         <h4 class="mb-0">Documento Arquivado</h4>
 
         <form action="/admin/documentos/arquivado/{{ documento.id }}/recuperar" method="post">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
             <button class="btn btn-warning"
                     onclick="return confirm('Tem a certeza que deseja recuperar este documento?')">
                 Recuperar para Produção
             </button>
         </form>
+
     </div>
 
     <div class="card mb-4">

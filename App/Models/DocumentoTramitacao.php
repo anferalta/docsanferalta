@@ -6,7 +6,6 @@ use App\Core\Conexao;
 
 class DocumentoTramitacao
 {
-
     /**
      * Registo direto (usado em partes antigas do sistema)
      */

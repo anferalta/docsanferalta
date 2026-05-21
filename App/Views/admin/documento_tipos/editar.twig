@@ -19,7 +19,7 @@
             <div class="alert alert-success">{{ flash.sucesso }}</div>
         {% endif %}
 
-        <form method="post" action="/admin/documento-tipos/editar/{{ tipo.id }}">
+        <form method="post" action="/admin/documento-tipos/editar/{{ tipo.tipo_id }}">
             <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
 
             <div class="mb-3">

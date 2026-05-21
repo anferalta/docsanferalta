@@ -35,7 +35,7 @@
             <select name="tipo_id" id="tipo_id" class="form-select" required>
                 <option value="">-- Selecione --</option>
                 {% for tipo in tipos %}
-                    <option value="{{ tipo.id }}">{{ tipo.nome }}</option>
+                    <option value="{{ tipo.tipo_id }}">{{ tipo.nome }}</option>
                 {% endfor %}
             </select>
         </div>

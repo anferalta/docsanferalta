@@ -6,6 +6,7 @@ use App\Core\Conexao;
 
 class DocumentoEstado
 {
+
     public static function all()
     {
         $db = Conexao::getInstancia();
@@ -19,5 +20,12 @@ class DocumentoEstado
         $stmt = $db->prepare("SELECT * FROM documento_estados WHERE id = ?");
         $stmt->execute([$id]);
         return $stmt->fetch();
+    }
+
+    public static function semArquivado()
+    {
+        return array_filter(self::all(), function ($e) {
+            return $e->codigo !== 'arquivado';
+        });
     }
 }

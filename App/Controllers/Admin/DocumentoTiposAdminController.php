@@ -58,10 +58,10 @@ class DocumentoTiposAdminController extends BaseController {
     /* ============================================================
       EDITAR (FORM)
     ============================================================ */
-    public function editar($id) {
+    public function editar($tipo_id) {
         $this->authorize('admin.documento-tipos.editar');
 
-        $tipo = DocumentoTipo::find($id);
+        $tipo = DocumentoTipo::find($tipo_id);
 
         if (!$tipo) {
             Sessao::flash('erro', 'Tipo não encontrado.');
@@ -76,23 +76,23 @@ class DocumentoTiposAdminController extends BaseController {
     /* ============================================================
       EDITAR (SUBMIT)
     ============================================================ */
-    public function editarSubmit($id) {
+    public function editarSubmit($tipo_id) {
         $this->authorize('admin.documento-tipos.editar');
 
         $nome = trim($_POST['nome'] ?? '');
 
         if ($nome === '') {
             Sessao::flash('erro', 'O nome é obrigatório.');
-            return $this->redirect("/admin/documento-tipos/editar/$id");
+            return $this->redirect("/admin/documento-tipos/editar/$tipo_id");
         }
 
         // impedir duplicados (exceto o próprio)
-        if (DocumentoTipo::existeNomeParaOutro($nome, $id)) {
+        if (DocumentoTipo::existeNomeParaOutro($nome, $tipo_id)) {
             Sessao::flash('erro', 'Já existe outro tipo com esse nome.');
-            return $this->redirect("/admin/documento-tipos/editar/$id");
+            return $this->redirect("/admin/documento-tipos/editar/$tipo_id");
         }
 
-        DocumentoTipo::update($id, ['nome' => $nome]);
+        DocumentoTipo::update($tipo_id, ['nome' => $nome]);
 
         Sessao::flash('sucesso', 'Tipo atualizado com sucesso.');
         return $this->redirect('/admin/documento-tipos');
@@ -101,15 +101,15 @@ class DocumentoTiposAdminController extends BaseController {
     /* ============================================================
       APAGAR
     ============================================================ */
-    public function apagar($id) {
+    public function apagar($tipo_id) {
         $this->authorize('admin.documento-tipos.apagar');
 
-        if (!DocumentoTipo::find($id)) {
+        if (!DocumentoTipo::find($tipo_id)) {
             Sessao::flash('erro', 'Tipo não encontrado.');
             return $this->redirect('/admin/documento-tipos');
         }
 
-        DocumentoTipo::delete($id);
+        DocumentoTipo::delete($tipo_id);
 
         Sessao::flash('sucesso', 'Tipo apagado.');
         return $this->redirect('/admin/documento-tipos');
@@ -134,11 +134,12 @@ class DocumentoTiposAdminController extends BaseController {
             return;
         }
 
+        // criar tipo e devolver ID correto
         $id = DocumentoTipo::criar($nome);
 
         echo json_encode([
             'sucesso' => true,
-            'id' => $id,
+            'tipo_id' => $id,
             'nome' => $nome
         ]);
     }
@@ -146,7 +147,7 @@ class DocumentoTiposAdminController extends BaseController {
     /* ============================================================
       AJAX — EDITAR
     ============================================================ */
-    public function editarAjax($id) {
+    public function editarAjax($tipo_id) {
         $this->authorize('admin.documento-tipos.editar');
         header('Content-Type: application/json');
 
@@ -157,12 +158,12 @@ class DocumentoTiposAdminController extends BaseController {
             return;
         }
 
-        if (DocumentoTipo::existeNomeParaOutro($nome, $id)) {
+        if (DocumentoTipo::existeNomeParaOutro($nome, $tipo_id)) {
             echo json_encode(['erro' => 'Já existe outro tipo com esse nome.']);
             return;
         }
 
-        DocumentoTipo::update($id, ['nome' => $nome]);
+        DocumentoTipo::update($tipo_id, ['nome' => $nome]);
 
         echo json_encode(['sucesso' => true]);
     }
@@ -170,16 +171,16 @@ class DocumentoTiposAdminController extends BaseController {
     /* ============================================================
       AJAX — APAGAR
     ============================================================ */
-    public function apagarAjax($id) {
+    public function apagarAjax($tipo_id) {
         $this->authorize('admin.documento-tipos.apagar');
         header('Content-Type: application/json');
 
-        if (!DocumentoTipo::find($id)) {
+        if (!DocumentoTipo::find($tipo_id)) {
             echo json_encode(['erro' => 'Tipo não encontrado.']);
             return;
         }
 
-        DocumentoTipo::delete($id);
+        DocumentoTipo::delete($tipo_id);
 
         echo json_encode(['sucesso' => true]);
     }

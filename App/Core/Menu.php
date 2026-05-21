@@ -15,142 +15,156 @@ class Menu
         // CONTADORES
         // ============================
         $pendentes = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'pendente'")->fetchColumn();
-        $analise = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'analise'")->fetchColumn();
-        $tram = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'em_tramitacao'")->fetchColumn();
-        $concl = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'concluido'")->fetchColumn();
-        $arquiv = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'arquivado'")->fetchColumn();
+        $analise   = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'analise'")->fetchColumn();
+        $tram      = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'em_tramitacao'")->fetchColumn();
+        $concl     = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'concluido'")->fetchColumn();
+        $arquiv    = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'arquivado'")->fetchColumn();
 
         return [
+
             // ============================
             // GERAL
             // ============================
             ['header' => 'GERAL'],
+
             [
-                'titulo' => 'Dashboard',
-                'icone' => 'bi-speedometer2',
-                'url' => '/admin/dashboard',
-                'permissao' => 'admin.dashboard.ver'
+                'titulo'     => 'Dashboard',
+                'icone'      => 'bi-speedometer2',
+                'url'        => '/admin/dashboard',
+                'permissao'  => 'admin.dashboard.ver',
+                'principal'  => true
             ],
+
             // ============================
             // UTILIZADORES
             // ============================
             ['header' => 'UTILIZADORES'],
+
             [
-                'titulo' => 'Utilizadores',
-                'icone' => 'bi-people',
-                'url' => '/admin/utilizadores',
-                'permissao' => 'admin.utilizadores.ver'
+                'titulo'     => 'Utilizadores',
+                'icone'      => 'bi-people',
+                'url'        => '/admin/utilizadores',
+                'permissao'  => 'admin.utilizadores.ver',
+                'principal'  => true
             ],
             [
-                'titulo' => 'Pendentes',
-                'icone' => 'bi-hourglass-split',
-                'url' => '/admin/utilizadores/pendentes',
-                'permissao' => 'admin.utilizadores.aprovar',
-                'badge' => $_SESSION['pendentesCount'] ?? 0
+                'titulo'     => 'Pendentes',
+                'icone'      => 'bi-hourglass-split',
+                'url'        => '/admin/utilizadores/pendentes',
+                'permissao'  => 'admin.utilizadores.aprovar',
+                'badge'      => $_SESSION['pendentesCount'] ?? 0
             ],
             [
-                'titulo' => 'Ativos',
-                'icone' => 'bi-person-check',
-                'url' => '/admin/utilizadores/ativos',
-                'permissao' => 'admin.utilizadores.ver'
+                'titulo'     => 'Ativos',
+                'icone'      => 'bi-person-check',
+                'url'        => '/admin/utilizadores/ativos',
+                'permissao'  => 'admin.utilizadores.ver'
             ],
             [
-                'titulo' => 'Bloqueados',
-                'icone' => 'bi-person-x',
-                'url' => '/admin/utilizadores/bloqueados',
-                'permissao' => 'admin.utilizadores.bloquear'
+                'titulo'     => 'Bloqueados',
+                'icone'      => 'bi-person-x',
+                'url'        => '/admin/utilizadores/bloqueados',
+                'permissao'  => 'admin.utilizadores.bloquear'
             ],
             [
-                'titulo' => 'Criar Utilizador',
-                'icone' => 'bi-person-plus',
-                'url' => '/admin/utilizadores/criar',
-                'permissao' => 'admin.utilizadores.criar'
+                'titulo'     => 'Criar Utilizador',
+                'icone'      => 'bi-person-plus',
+                'url'        => '/admin/utilizadores/criar',
+                'permissao'  => 'admin.utilizadores.criar'
             ],
+
             // ============================
-// DOCUMENTOS
-// ============================
+            // DOCUMENTOS
+            // ============================
             ['header' => 'DOCUMENTOS'],
+
             [
-                'titulo' => 'Documentos',
-                'icone' => 'bi-folder',
-                'url' => '/admin/documentos',
-                'permissao' => 'admin.documentos.ver'
+                'titulo'     => 'Documentos',
+                'icone'      => 'bi-folder',
+                'url'        => '/admin/documentos',
+                'permissao'  => 'admin.documentos.ver',
+                'principal'  => true
             ],
             [
-                'titulo' => 'Carregar Documento',
-                'icone' => 'bi-upload',
-                'url' => '/admin/documentos/criar',
-                'permissao' => 'admin.documentos.criar'
+                'titulo'     => 'Carregar Documento',
+                'icone'      => 'bi-upload',
+                'url'        => '/admin/documentos/criar',
+                'permissao'  => 'admin.documentos.criar'
             ],
             [
-                'titulo' => 'Tipos de Documento',
-                'icone' => 'bi-tags',
-                'url' => '/admin/documento-tipos',
-                'permissao' => 'admin.documento-tipos.ver'
+                'titulo'     => 'Tipos de Documento',
+                'icone'      => 'bi-tags',
+                'url'        => '/admin/documento-tipos',
+                'permissao'  => 'admin.documento-tipos.ver'
             ],
             [
-                'titulo' => 'Arquivados',
-                'icone' => 'bi-archive',
-                'url' => '/admin/documentos/arquivados',
-                'permissao' => 'admin.documentos.arquivados.ver',
-                'badge' => $arquiv
+                'titulo'     => 'Arquivados',
+                'icone'      => 'bi-archive',
+                'url'        => '/admin/documentos/arquivados',
+                'permissao'  => 'admin.documentos.arquivados.ver',
+                'badge'      => $arquiv
             ],
+
             // ============================
             // TRAMITAÇÃO
             // ============================
             ['header' => 'TRAMITAÇÃO'],
+
             [
-                'titulo' => 'Dashboard de Tramitação',
-                'icone' => 'bi-graph-up',
-                'url' => '/admin/tramitacao/dashboard',
-                'permissao' => 'admin.tramitacao.dashboard'
+                'titulo'     => 'Dashboard de Tramitação',
+                'icone'      => 'bi-graph-up',
+                'url'        => '/admin/tramitacao/dashboard',
+                'permissao'  => 'admin.tramitacao.dashboard'
             ],
             [
-                'titulo' => 'Tramitação',
-                'icone' => 'bi-diagram-3',
-                'url' => '/admin/tramitacao',
-                'permissao' => 'admin.tramitacao.ver',
-                'badge' => $tram
+                'titulo'     => 'Tramitação',
+                'icone'      => 'bi-diagram-3',
+                'url'        => '/admin/tramitacao',
+                'permissao'  => 'admin.tramitacao.ver',
+                'badge'      => $tram,
+                'principal'  => true
             ],
             [
-                'titulo' => 'Áreas de Tramitação',
-                'icone' => 'bi-diagram-2',
-                'url' => '/admin/tramitacao/areas',
-                'permissao' => 'admin.tramitacao.areas.ver'
+                'titulo'     => 'Áreas de Tramitação',
+                'icone'      => 'bi-diagram-2',
+                'url'        => '/admin/tramitacao/areas',
+                'permissao'  => 'admin.tramitacao.areas.ver'
             ],
+
             // ============================
             // SISTEMA
             // ============================
             ['header' => 'SISTEMA'],
+
             [
-                'titulo' => 'Perfis',
-                'icone' => 'bi-person-badge',
-                'url' => '/admin/perfis',
-                'permissao' => 'admin.perfis.ver'
+                'titulo'     => 'Perfis',
+                'icone'      => 'bi-person-badge',
+                'url'        => '/admin/perfis',
+                'permissao'  => 'admin.perfis.ver'
             ],
             [
-                'titulo' => 'Permissões',
-                'icone' => 'bi-shield-lock',
-                'url' => '/admin/permissoes',
-                'permissao' => 'admin.permissoes.ver'
+                'titulo'     => 'Permissões',
+                'icone'      => 'bi-shield-lock',
+                'url'        => '/admin/permissoes',
+                'permissao'  => 'admin.permissoes.ver'
             ],
             [
-                'titulo' => 'Auditoria',
-                'icone' => 'bi-search',
-                'url' => '/admin/auditoria',
-                'permissao' => 'admin.auditoria.ver'
+                'titulo'     => 'Auditoria',
+                'icone'      => 'bi-search',
+                'url'        => '/admin/auditoria',
+                'permissao'  => 'admin.auditoria.ver'
             ],
             [
-                'titulo' => 'Log Sistema',
-                'icone' => 'bi-terminal',
-                'url' => '/admin/logs',
-                'permissao' => 'admin.logs.ver'
+                'titulo'     => 'Log Sistema',
+                'icone'      => 'bi-terminal',
+                'url'        => '/admin/logs',
+                'permissao'  => 'admin.logs.ver'
             ],
             [
-                'titulo' => 'Backups',
-                'icone' => 'bi-hdd-stack',
-                'url' => '/admin/backups',
-                'permissao' => 'admin.backups.bd.ver'
+                'titulo'     => 'Backups',
+                'icone'      => 'bi-hdd-stack',
+                'url'        => '/admin/backups',
+                'permissao'  => 'admin.backups.bd.ver'
             ],
         ];
     }

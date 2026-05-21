@@ -3,74 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{% block title %}Admin{% endblock title %}</title>
+    <title>{% block title %}Admin{% endblock %}</title>
 
-    <!-- BOOTSTRAP (carregado primeiro) -->
+    <!-- Bootstrap -->
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
 
-    <!-- OUTROS CSS -->
+    <!-- CSS do sistema -->
     <link rel="stylesheet" href="/assets/css/logs.css">
+    <link rel="stylesheet" href="/assets/css/admin.css?v={{ random() }}">
 
-    {% block head %}{% endblock head %}
-
-    <!-- ADMIN CSS — TEM DE SER O ÚLTIMO -->
-    <link rel="stylesheet"
-          href="/assets/css/admin.css?v={{ random() }}"
-          id="admin-css">
+    {% block head %}{% endblock %}
 </head>
 
 <body>
 
-<div class="admin-wrapper">
+<div class="admin-wrapper d-flex">
 
-    <!-- SIDEBAR -->
+    {# ============================================================
+       SIDEBAR
+       ============================================================ #}
     <aside class="sidebar">
+
         <div class="logo">Painel Admin</div>
 
-        <nav class="menu">
-            <ul class="menu-list">
+        <nav class="sidebar-nav">
+            <ul>
 
                 {% for item in menuAdmin %}
 
+                    {# HEADER #}
                     {% if item.header is defined %}
                         <li class="menu-header">{{ item.header }}</li>
 
                     {% else %}
-                        {% if auth.user.hasPermissao(item.permissao) %}
-                            <li class="menu-item">
-                                <a href="{{ item.url }}" class="menu-link">
-                                    {% if item.icone %}
-                                        <i class="bi {{ item.icone }} me-2"></i>
+
+                        {# PERMISSÕES #}
+                        {% if auth.user.isAdmin() or auth.user.hasPermissao(item.permissao) %}
+
+                            {# ACTIVE #}
+                            {% set active = (app.request.path starts with item.url) ? 'active' : '' %}
+
+                            <li class="menu-item {{ active }}">
+
+                                <a href="{{ item.url }}"
+                                   class="menu-link {% if item.principal is defined and item.principal %}main{% endif %}">
+
+                                    {% if item.icone is defined %}
+                                        <i class="bi {{ item.icone }}"></i>
                                     {% endif %}
-                                    {{ item.titulo }}
+
+                                    <span>{{ item.titulo }}</span>
+
+                                    {% if item.sub is defined %}
+                                        <i class="bi bi-chevron-right submenu-arrow"></i>
+                                    {% endif %}
 
                                     {% if item.badge is defined and item.badge > 0 %}
-                                        <span class="badge bg-danger ms-auto">{{ item.badge }}</span>
+                                        <span class="badge">{{ item.badge }}</span>
                                     {% endif %}
                                 </a>
 
-                                {% if item.sub is defined and item.sub|length > 0 %}
+                                {# SUBMENU #}
+                                {% if item.sub is defined %}
                                     <ul class="submenu-list">
-                                        {% for sub in item.sub %}
-                                            {% if auth.user.hasPermissao(sub.permissao) %}
-                                                <li class="submenu-item">
-                                                    <a href="{{ sub.url }}" class="submenu-link">
-                                                        {% if sub.icone %}
-                                                            <i class="bi {{ sub.icone }} me-2"></i>
-                                                        {% endif %}
-                                                        {{ sub.titulo }}
 
-                                                        {% if sub.badge is defined and sub.badge > 0 %}
-                                                            <span class="badge bg-danger ms-auto">{{ sub.badge }}</span>
-                                                        {% endif %}
+                                        {% for sub in item.sub %}
+                                            {% if auth.user.isAdmin() or auth.user.hasPermissao(sub.permissao) %}
+
+                                                {% set subActive = (app.request.path == sub.url) ? 'active' : '' %}
+
+                                                <li class="submenu-item {{ subActive }}">
+                                                    <a href="{{ sub.url }}" class="submenu-link">
+                                                        {{ sub.titulo }}
                                                     </a>
                                                 </li>
+
                                             {% endif %}
                                         {% endfor %}
+
                                     </ul>
                                 {% endif %}
+
                             </li>
+
                         {% endif %}
                     {% endif %}
 
@@ -78,33 +94,44 @@
 
             </ul>
         </nav>
+
     </aside>
 
-    <!-- MAIN CONTENT -->
-    <main class="content-area">
+    {# ============================================================
+       ÁREA PRINCIPAL
+       ============================================================ #}
+    <main class="content-area flex-grow-1">
 
-        <!-- HEADER -->
-        <header class="topbar">
-            <div class="page-header">
-                <div class="page-title">
-                    {% block page_title %}{% endblock page_title %}
-                </div>
+        {# TOPBAR PREMIUM #}
+        <header class="topbar d-flex align-items-center justify-content-between px-4">
 
-                <nav class="breadcrumb">
-                    {% block breadcrumb %}{% endblock breadcrumb %}
-                </nav>
+            <button class="btn-toggle-sidebar me-3">
+                <i class="bi bi-list"></i>
+            </button>
+
+            <div class="page-title flex-grow-1">
+                {% block page_title %}{% endblock %}
             </div>
 
-            <div class="user-box">
-                <span>{{ auth.user.nome }}</span>
-                <img src="/assets/img/avatar.png" class="avatar">
+            <div class="user-info d-flex align-items-center gap-2 dropdown"
+                 data-bs-toggle="dropdown" style="cursor:pointer;">
+                <span class="user-name">{{ auth.user.nome }}</span>
+                <img src="/assets/img/avatar.png" class="avatar rounded-circle">
             </div>
+
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="/admin/perfil"><i class="bi bi-person"></i> Perfil</a></li>
+                <li><a class="dropdown-item" href="/admin/definicoes"><i class="bi bi-gear"></i> Definições</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="/logout"><i class="bi bi-box-arrow-right"></i> Sair</a></li>
+            </ul>
+
         </header>
 
-        <!-- PAGE CONTENT -->
+        {# CONTEÚDO DA PÁGINA #}
         <section class="page-content">
             {% include "@admin/flash.twig" %}
-            {% block content %}{% endblock content %}
+            {% block content %}{% endblock %}
         </section>
 
     </main>
@@ -114,7 +141,46 @@
 <!-- JS -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+{# ============================================================
+   JS — SIDEBAR TOGGLE (DESKTOP + MOBILE)
+============================================================ #}
+<script>
+    const toggleBtn = document.querySelector('.btn-toggle-sidebar');
+
+    toggleBtn.addEventListener('click', function () {
+        // Mobile
+        if (window.innerWidth <= 992) {
+            document.body.classList.toggle('sidebar-open');
+        }
+        // Desktop
+        else {
+            document.body.classList.toggle('sidebar-collapsed');
+        }
+    });
+</script>
+
+{# ============================================================
+   JS — SUBMENU PREMIUM
+============================================================ #}
+<script>
+    document.querySelectorAll('.menu-item').forEach(function (item) {
+
+        const link = item.querySelector('.menu-link');
+        const submenu = item.querySelector('.submenu-list');
+
+        if (!submenu) return;
+
+        link.addEventListener('click', function (e) {
+            e.preventDefault();
+            item.classList.toggle('open');
+        });
+
+        if (item.classList.contains('active')) {
+            item.classList.add('open');
+        }
+    });
+</script>
 
 {% block scripts %}{% endblock %}
 {% block modals %}{% endblock %}

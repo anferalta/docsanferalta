@@ -151,7 +151,9 @@
                     <select name="estado" class="form-select" required>
                         <option value="">Selecione...</option>
                         {% for e in estados %}
-                            <option value="{{ e.codigo }}">{{ e.nome }}</option>
+                            {% if e.codigo != 'arquivado' %}
+                                <option value="{{ e.codigo }}">{{ e.nome }}</option>
+                            {% endif %}
                         {% endfor %}
                     </select>
                 </div>
