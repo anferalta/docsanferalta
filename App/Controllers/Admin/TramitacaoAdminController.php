@@ -400,7 +400,7 @@ class TramitacaoAdminController extends BaseController
         ]);
 
         Sessao::flash('sucesso', 'Estado alterado com sucesso.');
-        return $this->redirect("/admin/documentos/editar/{$documento->id}#tabTramitacao");
+        return $this->redirect("/admin/tramitacao/{$documento->id}");
     }
 
     /**
@@ -455,46 +455,6 @@ class TramitacaoAdminController extends BaseController
     /**
      * ARQUIVAR DOCUMENTO
      */
-    public function arquivar($id)
-    {
-        $this->authorize('admin.documentos.arquivar');
-
-        $documento = Documento::find($id);
-
-        if (!$documento) {
-            Sessao::flash('erro', 'Documento não encontrado.');
-            return $this->redirect('/admin/documentos');
-        }
-
-        // Evitar arquivar duas vezes
-        if ($documento->estado_atual === 'arquivado') {
-            Sessao::flash('info', 'Este documento já se encontra arquivado.');
-            return $this->redirect("/admin/documentos/editar/{$id}");
-        }
-
-        // Atualizar documento
-        $documento->estado_atual = 'arquivado';
-        $documento->arquivado_em = date('Y-m-d H:i:s');
-        $documento->arquivado_por_id = Auth::user()->id;
-        $documento->area_atual_id = null;
-
-        $documento->save();
-
-        // Registar histórico
-        DocumentoTramitacao::create([
-            'documento_id' => $id,
-            'area_id' => null,
-            'utilizador_id' => Auth::user()->id,
-            'acao' => 'ARQUIVADO',
-            'estado' => 'arquivado',
-            'comentario' => 'Documento arquivado.',
-            'criado_em' => date('Y-m-d H:i:s')
-        ]);
-
-        Sessao::flash('sucesso', 'Documento arquivado com sucesso.');
-        return $this->redirect('/admin/documentos/arquivados');
-    }
-
     public function recuperar($id)
     {
         $this->authorize('admin.documentos.recuperar');
@@ -524,7 +484,7 @@ class TramitacaoAdminController extends BaseController
         Sessao::flash('sucesso', 'Documento recuperado com sucesso.');
 
         // 🔥 AQUI ESTÁ A SAÍDA DO LOOP
-        return $this->redirect("/admin/documentos/editar/{$id}?tab=tramitacao");
+        return $this->redirect("/admin/tramitacao/{$id}");
     }
 
     public function lista()

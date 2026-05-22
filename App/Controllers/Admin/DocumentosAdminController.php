@@ -771,39 +771,48 @@ class DocumentosAdminController extends BaseController
             'criado_em' => date('Y-m-d H:i:s')
         ]);
 
-        return $this->redirect("/admin/documentos/editar/{$id}");
+        return $this->redirect("/admin/tramitacao/editar/{$id}");
     }
 
-    public function arquivar(int $id)
+    public function arquivar($id)
     {
-        $this->autorizar('admin.documentos.arquivar');
+        $this->authorize('admin.documentos.arquivar');
 
         $documento = Documento::find($id);
 
         if (!$documento) {
-            http_response_code(404);
-            exit('Documento não encontrado.');
+            Sessao::flash('erro', 'Documento não encontrado.');
+            return $this->redirect('/admin/documentos');
         }
 
-        // Marcar como arquivado
-        $documento->estado_atual = 'arquivado';
-        $documento->arquivado_em = date('Y-m-d H:i:s');
-        $documento->arquivado_por_id = auth()->id(); // ajusta se usares outro helper
-        $documento->area_atual_id = null;
+        // Evitar arquivar duas vezes
+        if ($documento->estado_atual === 'arquivado') {
+            Sessao::flash('info', 'Este documento já se encontra arquivado.');
+            return $this->redirect("/admin/documentos/editar/{$id}");
+        }
 
-        $documento->save();
+        // Atualizar documento
+        $documento->update([
+            'estado_atual' => 'arquivado',
+            'arquivado_em' => date('Y-m-d H:i:s'),
+            'arquivado_por_id' => Auth::user()->id,
+            'area_atual_id' => null,
+            'estado' => 0
+                ], "id = {$documento->id}");
 
-        // Registar no histórico
+        // Registar histórico
         DocumentoTramitacao::create([
-            'documento_id' => $documento->id,
+            'documento_id' => $id,
             'area_id' => null,
-            'utilizador_id' => auth()->id(),
-            'comentario' => 'Documento arquivado.',
+            'utilizador_id' => Auth::user()->id,
+            'acao' => 'ARQUIVADO',
             'estado' => 'arquivado',
-            'criado_em' => date('Y-m-d H:i:s'),
+            'comentario' => 'Documento arquivado.',
+            'criado_em' => date('Y-m-d H:i:s')
         ]);
 
-        return $this->redirect("/admin/documentos/editar/{$id}?tab=tramitacao");
+        Sessao::flash('sucesso', 'Documento arquivado com sucesso.');
+        return $this->redirect('/admin/documentos/arquivados');
     }
 
     private function paginacao($total, $porPagina, $paginaAtual)

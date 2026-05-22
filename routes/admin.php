@@ -170,6 +170,10 @@ $router->group([
             $router->post('/tramitacao/estado', 'Admin\TramitacaoAdminController@estado')
                     ->name('admin.tramitacao.estado');
 
+            // Arquivar documento
+            $router->post('/documentos/{id}/arquivar', 'Admin\DocumentosAdminController@arquivar')
+                    ->name('admin.documentos.arquivar');
+
             // Ver anexo
             $router->get('/tramitacao/anexo/{historicoId}/{ficheiro}', 'Admin\TramitacaoAdminController@verAnexo')
                     ->name('admin.tramitacao.ver_anexo');
