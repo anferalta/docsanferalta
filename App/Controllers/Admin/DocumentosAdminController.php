@@ -97,17 +97,18 @@ class DocumentosAdminController extends BaseController
         // 2. Query base
         // ============================
         $sql = "
-        SELECT SQL_CALC_FOUND_ROWS
-            d.*,
-            t.nome AS tipo_nome,
-            u.nome AS criador_nome,
-            a.nome AS area_nome
-        FROM documentos d
-        LEFT JOIN documento_tipos t ON t.tipo_id = d.tipo_id
-        LEFT JOIN utilizadores u ON u.id = d.criado_por
-        LEFT JOIN documento_areas a ON a.id = d.area_atual_id
-        WHERE 1=1
-    ";
+SELECT SQL_CALC_FOUND_ROWS
+    d.*,
+    t.nome AS tipo_nome,
+    u.nome AS criador_nome,
+    a.nome AS area_nome
+FROM documentos d
+LEFT JOIN documento_tipos t ON t.tipo_id = d.tipo_id
+LEFT JOIN utilizadores u ON u.id = d.criado_por
+LEFT JOIN documento_areas a ON a.id = d.area_atual_id
+WHERE 1=1
+  AND d.estado_atual != 'arquivado'
+";
 
         // ============================
         // 3. ACL — aplicar filtro de visibilidade
@@ -756,14 +757,23 @@ class DocumentosAdminController extends BaseController
             exit("Documento arquivado não encontrado.");
         }
 
+        // Guardar a área onde estava antes de arquivar
+        $areaAnterior = $documento->area_atual_id;
+
+        // Recuperar o documento
         $documento->estado_atual = 'novo';
-        $documento->area_atual_id = null;
         $documento->arquivado_em = null;
+        $documento->arquivado_por_id = null;
+
+        // 🔥 Mantém a área original
+        $documento->area_atual_id = $areaAnterior;
+
         $documento->save();
 
-        \App\Models\DocumentoTramitacao::create([
+        // Registar tramitação
+        DocumentoTramitacao::create([
             'documento_id' => $id,
-            'area_id' => null,
+            'area_id' => $areaAnterior,
             'utilizador_id' => Auth::id(),
             'acao' => 'RECUPERAR',
             'estado' => 'recuperado',
@@ -771,7 +781,9 @@ class DocumentosAdminController extends BaseController
             'criado_em' => date('Y-m-d H:i:s')
         ]);
 
-        return $this->redirect("/admin/tramitacao/editar/{$id}");
+        Sessao::flash('sucesso', 'Documento recuperado com sucesso.');
+
+        return $this->redirect("/admin/documentos/editar/{$id}");
     }
 
     public function arquivar($id)

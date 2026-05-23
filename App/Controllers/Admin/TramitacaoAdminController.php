@@ -483,8 +483,8 @@ class TramitacaoAdminController extends BaseController
 
         Sessao::flash('sucesso', 'Documento recuperado com sucesso.');
 
-        // 🔥 AQUI ESTÁ A SAÍDA DO LOOP
-        return $this->redirect("/admin/tramitacao/{$id}");
+        // 🔥 ROTA CERTA
+        return $this->redirect("/admin/documentos/editar/{$id}");
     }
 
     public function lista()

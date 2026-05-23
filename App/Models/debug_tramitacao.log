@@ -1,0 +1,150 @@
+Array
+(
+    [documento_id] => 344
+    [area_id] => 
+    [utilizador_id] => 3
+    [acao] => RECUPERAR
+    [estado] => recuperado
+    [comentario] => Documento recuperado do arquivo para produção.
+    [criado_em] => 2026-05-23 19:04:08
+)
+Array
+(
+    [documento_id] => 344
+    [area_id] => 
+    [utilizador_id] => 3
+    [acao] => RECUPERAR
+    [estado] => recuperado
+    [comentario] => Documento recuperado do arquivo para produção.
+    [criado_em] => 2026-05-23 19:05:34
+)
+Array
+(
+    [documento_id] => 344
+    [area_id] => 
+    [utilizador_id] => 3
+    [acao] => RECUPERAR
+    [estado] => recuperado
+    [comentario] => Documento recuperado do arquivo para produção.
+    [criado_em] => 2026-05-23 19:10:58
+)
+Array
+(
+    [documento_id] => 344
+    [area_id] => 
+    [utilizador_id] => 3
+    [acao] => RECUPERAR
+    [estado] => recuperado
+    [comentario] => Documento recuperado do arquivo para produção.
+    [criado_em] => 2026-05-23 19:12:49
+)
+Array
+(
+    [documento_id] => 344
+    [area_id] => 
+    [utilizador_id] => 3
+    [acao] => RECUPERAR
+    [estado] => recuperado
+    [comentario] => Documento recuperado do arquivo para produção.
+    [criado_em] => 2026-05-23 19:25:58
+)
+Array
+(
+    [documento_id] => 344
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 1
+    [comentario] => reanalisar o processo
+    [estado] => analise
+    [criado_em] => 2026-05-23 19:27:17
+)
+Array
+(
+    [documento_id] => 356
+    [area_id] => 3
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => pagamento efectuado.
+    [criado_em] => 2026-05-23 19:32:28
+)
+Array
+(
+    [documento_id] => 342
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 
+    [comentario] => 
+    [estado] => devolvido
+    [criado_em] => 2026-05-23 19:45:29
+)
+Array
+(
+    [documento_id] => 342
+    [area_id] => 
+    [utilizador_id] => 3
+    [acao] => ARQUIVADO
+    [estado] => arquivado
+    [comentario] => Documento arquivado.
+    [criado_em] => 2026-05-23 19:46:57
+)
+Array
+(
+    [documento_id] => 349
+    [area_id] => 8
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => convocar utente
+    [criado_em] => 2026-05-23 19:48:17
+)
+Array
+(
+    [documento_id] => 348
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 2
+    [comentario] => Informar utente
+    [estado] => concluido
+    [criado_em] => 2026-05-23 20:01:00
+)
+Array
+(
+    [documento_id] => 344
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 1
+    [comentario] => nao reune requisitos
+    [estado] => devolvido
+    [criado_em] => 2026-05-23 20:04:02
+)
+Array
+(
+    [documento_id] => 344
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 1
+    [comentario] => informar utente
+    [estado] => devolvido
+    [criado_em] => 2026-05-23 20:05:08
+)
+Array
+(
+    [documento_id] => 344
+    [area_id] => 
+    [utilizador_id] => 3
+    [acao] => ARQUIVADO
+    [estado] => arquivado
+    [comentario] => Documento arquivado.
+    [criado_em] => 2026-05-23 20:05:49
+)
+Array
+(
+    [documento_id] => 345
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 1
+    [comentario] => aguarda parecer da direcção
+    [estado] => analise
+    [criado_em] => 2026-05-23 20:08:52
+)
