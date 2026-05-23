@@ -30,14 +30,20 @@ class DocumentoAreasAdminController extends BaseController
     {
         $this->authorize('admin.tramitacao.areas.criar');
 
-        DocumentoArea::criar(
+        $ok = DocumentoArea::criar(
                 $_POST['nome'],
                 $_POST['codigo'],
                 $_POST['descricao'],
                 isset($_POST['ativo']) ? 1 : 0
         );
 
-        return $this->redirect('/admin/tramitacao/areas');
+        if ($ok) {
+            \App\Core\Sessao::flash('sucesso', 'Área criada com sucesso.');
+        } else {
+            \App\Core\Sessao::flash('erro', 'Falha ao criar a área.');
+        }
+
+        return $this->redirect('/admin/documento-areas');
     }
 
     public function editar($id)
@@ -45,6 +51,11 @@ class DocumentoAreasAdminController extends BaseController
         $this->authorize('admin.tramitacao.areas.editar');
 
         $area = DocumentoArea::find($id);
+
+        if (!$area) {
+            \App\Core\Sessao::flash('erro', 'A área não existe.');
+            return $this->redirect('/admin/documento-areas');
+        }
 
         return $this->render('@admin/documento-areas/editar.twig', [
                     'area' => $area
@@ -55,7 +66,7 @@ class DocumentoAreasAdminController extends BaseController
     {
         $this->authorize('admin.tramitacao.areas.editar');
 
-        DocumentoArea::atualizar(
+        $ok = DocumentoArea::atualizar(
                 $id,
                 $_POST['nome'],
                 $_POST['codigo'],
@@ -63,30 +74,29 @@ class DocumentoAreasAdminController extends BaseController
                 isset($_POST['ativo']) ? 1 : 0
         );
 
+        if ($ok) {
+            \App\Core\Sessao::flash('sucesso', 'Área atualizada com sucesso.');
+        } else {
+            \App\Core\Sessao::flash('erro', 'Falha ao atualizar a área.');
+        }
+
         return $this->redirect('/admin/documento-areas');
     }
 
     public function apagar($id)
     {
         $this->authorize('admin.tramitacao.areas.apagar');
-        file_put_contents(__DIR__ . '/apagar_log.txt', "1 - Entrou no apagar ($id)\n", FILE_APPEND);
 
         $area = DocumentoArea::find($id);
-        file_put_contents(__DIR__ . '/apagar_log.txt', "3 - Encontrou area? " . ($area ? 'SIM' : 'NAO') . "\n", FILE_APPEND);
 
         if (!$area) {
+            \App\Core\Sessao::flash('erro', 'A área não existe.');
             return $this->redirect('/admin/documento-areas');
         }
 
-        DocumentoArea::atualizar(
-                $id,
-                $area->nome,
-                $area->codigo,
-                $area->descricao,
-                0
-        );
-file_put_contents(__DIR__ . '/apagar_log.txt', "4 - Atualizou area\n", FILE_APPEND);
-file_put_contents(__DIR__ . '/apagar_log.txt', "5 - Vai redirecionar\n", FILE_APPEND);
+        DocumentoArea::apagar($id);
+
+        \App\Core\Sessao::flash('sucesso', 'Área apagada com sucesso.');
 
         return $this->redirect('/admin/documento-areas');
     }

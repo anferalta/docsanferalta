@@ -1,0 +1,8 @@
+1 - Entrou no apagar (6)
+3 - Encontrou area? SIM
+4 - Atualizou area
+5 - Vai redirecionar
+1 - Entrou no apagar (6)
+3 - Encontrou area? SIM
+4 - Atualizou area
+5 - Vai redirecionar
