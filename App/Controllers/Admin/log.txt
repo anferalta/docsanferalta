@@ -1,0 +1,11 @@
+APAGAR FOI CHAMADO: 6
+1 - Entrou no apagar (6)
+2 - Passou authorize
+3 - Encontrou area? SIM
+5 - Atualizou area
+6 - Vai redirecionar
+1 - Entrou no apagar (6)
+2 - Passou authorize
+3 - Encontrou area? SIM
+5 - Atualizou area
+6 - Vai redirecionar

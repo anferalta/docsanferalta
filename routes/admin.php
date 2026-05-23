@@ -151,8 +151,23 @@ $router->group([
                     ->name('admin.tramitacao.lista');
 
             // Gestão de áreas
-            $router->get('/tramitacao/areas', 'Admin\DocumentoAreasAdminController@index')
-                    ->name('admin.tramitacao.areas');
+            $router->get('/documento-areas', 'Admin\DocumentoAreasAdminController@index')
+       ->name('admin.documento_areas.index');
+
+            $router->get('/documento-areas/criar', 'Admin\DocumentoAreasAdminController@criar')
+                    ->name('admin.documento_areas.criar');
+
+            $router->post('/documento-areas', 'Admin\DocumentoAreasAdminController@store')
+                    ->name('admin.documento_areas.store');
+
+            $router->get('/documento-areas/editar/{id}', 'Admin\DocumentoAreasAdminController@editar')
+                    ->name('admin.documento_areas.editar');
+
+            $router->post('/documento-areas/{id}', 'Admin\DocumentoAreasAdminController@update')
+                    ->name('admin.documento_areas.update');
+
+            $router->post('/documento-areas/apagar/{id}', 'Admin\DocumentoAreasAdminController@apagar')
+       ->name('admin.documento_areas.apagar');
 
             // Ver tramitação de um documento (DINÂMICA — SEMPRE NO FIM)
             $router->get('/tramitacao/{documento_id}', 'Admin\TramitacaoAdminController@index')
