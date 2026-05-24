@@ -416,3 +416,27 @@
 .badge-arquivado { background-color: #343a40 !important; }
 .badge-novo { background-color: #6f42c1 !important; }
 .badge-devolvido { background-color: #dc3545 !important; }
+
+.dropdown-menu {
+    z-index: 9999 !important;
+}
+.topbar {
+    z-index: 2000 !important;
+}
+.menu-link {
+    position: relative;
+    display: block;
+}
+
+.menu-link .badge {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #ffc107;
+    color: #000;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+}

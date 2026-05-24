@@ -1,0 +1,41 @@
+{% extends "layout_user.twig" %}
+
+{% block title %}Os Meus Documentos{% endblock %}
+
+{% block content %}
+
+<h3 class="mb-4">Os Meus Documentos</h3>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Título</th>
+            <th>Tipo</th>
+            <th>Estado</th>
+            <th>Ficheiro</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for d in documentos %}
+        <tr>
+            <td>{{ d.titulo }}</td>
+            <td>{{ d.tipo.nome }}</td>
+            <td>{{ d.estado|capitalize }}</td>
+            <td>
+                <a href="/uploads/documentos/{{ d.ficheiro }}" target="_blank">
+                    Abrir
+                </a>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="4" class="text-center text-muted">
+                Nenhum documento encontrado.
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}
+

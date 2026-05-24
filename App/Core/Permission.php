@@ -4,11 +4,13 @@ namespace App\Core;
 
 use App\Core\Conexao;
 
-class Permission {
+class Permission
+{
 
     private static array $cache = [];
 
-    public static function getPermissoesUtilizador(int $userId): array {
+    public static function getPermissoesUtilizador(int $userId): array
+    {
 
         if (isset(self::$cache[$userId])) {
             return self::$cache[$userId];
@@ -46,7 +48,8 @@ class Permission {
         return $todas;
     }
 
-    public static function tem(string $codigo): bool {
+    public static function tem(string $codigo): bool
+    {
 
         $user = Auth::user();
 
@@ -55,16 +58,15 @@ class Permission {
         }
 
         // ADMIN TEM ACESSO TOTAL
-        if ($user->isAdmin() || (int)$user->is_admin === 1) {
+        if ($user->isAdmin()) {
             return true;
         }
 
-        $permissoes = self::getPermissoesUtilizador($user->id);
-
-        return in_array($codigo, $permissoes);
+        return in_array($codigo, $user->permissoes());
     }
 
-    public static function temAlguma(array $lista): bool {
+    public static function temAlguma(array $lista): bool
+    {
         foreach ($lista as $perm) {
             if (self::tem($perm)) {
                 return true;
@@ -73,7 +75,8 @@ class Permission {
         return false;
     }
 
-    public static function temTodas(array $lista): bool {
+    public static function temTodas(array $lista): bool
+    {
         foreach ($lista as $perm) {
             if (!self::tem($perm)) {
                 return false;

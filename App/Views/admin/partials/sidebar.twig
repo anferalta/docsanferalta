@@ -7,16 +7,13 @@
 
             {% for item in menuAdmin %}
 
-                {# HEADER #}
                 {% if item.header is defined %}
                     <li class="menu-header">{{ item.header }}</li>
 
                 {% else %}
 
-                    {# PERMISSÕES #}
                     {% if auth.user.isAdmin() or auth.user.hasPermissao(item.permissao) %}
 
-                        {# ACTIVE #}
                         {% set active = (app.request.path starts with item.url) ? 'active' : '' %}
 
                         <li class="menu-item {{ active }}">
@@ -27,19 +24,17 @@
                                     <i class="bi {{ item.icone }}"></i>
                                 {% endif %}
 
-                                <span>{{ item.titulo }}</span>
-
-                                {% if item.sub is defined %}
-                                    <i class="bi bi-chevron-right submenu-arrow"></i>
-                                {% endif %}
-
+                                <span class="menu-title">{{ item.titulo }}</span>
 
                                 {% if item.badge is defined and item.badge > 0 %}
                                     <span class="badge">{{ item.badge }}</span>
                                 {% endif %}
+
+                                {% if item.sub is defined %}
+                                    <i class="bi bi-chevron-right submenu-arrow"></i>
+                                {% endif %}
                             </a>
 
-                            {# SUBMENU #}
                             {% if item.sub is defined %}
                                 <ul class="submenu-list">
 

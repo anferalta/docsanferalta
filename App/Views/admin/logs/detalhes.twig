@@ -1,26 +1,124 @@
 {% extends "@admin/layout.twig" %}
 
 {% block header %} Gestão de Logs {% endblock %}
+{% block title %} Detalhes do Log {% endblock %}
 
 {% block content %}
-<h3>Detalhes do Log</h3>
+<h3 class="mb-4">Detalhes do Log</h3>
 
-<div class="card">
+<div class="card shadow-sm">
     <div class="card-body">
 
-        <p><strong>Tipo:</strong> {{ log.tipo }}</p>
-        <p><strong>Mensagem:</strong> {{ log.mensagem }}</p>
-        <p><strong>Ficheiro:</strong> {{ log.ficheiro }}</p>
-        <p><strong>Linha:</strong> {{ log.linha }}</p>
-        <p><strong>IP:</strong> {{ log.ip }}</p>
-        <p><strong>Data:</strong> {{ log.criado_em }}</p>
+        <div class="row mb-3">
+            <div class="col-md-3 text-muted">Tipo</div>
+            <div class="col-md-9">
+                <span class="badge bg-{{
+                    log.tipo in ['erro','fatal'] ? 'danger' :
+                    log.tipo == 'excecao' ? 'warning' :
+                    log.tipo == 'aviso' ? 'info' :
+                    log.tipo == 'debug' ? 'secondary' : 'primary'
+                }}">
+                    {{ log.tipo }}
+                </span>
+            </div>
+        </div>
 
-        {% if log.detalhes %}
-        <p><strong>Detalhes:</strong></p>
-        <pre>{{ log.detalhes }}</pre>
+        <div class="row mb-3">
+            <div class="col-md-3 text-muted">Mensagem</div>
+            <div class="col-md-9">
+                <strong>{{ log.mensagem }}</strong>
+            </div>
+        </div>
+
+        {% if log.ficheiro %}
+        <div class="row mb-3">
+            <div class="col-md-3 text-muted">Ficheiro</div>
+            <div class="col-md-9">
+                <code>{{ log.ficheiro }}</code>
+            </div>
+        </div>
         {% endif %}
 
-        <a href="/admin/logs" class="btn btn-secondary mt-3">Voltar</a>
+        {% if log.linha %}
+        <div class="row mb-3">
+            <div class="col-md-3 text-muted">Linha</div>
+            <div class="col-md-9">
+                <span class="badge bg-dark">{{ log.linha }}</span>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="row mb-3">
+            <div class="col-md-3 text-muted">IP</div>
+            <div class="col-md-9">
+                <span class="badge bg-light text-dark">{{ log.ip }}</span>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-3 text-muted">Data</div>
+            <div class="col-md-9">
+                {{ log.criado_em|date("d M Y H:i:s") }}
+            </div>
+        </div>
+
+        {% if log.url %}
+        <div class="row mb-3">
+            <div class="col-md-3 text-muted">URL</div>
+            <div class="col-md-9">
+                <code>{{ log.url }}</code>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if log.metodo %}
+        <div class="row mb-3">
+            <div class="col-md-3 text-muted">Método HTTP</div>
+            <div class="col-md-9">
+                <span class="badge bg-secondary">{{ log.metodo }}</span>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if log.utilizador_id %}
+        <div class="row mb-3">
+            <div class="col-md-3 text-muted">Utilizador</div>
+            <div class="col-md-9">
+                ID {{ log.utilizador_id }}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if log.user_agent %}
+        <div class="row mb-3">
+            <div class="col-md-3 text-muted">User Agent</div>
+            <div class="col-md-9">
+                <small class="text-muted">{{ log.user_agent }}</small>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if log.detalhes %}
+        <div class="row mb-3">
+            <div class="col-md-3 text-muted">Detalhes</div>
+            <div class="col-md-9">
+                <pre class="p-3 bg-light border rounded" style="max-height: 300px; overflow-y: auto;">
+{{ log.detalhes }}
+                </pre>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="mt-4 d-flex justify-content-between">
+            <a href="/admin/logs?{{ app.request.queryString }}" class="btn btn-outline-secondary">
+                Voltar aos resultados
+            </a>
+
+            <a href="/admin/logs/exportar?id={{ log.id }}" class="btn btn-success">
+                Exportar este log
+            </a>
+        </div>
+
     </div>
 </div>
 {% endblock %}

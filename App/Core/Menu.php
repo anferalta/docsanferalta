@@ -6,21 +6,31 @@ use App\Core\Conexao;
 
 class Menu
 {
-
     public function getMenu(): array
     {
         $db = Conexao::getInstancia();
 
         // ============================
-        // CONTADORES
+        // CONTADORES DE UTILIZADORES
         // ============================
-        $pendentes = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'pendente'")->fetchColumn();
-        $analise = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'analise'")->fetchColumn();
-        $tram = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'em_tramitacao'")->fetchColumn();
-        $concl = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'concluido'")->fetchColumn();
-        $arquiv = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'arquivado'")->fetchColumn();
+        $totalUsers = $db->query("SELECT COUNT(*) FROM utilizadores")->fetchColumn();
+        $usersAtivos = $db->query("SELECT COUNT(*) FROM utilizadores WHERE ativo = 1")->fetchColumn();
+        $usersPendentes = $db->query("SELECT COUNT(*) FROM utilizadores WHERE ativo = 0 AND aprovado_em IS NULL")->fetchColumn();
+        $usersBloqueados = $db->query("SELECT COUNT(*) FROM utilizadores WHERE ativo = 0 AND aprovado_em IS NOT NULL")->fetchColumn();
+
+        // ============================
+        // CONTADORES DE DOCUMENTOS
+        // ============================
+        $docsTotal = $db->query("SELECT COUNT(*) FROM documentos")->fetchColumn();
+        $docsPendentes = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'pendente'")->fetchColumn();
+        $docsAnalise = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'analise'")->fetchColumn();
+        $docsTram = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'em_tramitacao'")->fetchColumn();
+        $docsConcl = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'concluido'")->fetchColumn();
+        $docsArquiv = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'arquivado'")->fetchColumn();
+        $docsDevolvidos = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'devolvido'")->fetchColumn();
 
         return [
+
             // ============================
             // GERAL
             // ============================
@@ -32,6 +42,7 @@ class Menu
                 'permissao' => 'admin.dashboard.ver',
                 'principal' => true
             ],
+
             // ============================
             // UTILIZADORES
             // ============================
@@ -41,6 +52,7 @@ class Menu
                 'icone' => 'bi-people',
                 'url' => '/admin/utilizadores',
                 'permissao' => 'admin.utilizadores.ver',
+                'badge' => $totalUsers,
                 'principal' => true
             ],
             [
@@ -48,19 +60,21 @@ class Menu
                 'icone' => 'bi-hourglass-split',
                 'url' => '/admin/utilizadores/pendentes',
                 'permissao' => 'admin.utilizadores.aprovar',
-                'badge' => $_SESSION['pendentesCount'] ?? 0
+                'badge' => $usersPendentes
             ],
             [
                 'titulo' => 'Ativos',
                 'icone' => 'bi-person-check',
                 'url' => '/admin/utilizadores/ativos',
-                'permissao' => 'admin.utilizadores.ver'
+                'permissao' => 'admin.utilizadores.ver',
+                'badge' => $usersAtivos
             ],
             [
                 'titulo' => 'Bloqueados',
                 'icone' => 'bi-person-x',
                 'url' => '/admin/utilizadores/bloqueados',
-                'permissao' => 'admin.utilizadores.bloquear'
+                'permissao' => 'admin.utilizadores.bloquear',
+                'badge' => $usersBloqueados
             ],
             [
                 'titulo' => 'Criar Utilizador',
@@ -68,6 +82,7 @@ class Menu
                 'url' => '/admin/utilizadores/criar',
                 'permissao' => 'admin.utilizadores.criar'
             ],
+
             // ============================
             // DOCUMENTOS
             // ============================
@@ -77,27 +92,45 @@ class Menu
                 'icone' => 'bi-folder',
                 'url' => '/admin/documentos',
                 'permissao' => 'admin.documentos.ver',
+                'badge' => $docsTotal,
                 'principal' => true
             ],
             [
-                'titulo' => 'Carregar Documento',
-                'icone' => 'bi-upload',
-                'url' => '/admin/documentos/criar',
-                'permissao' => 'admin.documentos.criar'
+                'titulo' => 'Pendentes',
+                'icone' => 'bi-hourglass',
+                'url' => '/admin/documentos/pendentes',
+                'permissao' => 'admin.documentos.ver',
+                'badge' => $docsPendentes
             ],
             [
-                'titulo' => 'Tipos de Documento',
-                'icone' => 'bi-tags',
-                'url' => '/admin/documento-tipos',
-                'permissao' => 'admin.documento-tipos.ver'
+                'titulo' => 'Em Análise',
+                'icone' => 'bi-search',
+                'url' => '/admin/documentos/analise',
+                'permissao' => 'admin.documentos.ver',
+                'badge' => $docsAnalise
+            ],
+            [
+                'titulo' => 'Concluídos',
+                'icone' => 'bi-check2-circle',
+                'url' => '/admin/documentos/concluidos',
+                'permissao' => 'admin.documentos.ver',
+                'badge' => $docsConcl
             ],
             [
                 'titulo' => 'Arquivados',
                 'icone' => 'bi-archive',
                 'url' => '/admin/documentos/arquivados',
                 'permissao' => 'admin.documentos.arquivados.ver',
-                'badge' => $arquiv
+                'badge' => $docsArquiv
             ],
+            [
+                'titulo' => 'Devolvidos',
+                'icone' => 'bi-arrow-return-left',
+                'url' => '/admin/documentos/devolvidos',
+                'permissao' => 'admin.documentos.ver',
+                'badge' => $docsDevolvidos
+            ],
+
             // ============================
             // TRAMITAÇÃO
             // ============================
@@ -113,7 +146,7 @@ class Menu
                 'icone' => 'bi-diagram-3',
                 'url' => '/admin/tramitacao',
                 'permissao' => 'admin.tramitacao.ver',
-                'badge' => $tram,
+                'badge' => $docsTram,
                 'principal' => true
             ],
             [
@@ -122,6 +155,7 @@ class Menu
                 'url' => '/admin/documento-areas',
                 'permissao' => 'admin.tramitacao.areas.ver'
             ],
+
             // ============================
             // SISTEMA
             // ============================
@@ -159,9 +193,6 @@ class Menu
         ];
     }
 
-    /**
-     * Filtrar menu por permissões
-     */
     public function filtrarMenu(array $menu): array
     {
         $uid = $_SESSION['user_id'] ?? null;
@@ -173,19 +204,16 @@ class Menu
 
         foreach ($menu as $item) {
 
-            // Headers passam sempre
             if (isset($item['header'])) {
                 $resultado[] = $item;
                 continue;
             }
 
-            // Admin vê tudo
             if ($user && $user->isAdmin()) {
                 $resultado[] = $item;
                 continue;
             }
 
-            // Sem permissão → não mostra
             if (!isset($item['permissao']))
                 continue;
 

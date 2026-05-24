@@ -11,13 +11,16 @@ use App\Core\Validator;
 use App\Models\Auditoria;
 use App\Models\Utilizador;
 
-class AuthController extends BaseController {
+class AuthController extends BaseController
+{
 
-    public function login() {
+    public function login()
+    {
         return $this->render('@site/login/index.twig');
     }
 
-    public function loginSubmit() {
+    public function loginSubmit()
+    {
         $email = $_POST['email'] ?? '';
         $password = $_POST['password'] ?? '';
 
@@ -43,23 +46,17 @@ class AuthController extends BaseController {
         // Login OK
         Auth::login($user);
 
-        // 🔥 REDIRECIONAMENTO POR PERFIL (melhores práticas)
-        switch ($user->perfil_id) {
-
-            case 1: // Admin
-            case 3: // Gestor
-            case 9: // Supervisor
-                Helpers::redirect('/admin/dashboard');
-                break;
-
-            case 4: // Utilizador
-            default:
-                Helpers::redirect('/admin/documentos');
-                break;
+        // 🔥 REDIRECIONAMENTO POR PERFIL (boas práticas reais)
+        if ($user->isAdmin()) {
+            return Helpers::redirect('/admin/dashboard');
         }
+
+        // Utilizador normal → dashboard próprio
+        return Helpers::redirect('/dashboard');
     }
 
-    public function logout() {
+    public function logout()
+    {
         $user = Auth::user();
 
         if ($user) {
@@ -70,11 +67,13 @@ class AuthController extends BaseController {
         return $this->redirect('/login');
     }
 
-    public function registar() {
+    public function registar()
+    {
         return $this->render('@site/login/registar.twig');
     }
 
-    public function registarSubmit() {
+    public function registarSubmit()
+    {
         $nome = trim($_POST['nome'] ?? '');
         $email = trim($_POST['email'] ?? '');
         $password = trim($_POST['password'] ?? '');
@@ -131,11 +130,13 @@ class AuthController extends BaseController {
         return $this->redirect('/login');
     }
 
-    public function recuperar() {
+    public function recuperar()
+    {
         return $this->render('@site/login/recuperar.twig');
     }
 
-    public function recuperarSubmit() {
+    public function recuperarSubmit()
+    {
         $email = trim($_POST['email'] ?? '');
 
         $v = new Validator();

@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const PAGE_SIZE = 5;
     let currentPage = 1;
 
+    // Buffer real dos ficheiros
     let fileBuffer = new DataTransfer();
 
     const bytesToMB = b => b / (1024 * 1024);
@@ -115,9 +116,15 @@ document.addEventListener("DOMContentLoaded", () => {
             fileBuffer.items.add(f);
         }
 
-        setTimeout(updateFileInput, 0);
+        // Garantir atualização do input
+        await new Promise(resolve => setTimeout(resolve, 20));
+        updateFileInput();
         renderFileList();
     }
+
+    // ============================
+    // EVENTOS DO DROPZONE
+    // ============================
 
     dropZone.addEventListener("click", () => fileInput.click());
 
@@ -136,19 +143,35 @@ document.addEventListener("DOMContentLoaded", () => {
         addFiles(e.dataTransfer.files);
     });
 
-    fileInput.addEventListener("change", () => {
-        addFiles(fileInput.files);
+    // ============================
+    // INPUT DE FICHEIROS
+    // ============================
+
+    fileInput.addEventListener("change", async () => {
+        await addFiles(fileInput.files);
 
         // FIX CRÍTICO DO PRIMEIRO CLICK
-        setTimeout(updateFileInput, 0);
+        await new Promise(resolve => setTimeout(resolve, 20));
+        updateFileInput();
     });
 
-    form.addEventListener("submit", e => {
+    // ============================
+    // SUBMISSÃO DO FORMULÁRIO
+    // ============================
+
+    form.addEventListener("submit", async e => {
+        e.preventDefault(); // impedir submissão imediata
+
+        // Garantir que o input atualiza ANTES de enviar
+        await new Promise(resolve => setTimeout(resolve, 50));
         updateFileInput();
 
         if (fileBuffer.files.length === 0) {
             alert("Selecione pelo menos um ficheiro.");
-            e.preventDefault();
+            return;
         }
+
+        // Agora sim, submeter com ficheiros corretos
+        form.submit();
     });
 });

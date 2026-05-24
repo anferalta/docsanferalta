@@ -5,7 +5,8 @@ namespace App\Models;
 use App\Core\Model;
 use App\Core\Conexao;
 
-class Utilizador extends Model {
+class Utilizador extends Model
+{
 
     protected string $table = 'utilizadores';
     protected string $primaryKey = 'id';
@@ -24,7 +25,6 @@ class Utilizador extends Model {
     public ?int $aprovado_por = null;
     public ?string $aprovado_em = null;
     public ?string $criado_em = null;
-    public ?int $is_admin = null;
 
     /* ============================================================
      *  CAMPOS PERMITIDOS
@@ -39,13 +39,14 @@ class Utilizador extends Model {
         'ativo',
         'aprovado_por',
         'aprovado_em',
-        'is_admin'
     ];
 
     /* ============================================================
      *  CRIAÇÃO
      * ============================================================ */
-    public static function create(array $dados): int {
+
+    public static function create(array $dados): int
+    {
         if (!empty($dados['password'])) {
             $dados['password'] = password_hash($dados['password'], PASSWORD_DEFAULT);
         }
@@ -56,7 +57,9 @@ class Utilizador extends Model {
     /* ============================================================
      *  FINDERS
      * ============================================================ */
-    public static function findByEmail(string $email): ?Utilizador {
+
+    public static function findByEmail(string $email): ?Utilizador
+    {
         $db = Conexao::getInstancia();
 
         $stmt = $db->prepare("SELECT * FROM utilizadores WHERE email = :email LIMIT 1");
@@ -82,7 +85,9 @@ class Utilizador extends Model {
     /* ============================================================
      *  UPDATE
      * ============================================================ */
-    public function updateUser(int $id, array $dados): bool {
+
+    public function updateUser(int $id, array $dados): bool
+    {
         $dados = array_intersect_key($dados, array_flip($this->permitidos));
 
         if (!empty($dados['password'])) {
@@ -97,14 +102,18 @@ class Utilizador extends Model {
     /* ============================================================
      *  DELETE
      * ============================================================ */
-    public function deleteUser(int $id): bool {
+
+    public function deleteUser(int $id): bool
+    {
         return $this->delete($id);
     }
 
     /* ============================================================
      *  PERFIL
      * ============================================================ */
-    public function perfil(): ?Perfil {
+
+    public function perfil(): ?Perfil
+    {
         if (!$this->perfil_id) {
             return null;
         }
@@ -121,7 +130,9 @@ class Utilizador extends Model {
     /* ============================================================
      *  PERMISSÕES
      * ============================================================ */
-    public function permissoes(): array {
+
+    public function permissoes(): array
+    {
         if (!$this->perfil_id) {
             return [];
         }
@@ -137,31 +148,39 @@ class Utilizador extends Model {
         return array_column($stmt->fetchAll(\PDO::FETCH_ASSOC), 'codigo');
     }
 
-    public function hasPermissao(string $codigo): bool {
-        return in_array($codigo, $this->permissoes());
-    }
-
     /* ============================================================
      *  ADMIN (CORRIGIDO)
      * ============================================================ */
-    public function isAdmin(): bool {
-        // O TEU SISTEMA USA perfil_id = 1 COMO ADMINISTRADOR
-        return (int) $this->perfil_id === 1;
+
+    public function isAdmin()
+    {
+        return $this->perfil_id == 1;
+    }
+
+    public function hasPermissao($permissao)
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return in_array($permissao, $this->permissoes());
     }
 
     /* ============================================================
      *  ESTADO
      * ============================================================ */
-    public function estadoBadge(): string {
-        return $this->ativo == 1
-            ? '<span class="badge bg-success">Ativo</span>'
-            : '<span class="badge bg-secondary">Inativo</span>';
+
+    public function estadoBadge(): string
+    {
+        return $this->ativo == 1 ? '<span class="badge bg-success">Ativo</span>' : '<span class="badge bg-secondary">Inativo</span>';
     }
 
     /* ============================================================
      *  LOGIN
      * ============================================================ */
-    public function registarLogin(): void {
+
+    public function registarLogin(): void
+    {
         $sql = "UPDATE utilizadores 
                 SET ultimo_login = NOW(), tentativas_falhadas = 0 
                 WHERE id = :id";

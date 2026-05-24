@@ -1,0 +1,29 @@
+{% extends "layout_user.twig" %}
+
+{% block title %}O Meu Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="row g-4">
+
+    {% set cards = [
+        { title: 'Os Meus Documentos', value: total, color: 'primary' },
+        { title: 'Pendentes', value: pendentes, color: 'warning' },
+        { title: 'Em Análise', value: analise, color: 'info' },
+        { title: 'Concluídos', value: concluidos, color: 'success' },
+        { title: 'Arquivados', value: arquivados, color: 'secondary' },
+        { title: 'Devolvidos', value: devolvidos, color: 'danger' }
+    ] %}
+
+    {% for c in cards %}
+    <div class="col-md-4 col-lg-3">
+        <div class="stat-card border border-{{ c.color }}">
+            <h6>{{ c.title }}</h6>
+            <h3 class="text-{{ c.color }}">{{ c.value }}</h3>
+        </div>
+    </div>
+    {% endfor %}
+
+</div>
+
+{% endblock %}
