@@ -178,20 +178,111 @@ class BackupsAdminController extends BaseController
         return $this->redirect('/admin/backups');
     }
 
+    private function getWampServices(): array
+    {
+        $services = [];
+
+        exec('sc query state= all', $output);
+
+        foreach ($output as $line) {
+            if (stripos($line, 'wampapache') !== false) {
+                $services['apache'] = trim(explode(':', $line)[1]);
+            }
+            if (stripos($line, 'wampmysqld') !== false) {
+                $services['mysql'] = trim(explode(':', $line)[1]);
+            }
+        }
+
+        return $services;
+    }
+
+    private function detectarServicoApache(): ?string
+    {
+        exec('sc query state= all', $output);
+
+        foreach ($output as $line) {
+            if (stripos($line, 'apache') !== false) {
+                return trim(explode(':', $line)[1]);
+            }
+        }
+
+        return null;
+    }
+
+    private function restartService(string $service): bool
+    {
+        exec("net stop {$service}", $outStop, $codeStop);
+        sleep(1);
+        exec("net start {$service}", $outStart, $codeStart);
+
+        return $codeStart === 0;
+    }
+
+    private function apacheEstaAtivo(): bool
+    {
+        exec('sc query type= service state= all', $output);
+
+        foreach ($output as $line) {
+            if (stripos($line, 'apache') !== false && stripos($line, 'RUNNING') !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function garantirApacheAtivo(string $service)
+    {
+        if ($this->apacheEstaAtivo()) {
+            return;
+        }
+
+        // Tentar arrancar novamente
+        exec("net start {$service}");
+        sleep(1);
+
+        if ($this->apacheEstaAtivo()) {
+            return;
+        }
+
+        // Fallback final: reiniciar WAMP
+        exec('"C:\wamp64\wampmanager.exe" -restart');
+    }
+
     public function restaurarEReiniciar(string $ficheiro)
     {
         $this->authorize('admin.backups.bd.restaurar.executar');
 
+        // Corrigir caminho
+        $ficheiro = $this->decodePath($ficheiro);
+        $path = $this->resolverCaminho($ficheiro);
+
+        if (!$path) {
+            Sessao::flash('erro', 'Ficheiro não encontrado.');
+            return $this->redirect('/admin/backups');
+        }
+
         try {
-            (new RestoreService())->restaurarBD($ficheiro);
+            // Restaurar BD
+            (new RestoreService())->restaurarBD($path);
 
-            // Reiniciar serviços
-            exec("net stop wampapache64");
-            exec("net start wampapache64");
-            exec("net stop wampmysqld64");
-            exec("net start wampmysqld64");
+            // Detetar serviço Apache
+            $apache = $this->detectarServicoApache();
 
-            Sessao::flash('sucesso', 'Restaurado e serviços reiniciados.');
+            if ($apache) {
+                // Reiniciar Apache
+                $ok = $this->restartService($apache);
+
+                // Garantir que arrancou
+                $this->garantirApacheAtivo($apache);
+
+                if (!$ok) {
+                    Sessao::flash('erro', 'BD restaurada, mas o Apache não arrancou automaticamente.');
+                    return $this->redirect('/admin/backups');
+                }
+            }
+
+            Sessao::flash('sucesso', 'Base de dados restaurada e Apache reiniciado com sucesso.');
         } catch (\Exception $e) {
             Sessao::flash('erro', 'Erro: ' . $e->getMessage());
         }

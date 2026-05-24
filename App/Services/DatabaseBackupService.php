@@ -4,7 +4,6 @@ namespace App\Services;
 
 class DatabaseBackupService
 {
-
     private string $baseDir;
     private string $logFile;
 
@@ -28,6 +27,9 @@ class DatabaseBackupService
         $this->logFile = rtrim(str_replace('\\', '/', realpath($logDir)), '/') . '/backup_db.log';
     }
 
+    /**
+     * Criar backup completo da base de dados
+     */
     public function criar(): string
     {
         // Criar subpastas ano/mês
@@ -46,7 +48,7 @@ class DatabaseBackupService
         $nome = 'backup_db_' . date('Y-m-d_H-i-s') . '.sql';
         $ficheiroSQL = $dir . $nome;
 
-        // Credenciais — SEM Env::get()
+        // Credenciais
         $host = $_ENV['DB_HOST'] ?? 'localhost';
         $db = $_ENV['DB_NAME'] ?? 'anferaltadocs';
         $user = $_ENV['DB_USER'] ?? 'root';
@@ -66,13 +68,13 @@ class DatabaseBackupService
             $cmd = "\"{$mysqldump}\" --host={$host} --user={$user} --password={$pass} {$db} > \"{$ficheiroSQL}\"";
         } else {
             $cmd = sprintf(
-                    '%s -h%s -u%s -p%s %s > %s',
-                    escapeshellarg($mysqldump),
-                    escapeshellarg($host),
-                    escapeshellarg($user),
-                    escapeshellarg($pass),
-                    escapeshellarg($db),
-                    escapeshellarg($ficheiroSQL)
+                '%s -h%s -u%s -p%s %s > %s',
+                escapeshellarg($mysqldump),
+                escapeshellarg($host),
+                escapeshellarg($user),
+                escapeshellarg($pass),
+                escapeshellarg($db),
+                escapeshellarg($ficheiroSQL)
             );
         }
 
@@ -101,18 +103,19 @@ class DatabaseBackupService
         return $ficheiroFinal;
     }
 
+    /**
+     * Encriptar ZIP com AES‑256
+     */
     private function encriptar(string $zipPath): string
     {
         $password = $_ENV['BACKUP_PASSWORD'] ?? null;
 
-        // Se não houver password → devolve o ZIP normal
         if (!$password) {
             return $zipPath;
         }
 
         $zipEnc = $zipPath . '.enc';
 
-        // Comando OpenSSL para encriptar AES‑256
         $cmd = "openssl enc -aes-256-cbc -salt -in \"$zipPath\" -out \"$zipEnc\" -k \"$password\"";
 
         exec($cmd, $out, $code);
@@ -121,15 +124,17 @@ class DatabaseBackupService
             throw new \Exception("Falha ao encriptar o backup.");
         }
 
-        // Apagar o ZIP original
         unlink($zipPath);
 
         return $zipEnc;
     }
 
+    /**
+     * DETETAR mysqldump.exe automaticamente
+     */
     private function detetarMysqldump(): ?string
     {
-        // 1) .env — SEM Env::get()
+        // 1) .env
         $envPath = $_ENV['MYSQLDUMP_PATH'] ?? null;
         if ($envPath && file_exists($envPath)) {
             return $envPath;
@@ -139,9 +144,6 @@ class DatabaseBackupService
         $possiveis = [
             'C:\\wamp\\bin\\mysql\\mysql9.1.0\\bin\\mysqldump.exe', // O TEU CAMINHO REAL
             'C:\\wamp64\\bin\\mysql\\mysql9.1.0\\bin\\mysqldump.exe',
-            'C:\\wamp64\\bin\\mysql\\mysql8.0.31\\bin\\mysqldump.exe',
-            'C:\\wamp64\\bin\\mysql\\mysql8.0.30\\bin\\mysqldump.exe',
-            'C:\\wamp64\\bin\\mysql\\mysql5.7.31\\bin\\mysqldump.exe',
             'C:\\xampp\\mysql\\bin\\mysqldump.exe',
         ];
 
@@ -160,6 +162,42 @@ class DatabaseBackupService
         return null;
     }
 
+    /**
+     * DETETAR mysql.exe automaticamente (para RESTAURO)
+     */
+    public function detetarMysql(): ?string
+    {
+        // 1) .env
+        $envPath = $_ENV['MYSQL_PATH'] ?? null;
+        if ($envPath && file_exists($envPath)) {
+            return $envPath;
+        }
+
+        // 2) Caminhos típicos do WAMP/XAMPP
+        $possiveis = [
+            'C:\\wamp\\bin\\mysql\\mysql9.1.0\\bin\\mysql.exe', // O TEU CAMINHO REAL
+            'C:\\wamp64\\bin\\mysql\\mysql9.1.0\\bin\\mysql.exe',
+            'C:\\xampp\\mysql\\bin\\mysql.exe',
+        ];
+
+        foreach ($possiveis as $p) {
+            if (file_exists($p)) {
+                return $p;
+            }
+        }
+
+        // 3) Linux
+        $which = trim(shell_exec('which mysql 2>/dev/null') ?? '');
+        if ($which !== '' && file_exists($which)) {
+            return $which;
+        }
+
+        return null;
+    }
+
+    /**
+     * Criar ZIP
+     */
     private function comprimirZip(string $ficheiroSQL): string
     {
         $zipPath = $ficheiroSQL . '.zip';
@@ -177,13 +215,16 @@ class DatabaseBackupService
         throw new \Exception("Falha ao criar ZIP.");
     }
 
+    /**
+     * Apagar backups antigos
+     */
     private function limparAntigos(string $baseDir, int $dias): void
     {
         $limite = strtotime("-{$dias} days");
 
         $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($baseDir, \FilesystemIterator::SKIP_DOTS),
-                \RecursiveIteratorIterator::CHILD_FIRST
+            new \RecursiveDirectoryIterator($baseDir, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
         );
 
         foreach ($iterator as $ficheiro) {
@@ -193,13 +234,15 @@ class DatabaseBackupService
                 }
             }
 
-            // Apagar pastas vazias
             if ($ficheiro->isDir()) {
                 @rmdir($ficheiro->getPathname());
             }
         }
     }
 
+    /**
+     * Log
+     */
     private function log(string $mensagem): void
     {
         $linha = '[' . date('Y-m-d H:i:s') . '] ' . $mensagem . PHP_EOL;

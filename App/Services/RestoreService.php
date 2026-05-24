@@ -41,13 +41,12 @@ class RestoreService
         }
 
         // Encontrar mysql.exe do WAMP
-        $mysqlPath = $this->detectarMysql();
+        $mysqlPath = $this->detetarMysql();
         if (!$mysqlPath) {
             throw new Exception("mysql.exe não encontrado no WAMP.");
         }
 
         // Construir comando MySQL corretamente
-        // Se password for vazia → NÃO usar -p
         $pass = $this->mysqlPass === '' ? '' : '-p"' . $this->mysqlPass . '"';
 
         $cmd = sprintf(
@@ -72,7 +71,6 @@ class RestoreService
             throw new Exception("Backup de ficheiros não encontrado: {$path}");
         }
 
-        // Caminho correto no teu projeto
         $destino = realpath(__DIR__ . '/../../public/uploads_publicos');
 
         if (!$destino) {
@@ -88,22 +86,36 @@ class RestoreService
         $zip->close();
     }
 
-    private function detectarMysql(): ?string
+    /**
+     * DETETAR mysql.exe automaticamente (WAMP, WAMP64, XAMPP, Linux)
+     */
+    private function detetarMysql(): ?string
     {
-        $base = 'C:/wamp64/bin/mysql/';
-
-        if (!is_dir($base)) {
-            return null;
+        // 1) .env
+        $envPath = $_ENV['MYSQL_PATH'] ?? null;
+        if ($envPath && file_exists($envPath)) {
+            return str_replace('\\', '/', $envPath);
         }
 
-        foreach (scandir($base) as $versao) {
-            if ($versao === '.' || $versao === '..') continue;
+        // 2) Caminhos típicos do WAMP
+        $possiveis = [
+            'C:\\wamp\\bin\\mysql\\mysql9.1.0\\bin\\mysql.exe', // O TEU CAMINHO REAL
+            'C:\\wamp64\\bin\\mysql\\mysql9.1.0\\bin\\mysql.exe',
+            'C:\\wamp\\bin\\mysql\\mysql8.0.31\\bin\\mysql.exe',
+            'C:\\wamp64\\bin\\mysql\\mysql8.0.31\\bin\\mysql.exe',
+            'C:\\xampp\\mysql\\bin\\mysql.exe',
+        ];
 
-            $mysql = $base . $versao . '/bin/mysql.exe';
-
-            if (is_file($mysql)) {
-                return str_replace('\\', '/', $mysql);
+        foreach ($possiveis as $p) {
+            if (file_exists($p)) {
+                return str_replace('\\', '/', $p);
             }
+        }
+
+        // 3) Linux
+        $which = trim(shell_exec('which mysql 2>/dev/null') ?? '');
+        if ($which !== '' && file_exists($which)) {
+            return $which;
         }
 
         return null;
