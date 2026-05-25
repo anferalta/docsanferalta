@@ -95,27 +95,7 @@ class Menu
                 'badge' => $docsTotal,
                 'principal' => true
             ],
-            [
-                'titulo' => 'Pendentes',
-                'icone' => 'bi-hourglass',
-                'url' => '/admin/documentos/pendentes',
-                'permissao' => 'admin.documentos.ver',
-                'badge' => $docsPendentes
-            ],
-            [
-                'titulo' => 'Em Análise',
-                'icone' => 'bi-search',
-                'url' => '/admin/documentos/analise',
-                'permissao' => 'admin.documentos.ver',
-                'badge' => $docsAnalise
-            ],
-            [
-                'titulo' => 'Concluídos',
-                'icone' => 'bi-check2-circle',
-                'url' => '/admin/documentos/concluidos',
-                'permissao' => 'admin.documentos.ver',
-                'badge' => $docsConcl
-            ],
+            
             [
                 'titulo' => 'Arquivados',
                 'icone' => 'bi-archive',
@@ -123,14 +103,7 @@ class Menu
                 'permissao' => 'admin.documentos.arquivados.ver',
                 'badge' => $docsArquiv
             ],
-            [
-                'titulo' => 'Devolvidos',
-                'icone' => 'bi-arrow-return-left',
-                'url' => '/admin/documentos/devolvidos',
-                'permissao' => 'admin.documentos.ver',
-                'badge' => $docsDevolvidos
-            ],
-
+            
             // ============================
             // TRAMITAÇÃO
             // ============================

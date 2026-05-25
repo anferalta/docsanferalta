@@ -4,6 +4,8 @@
 
 {% block content %}
 
+<h3 class="mb-4">Criar Documento</h3>
+
 <form id="upload-form"
       method="post"
       action="/documentos/criar"
@@ -13,6 +15,9 @@
 
     <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
 
+    {# ============================
+       ALERTAS / INFO
+    ============================ #}
     <div class="alert alert-info">
         <strong>Informações importantes:</strong>
         <ul class="mb-0">
@@ -23,22 +28,25 @@
         </ul>
     </div>
 
+    {# ============================
+       TÍTULO
+    ============================ #}
     <div class="mb-3">
         <label class="form-label"><strong>Título:</strong></label>
         <input type="text" name="titulo" id="titulo" class="form-control" required>
-        <div id="tituloErro" class="text-danger mt-1 d-none">O título é obrigatório.</div>
     </div>
 
+    {# ============================
+       TIPO DE DOCUMENTO
+    ============================ #}
     <div class="mb-3">
         <label class="form-label">Tipo de Documento</label>
-        <div class="input-group">
-            <select name="tipo_id" id="tipo_id" class="form-select" required>
-                <option value="">-- Selecione --</option>
-                {% for tipo in tipos %}
-                    <option value="{{ tipo.id }}">{{ tipo.nome }}</option>
-                {% endfor %}
-            </select>
-        </div>
+        <select name="tipo_id" id="tipo_id" class="form-select" required>
+            <option value="">-- Selecione --</option>
+            {% for tipo in tipos %}
+                <option value="{{ tipo.tipo_id }}">{{ tipo.nome }}</option>
+            {% endfor %}
+        </select>
     </div>
 
     {# ============================
@@ -82,165 +90,4 @@
 
 {% block scripts %}
     <script src="/assets/js/documentos/upload.js?v={{ random() }}"></script>
-    <script src="/assets/js/documentos/tipos.js?v={{ random() }}"></script>
-
-    <script>
-        const dz = document.getElementById("dropZone");
-        const inputFicheiros = document.getElementById("ficheiros");
-
-        // ============================
-        // CLIQUE NO DROPZONE → ABRIR INPUT
-        // ============================
-        dz.addEventListener("click", () => {
-            inputFicheiros.click();
-        });
-
-        // ============================
-        // DRAG & DROP
-        // ============================
-        dz.addEventListener("dragover", e => {
-            e.preventDefault();
-            dz.classList.add("dragover");
-        });
-
-        dz.addEventListener("dragleave", () => {
-            dz.classList.remove("dragover");
-        });
-
-        dz.addEventListener("drop", e => {
-            e.preventDefault();
-            dz.classList.remove("dragover");
-
-            if (e.dataTransfer.files.length > 0) {
-                inputFicheiros.files = e.dataTransfer.files;
-                inputFicheiros.dispatchEvent(new Event('change'));
-            }
-        });
-
-        // ============================
-        // PRÉ-VISUALIZAÇÃO
-        // ============================
-        function atualizarPreview() {
-            const previewContainer = document.getElementById('previewContainer');
-            const previewArea = document.getElementById('previewArea');
-
-            previewArea.innerHTML = '';
-
-            if (inputFicheiros.files.length === 0) {
-                previewContainer.classList.add('d-none');
-                return;
-            }
-
-            previewContainer.classList.remove('d-none');
-
-            [...inputFicheiros.files].forEach(file => {
-                const ext = file.name.split('.').pop().toLowerCase();
-
-                if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
-                    const reader = new FileReader();
-                    reader.onload = e => {
-                        const img = document.createElement('img');
-                        img.src = e.target.result;
-                        img.className = "img-fluid mb-2";
-                        img.style.maxHeight = "250px";
-                        previewArea.appendChild(img);
-                    };
-                    reader.readAsDataURL(file);
-                }
-
-                else if (ext === 'pdf') {
-                    const reader = new FileReader();
-                    reader.onload = e => {
-                        previewArea.innerHTML += `
-                            <div class="mb-3">
-                                <embed src="${e.target.result}" type="application/pdf" width="100%" height="400px" />
-                                <div class="small text-muted mt-1">${file.name}</div>
-                            </div>`;
-                    };
-                    reader.readAsDataURL(file);
-                }
-
-                else {
-                    previewArea.innerHTML += `
-                        <div class="mb-2">
-                            <i class="fa fa-file-alt fa-3x text-secondary"></i><br>
-                            ${file.name}
-                        </div>`;
-                }
-            });
-        }
-
-        inputFicheiros.addEventListener('change', atualizarPreview);
-        document.addEventListener('ficheirosAtualizados', atualizarPreview);
-    </script>
-
-    <style>
-        .drop-zone {
-            border: 2px dashed #b8b8ff;
-            border-radius: 14px;
-            padding: 45px 25px;
-            background: linear-gradient(135deg, #fafaff 0%, #ffffff 100%);
-            text-align: center;
-            cursor: pointer;
-            transition: all .25s ease;
-            color: #4b44e0;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .drop-zone:hover {
-            border-color: #6c63ff;
-            background: #f3f2ff;
-            transform: scale(1.01);
-        }
-
-        .drop-zone.dragover {
-            border-color: #3a33d1;
-            background: #eceaff;
-            box-shadow: 0 0 18px rgba(108, 99, 255, 0.25);
-            transform: scale(1.02);
-        }
-
-        .dz-icon {
-            font-size: 48px;
-            color: #6c63ff;
-            margin-bottom: 10px;
-        }
-
-        .dz-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin: 0;
-        }
-
-        .dz-subtitle {
-            font-size: 14px;
-            color: #777;
-            margin: 0;
-        }
-
-        .drop-zone::after {
-            content: "";
-            position: absolute;
-            top: -100%;
-            left: 0;
-            width: 100%;
-            height: 200%;
-            background: linear-gradient(
-                120deg,
-                transparent 0%,
-                rgba(255,255,255,0.4) 50%,
-                transparent 100%
-            );
-            transform: rotate(25deg);
-            transition: 0.6s;
-            opacity: 0;
-        }
-
-        .drop-zone:hover::after {
-            top: -30%;
-            opacity: 1;
-        }
-    </style>
 {% endblock %}
-

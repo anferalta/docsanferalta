@@ -11,7 +11,6 @@ session_set_cookie_params([
 
 session_start();
 
-
 require __DIR__ . '/../vendor/autoload.php';
 
 use App\Core\Router;

@@ -6,30 +6,55 @@
 
 <h3 class="mb-4">Os Meus Documentos</h3>
 
-<table class="table table-striped">
+<table class="table table-striped align-middle">
     <thead>
         <tr>
             <th>Título</th>
             <th>Tipo</th>
             <th>Estado</th>
+            <th>Área Atual</th>
+            <th>Criado em</th>
+            <th>Tamanho</th>
             <th>Ficheiro</th>
         </tr>
     </thead>
+
     <tbody>
         {% for d in documentos %}
         <tr>
             <td>{{ d.titulo }}</td>
-            <td>{{ d.tipo.nome }}</td>
-            <td>{{ d.estado|capitalize }}</td>
+
+            {# Tipo do documento (via JOIN) #}
+            <td>{{ d.tipo_nome ?: '-' }}</td>
+
+            {# Estado atual (string, não número) #}
+            <td>{{ d.estado_atual|capitalize }}</td>
+
+            {# Área atual (via JOIN) #}
+            <td>{{ d.area_nome ?: '-' }}</td>
+
+            {# Data formatada #}
+            <td>{{ d.criado_em_formatado() }}</td>
+
+            {# Tamanho formatado #}
             <td>
-                <a href="/uploads/documentos/{{ d.ficheiro }}" target="_blank">
+                {% if d.tamanho %}
+                    {{ (d.tamanho / 1024)|number_format(1, '.', ',') }} KB
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+
+            {# Link correto para abrir o ficheiro #}
+            <td>
+                <a href="/{{ d.caminho }}{{ d.ficheiro }}" target="_blank">
                     Abrir
                 </a>
             </td>
         </tr>
         {% else %}
         <tr>
-            <td colspan="4" class="text-center text-muted">
+            <td colspan="7" class="text-center text-muted">
                 Nenhum documento encontrado.
             </td>
         </tr>
@@ -38,4 +63,3 @@
 </table>
 
 {% endblock %}
-
