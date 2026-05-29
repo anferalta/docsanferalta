@@ -8,8 +8,8 @@ use App\Core\Conexao;
 
 class Documento extends Model
 {
-    protected string $table = 'documentos';
 
+    protected string $table = 'documentos';
     // ============================================================
     //  PROPRIEDADES DA TABELA DOCUMENTOS
     // ============================================================
@@ -24,7 +24,6 @@ class Documento extends Model
     public ?string $criado_em = null;
     public ?string $caminho = null;
     public ?int $tipo_id = null;
-
     // ============================================================
     //  CAMPOS DE TRAMITAÇÃO
     // ============================================================
@@ -33,7 +32,6 @@ class Documento extends Model
     public ?string $arquivado_em = null;
     public ?int $arquivado_por_id = null;
     public ?int $estado = null;
-
     // ============================================================
     //  CAMPOS DERIVADOS (JOINs)
     // ============================================================
@@ -41,7 +39,6 @@ class Documento extends Model
     public ?string $criador_nome = null;
     public ?string $criador_avatar = null;
     public ?string $area_nome = null;
-
     // ============================================================
     //  CAMPOS GRAVÁVEIS (CORRIGIDO!)
     // ============================================================
@@ -66,6 +63,7 @@ class Documento extends Model
     /* ============================================================
      *  RELAÇÃO COM UTILIZADOR
      * ============================================================ */
+
     public function utilizador(): ?Utilizador
     {
         return $this->criado_por ? Utilizador::find($this->criado_por) : null;
@@ -85,6 +83,7 @@ class Documento extends Model
     /* ============================================================
      *  CAMINHO DO FICHEIRO
      * ============================================================ */
+
     public function path(): string
     {
         $base = dirname(__DIR__, 3) . '/storage/documentos';
@@ -95,6 +94,7 @@ class Documento extends Model
     /* ============================================================
      *  ÍCONES
      * ============================================================ */
+
     public function tipo(): string
     {
         $nome = $this->ficheiro_original ?: $this->ficheiro;
@@ -127,6 +127,7 @@ class Documento extends Model
     /* ============================================================
      *  DATAS
      * ============================================================ */
+
     public function criado_em_formatado(): string
     {
         return $this->criado_em ? date('d/m/Y H:i', strtotime($this->criado_em)) : '';
@@ -145,10 +146,24 @@ class Documento extends Model
     /* ============================================================
      *  TRAMITAÇÃO
      * ============================================================ */
+
     public static function updateEstado($id, $estado, $area_id = null)
     {
         $db = Conexao::getInstancia();
 
+        // Buscar documento atual para manter a área se não for enviada nova
+        $doc = self::find($id);
+
+        if (!$doc) {
+            return false;
+        }
+
+        // Se não foi enviada nova área, mantém a atual
+        if ($area_id === null) {
+            $area_id = $doc->area_atual_id;
+        }
+
+        // Caso especial: arquivar
         if ($estado === 'arquivado') {
             $sql = "UPDATE documentos 
                 SET estado_atual = 'arquivado',
@@ -161,11 +176,20 @@ class Documento extends Model
             return;
         }
 
+        // Atualizar estado + área
         $sql = "UPDATE documentos 
             SET estado_atual = ?, area_atual_id = ?
             WHERE id = ?";
         $stmt = $db->prepare($sql);
         $stmt->execute([$estado, $area_id, $id]);
+
+        $map = [
+            'analise' => 'em_analise',
+            'em analise' => 'em_analise',
+            'em-analise' => 'em_analise'
+        ];
+
+        $estado = $map[$estado] ?? $estado;
     }
 
     public static function arquivar($id, $user_id)
@@ -185,6 +209,7 @@ class Documento extends Model
     /* ============================================================
      *  MÉTODOS DE GRAVAÇÃO
      * ============================================================ */
+
     public function save()
     {
         $db = Conexao::getInstancia();
@@ -217,9 +242,9 @@ class Documento extends Model
         }
 
         return parent::update(
-            $data,
-            "id = :id",
-            [':id' => $this->id]
-        );
+                        $data,
+                        "id = :id",
+                        [':id' => $this->id]
+                );
     }
 }

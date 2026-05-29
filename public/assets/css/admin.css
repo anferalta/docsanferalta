@@ -409,13 +409,28 @@
     color: #fff !important;
 }
 
-.badge-pendente { background-color: #0d6efd !important; }
-.badge-em_tramitacao { background-color: #ffc107 !important; color: #212529 !important; }
-.badge-em_analise { background-color: #0dcaf0 !important; }
-.badge-concluido { background-color: #198754 !important; }
-.badge-arquivado { background-color: #343a40 !important; }
-.badge-novo { background-color: #6f42c1 !important; }
-.badge-devolvido { background-color: #dc3545 !important; }
+.badge-pendente {
+    background-color: #0d6efd !important;
+}
+.badge-em_tramitacao {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+}
+.badge-em_analise {
+    background-color: #17a2b8 !important;
+}
+.badge-concluido {
+    background-color: #198754 !important;
+}
+.badge-arquivado {
+    background-color: #343a40 !important;
+}
+.badge-novo {
+    background-color: #6f42c1 !important;
+}
+.badge-devolvido {
+    background-color: #dc3545 !important;
+}
 
 .dropdown-menu {
     z-index: 9999 !important;
@@ -439,4 +454,8 @@
     padding: 2px 8px;
     border-radius: 8px;
     font-size: 0.75rem;
+}
+.badge-analise {
+    background-color: #17a2b8; /* azul */
+    color: #fff;
 }

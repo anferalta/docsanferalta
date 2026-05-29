@@ -420,34 +420,27 @@ class TramitacaoAdminController extends BaseController
 
         $documento = Documento::find($doc_id);
 
-        // ============================
-        // REGISTAR HISTÓRICO
-        // ============================
         DocumentoTramitacao::create(
                 $doc_id,
-                $documento->area_atual_id, // ← ÁREA CORRETA
+                $documento->area_atual_id,
                 Auth::id(),
-                'ESTADO', // ← AÇÃO CORRETA
-                $estado, // ← NOVO ESTADO
+                'ESTADO',
+                $estado,
                 $comentario
         );
 
-        // Guardar anexos
         $tramitacao_id = DocumentoTramitacao::ultimoId();
         $this->guardarAnexos($tramitacao_id);
 
-        // Atualizar estado do documento
-        Documento::updateEstado($doc_id, $estado);
+        // AQUI ESTÁ A CORREÇÃO
+        Documento::updateEstado($doc_id, $estado, $documento->area_atual_id);
 
-        // Notificar criador
-        if ($documento) {
-            $this->notificar(
-                    $documento->criado_por,
-                    $doc_id,
-                    'estado',
-                    "O documento #{$doc_id} mudou para o estado: {$estado}."
-            );
-        }
+        $this->notificar(
+                $documento->criado_por,
+                $doc_id,
+                'estado',
+                "O documento #{$doc_id} mudou para o estado: {$estado}."
+        );
 
         return $this->redirect("/admin/tramitacao/$doc_id");
     }
@@ -495,19 +488,19 @@ class TramitacaoAdminController extends BaseController
 
         $sql = "
         SELECT 
-            d.id,
-            d.titulo,
-            d.estado_atual,
-            d.criado_em,
-            t.nome AS tipo_nome,
-            a.nome AS area_atual_nome,
-            u.nome AS criador_nome
-        FROM documentos d
-        LEFT JOIN documento_tipos t ON t.tipo_id = d.tipo_id
-        LEFT JOIN documento_areas a ON a.id = d.area_atual_id
-        LEFT JOIN utilizadores u ON u.id = d.criado_por
-        WHERE d.estado_atual != 'arquivado'
-        ORDER BY d.criado_em DESC
+    d.id,
+    d.titulo,
+    d.estado_atual,
+    d.criado_em,
+    t.nome AS tipo_nome,
+    a.nome AS area_atual_nome,
+    u.nome AS criador_nome
+FROM documentos d
+LEFT JOIN documento_tipos t ON t.tipo_id = d.tipo_id
+LEFT JOIN documento_areas a ON a.id = d.area_atual_id
+LEFT JOIN utilizadores u ON u.id = d.criado_por
+WHERE d.estado_atual IN ('novo', 'pendente', 'analise', 'em_tramitacao')
+ORDER BY d.criado_em DESC
     ";
 
         $documentos = $db->query($sql)->fetchAll(\PDO::FETCH_ASSOC);

@@ -4,62 +4,70 @@
 
 {% block content %}
 
-<h3 class="mb-4">Os Meus Documentos</h3>
+    <h3 class="mb-4">Os Meus Documentos</h3>
 
-<table class="table table-striped align-middle">
-    <thead>
-        <tr>
-            <th>Título</th>
-            <th>Tipo</th>
-            <th>Estado</th>
-            <th>Área Atual</th>
-            <th>Criado em</th>
-            <th>Tamanho</th>
-            <th>Ficheiro</th>
-        </tr>
-    </thead>
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Título</th>
+                <th>Tipo</th>
+                <th>Estado</th>
+                <th>Área Atual</th>
+                <th>Criado em</th>
+                <th>Tamanho</th>
+                <th>Ficheiro</th>
+            </tr>
+        </thead>
 
-    <tbody>
-        {% for d in documentos %}
-        <tr>
-            <td>{{ d.titulo }}</td>
+        <tbody>
+            {% for d in documentos %}
+                <tr>
+                    <td>{{ d.titulo }}</td>
 
-            {# Tipo do documento (via JOIN) #}
-            <td>{{ d.tipo_nome ?: '-' }}</td>
+                    {# Tipo do documento (via JOIN) #}
+                    <td>{{ d.tipo_nome ?: '-' }}</td>
 
-            {# Estado atual (string, não número) #}
-            <td>{{ d.estado_atual|capitalize }}</td>
+                    {# Estado com cores (igual ao admin) #}
+                    <td>
+                        <span class="badge badge-estado badge-{{ d.estado_atual|lower|replace({' ':'_'}) }}">
+                            {{ d.estado_atual|replace({'_':' '})|capitalize }}
+                        </span>
+                    </td>
 
-            {# Área atual (via JOIN) #}
-            <td>{{ d.area_nome ?: '-' }}</td>
+                    {# Área atual (via JOIN) #}
+                    <td>{{ d.area_nome ?: '-' }}</td>
 
-            {# Data formatada #}
-            <td>{{ d.criado_em_formatado() }}</td>
+                    {# Data formatada #}
+                    <td>{{ d.criado_em_formatado() }}</td>
 
-            {# Tamanho formatado #}
-            <td>
-                {% if d.tamanho %}
-                    {{ (d.tamanho / 1024)|number_format(1, '.', ',') }} KB
-                {% else %}
-                    -
-                {% endif %}
-            </td>
+                    {# Tamanho formatado #}
+                    <td>
+                        {% if d.tamanho %}
+                            {{ (d.tamanho / 1024)|number_format(1, '.', ',') }} KB
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
 
-            {# Link correto para abrir o ficheiro #}
-            <td>
-                <a href="/{{ d.caminho }}{{ d.ficheiro }}" target="_blank">
-                    Abrir
-                </a>
-            </td>
-        </tr>
-        {% else %}
-        <tr>
-            <td colspan="7" class="text-center text-muted">
-                Nenhum documento encontrado.
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+                    {# Link correto para abrir o ficheiro #}
+                    <td>
+                        <a href="/documentos/abrir/{{ d.caminho|trim('/') }}/{{ d.ficheiro }}" target="_blank">
+                            Abrir
+                        </a>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted">
+                        Nenhum documento encontrado.
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+{% endblock %}
+
+{% block scripts %}
 
 {% endblock %}

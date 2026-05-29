@@ -79,7 +79,7 @@
                         <option value="">-- Todos --</option>
                         <option value="pendente"       {{ app.request.get('estado_atual') == 'pendente' ? 'selected' : '' }}>Pendente</option>
                         <option value="em_tramitacao"  {{ app.request.get('estado_atual') == 'em_tramitacao' ? 'selected' : '' }}>Em Tramitação</option>
-                        <option value="analise"        {{ app.request.get('estado_atual') == 'analise' ? 'selected' : '' }}>Em Análise</option>
+                        <option value="em_analise"     {{ app.request.get('estado_atual') == 'analise' ? 'selected' : '' }}>Em Análise</option>
                         <option value="concluido"      {{ app.request.get('estado_atual') == 'concluido' ? 'selected' : '' }}>Concluído</option>
                         <option value="devolvido"      {{ app.request.get('estado_atual') == 'devolvido' ? 'selected' : '' }}>Devolvido</option>
                         <option value="arquivado"      {{ app.request.get('estado_atual') == 'arquivado' ? 'selected' : '' }}>Arquivado</option>
@@ -338,17 +338,17 @@
             text-transform: capitalize;
         }
 
-        .badge-pendente       {
-            background: #e0e0e0;
-            color: #555;
+        .badge-pendente {
+            background: #ffc107 !important; /* AMARELO */
+            color: #000 !important;
         }
-        .badge-em_tramitacao  {
-            background: #ffe08a;
-            color: #7a5a00;
+        .badge-em_tramitacao {
+            background: #fd7e14;
+            color: #fff !important;
         }
-        .badge-analise        {
-            background: #bde0fe;
-            color: #084c8c;
+        .badge-em_analise {
+            background: #17a2b8;
+            color: #fff !important;
         }
         .badge-concluido      {
             background: #c8f7c5;

@@ -90,4 +90,60 @@
 
 {% block scripts %}
     <script src="/assets/js/documentos/upload.js?v={{ random() }}"></script>
+    <script>
+const inputFicheiros = document.getElementById("ficheiros");
+
+function atualizarPreview() {
+    const previewContainer = document.getElementById('previewContainer');
+    const previewArea = document.getElementById('previewArea');
+
+    previewArea.innerHTML = '';
+
+    if (inputFicheiros.files.length === 0) {
+        previewContainer.classList.add('d-none');
+        return;
+    }
+
+    previewContainer.classList.remove('d-none');
+
+    [...inputFicheiros.files].forEach(file => {
+        const ext = file.name.split('.').pop().toLowerCase();
+
+        if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.className = "img-fluid mb-2";
+                img.style.maxHeight = "250px";
+                previewArea.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        else if (ext === 'pdf') {
+            const reader = new FileReader();
+            reader.onload = e => {
+                previewArea.innerHTML += `
+                    <div class="mb-3">
+                        <embed src="${e.target.result}" type="application/pdf" width="100%" height="400px" />
+                        <div class="small text-muted mt-1">${file.name}</div>
+                    </div>`;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        else {
+            previewArea.innerHTML += `
+                <div class="mb-2">
+                    <i class="fa fa-file-alt fa-3x text-secondary"></i><br>
+                    ${file.name}
+                </div>`;
+        }
+    });
+}
+
+inputFicheiros.addEventListener('change', atualizarPreview);
+</script>
+
 {% endblock %}

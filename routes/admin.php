@@ -34,6 +34,7 @@ $router->get('/dashboard', 'DashboardUserController@index');
 $router->get('/documentos', 'DocumentosUserController@index');
 $router->get('/documentos/criar', 'DocumentosUserController@criar');
 $router->post('/documentos/criar', 'DocumentosUserController@criarSubmit');
+$router->get('/documentos/abrir/{ano}/{mes}/{dia}/{ficheiro}', 'DocumentosUserController@abrir');
 
 // ============================================================
 // ROTAS ADMIN (PROTEGIDAS POR AUTH)

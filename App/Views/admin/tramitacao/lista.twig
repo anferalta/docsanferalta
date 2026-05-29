@@ -44,7 +44,7 @@
                                     <td>{{ d.tipo_nome }}</td>
 
                                     <td>
-                                        <span class="badge-estado badge-{{ d.estado_atual }}">
+                                        <span class="badge badge-estado badge-{{ d.estado_atual|trim|lower|replace({' ':'_','-':'_'}) }}">
                                             {{ d.estado_atual|replace({'_':' '})|upper }}
                                         </span>
                                     </td>
