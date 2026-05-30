@@ -1438,3 +1438,163 @@ Array
     [estado] => pendente
     [criado_em] => 2026-05-29 17:55:53
 )
+Array
+(
+    [documento_id] => 387
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => tratamento urgente
+    [estado] => novo
+    [criado_em] => 2026-05-30 16:41:32
+)
+Array
+(
+    [documento_id] => 387
+    [area_id] => 4
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => verificar documentos
+    [criado_em] => 2026-05-30 16:43:13
+)
+Array
+(
+    [documento_id] => 387
+    [area_id] => 8
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => para parecer
+    [criado_em] => 2026-05-30 16:46:28
+)
+Array
+(
+    [documento_id] => 387
+    [area_id] => 2
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => para aprovação
+    [criado_em] => 2026-05-30 17:33:33
+)
+Array
+(
+    [documento_id] => 387
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 2
+    [comentario] => aprovado
+    [estado] => em_tramitacao
+    [criado_em] => 2026-05-30 17:35:09
+)
+Array
+(
+    [documento_id] => 387
+    [area_id] => 1
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => informar utente
+    [criado_em] => 2026-05-30 17:36:50
+)
+Array
+(
+    [documento_id] => 387
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 1
+    [comentario] => informar utente
+    [estado] => concluido
+    [criado_em] => 2026-05-30 17:38:04
+)
+Array
+(
+    [documento_id] => 380
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => pedido especial
+    [estado] => novo
+    [criado_em] => 2026-05-30 17:42:50
+)
+Array
+(
+    [documento_id] => 380
+    [area_id] => 3
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => confirmar pagamento
+    [criado_em] => 2026-05-30 17:43:16
+)
+Array
+(
+    [documento_id] => 380
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 3
+    [comentario] => verificar pagamento
+    [estado] => analise
+    [criado_em] => 2026-05-30 17:44:22
+)
+Array
+(
+    [documento_id] => 380
+    [area_id] => 8
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => parecer
+    [criado_em] => 2026-05-30 17:45:17
+)
+Array
+(
+    [documento_id] => 380
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 8
+    [comentario] => documentos incompletos
+    [estado] => pendente
+    [criado_em] => 2026-05-30 17:47:48
+)
+Array
+(
+    [documento_id] => 388
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => muito urgente
+    [estado] => novo
+    [criado_em] => 2026-05-30 20:10:32
+)
+Array
+(
+    [documento_id] => 388
+    [area_id] => 3
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => pagar
+    [criado_em] => 2026-05-30 20:12:53
+)
+Array
+(
+    [documento_id] => 388
+    [area_id] => 1
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => informar utente
+    [criado_em] => 2026-05-30 20:14:27
+)
+Array
+(
+    [documento_id] => 388
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 1
+    [comentario] => informar utente
+    [estado] => concluido
+    [criado_em] => 2026-05-30 20:15:25
+)

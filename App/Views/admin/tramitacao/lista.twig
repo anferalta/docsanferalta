@@ -2,90 +2,175 @@
 
 {% block content %}
 
-<div class="container-fluid">
+    <div class="container-fluid">
 
-    <!-- TÍTULO -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0">
-            <i class="fa fa-diagram-project me-2"></i> Documentos em Tramitação
-        </h4>
-    </div>
-
-    <!-- CARTÃO -->
-    <div class="card">
-        <div class="card-body">
-
-            {% if documentos is empty %}
-                <p class="text-muted">Não existem documentos em tramitação.</p>
-            {% else %}
-
-                <div class="table-responsive">
-                    <table class="table table-striped align-middle">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Título</th>
-                                <th>Tipo</th>
-                                <th>Estado</th>
-                                <th>Área Atual</th>
-                                <th>Criado Por</th>
-                                <th>Data</th>
-                                <th class="text-end">Ações</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {% for d in documentos %}
-                                <tr>
-                                    <td>{{ d.id }}</td>
-
-                                    <td><strong>{{ d.titulo }}</strong></td>
-
-                                    <td>{{ d.tipo_nome }}</td>
-
-                                    <td>
-                                        <span class="badge badge-estado badge-{{ d.estado_atual|trim|lower|replace({' ':'_','-':'_'}) }}">
-                                            {{ d.estado_atual|replace({'_':' '})|upper }}
-                                        </span>
-                                    </td>
-
-                                    <td>{{ d.area_atual_nome }}</td>
-
-                                    <td>{{ d.criador_nome }}</td>
-
-                                    <td>{{ d.criado_em|date("d/m/Y") }}</td>
-
-                                    <td class="text-end">
-
-                                        <!-- Ver Tramitação -->
-                                        <a href="/admin/tramitacao/{{ d.id }}"
-                                           class="btn btn-sm btn-outline-primary">
-                                            <i class="fa fa-random me-1"></i> Tramitação
-                                        </a>
-
-                                        <!-- Ver Documento -->
-                                        <a href="/admin/documentos/ver/{{ d.id }}"
-                                           class="btn btn-sm btn-secondary">
-                                            <i class="fa fa-file me-1"></i> Documento
-                                        </a>
-
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-
-                    </table>
-                </div>
-
-            {% endif %}
-
+        <!-- TÍTULO -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0">
+                <i class="fa fa-diagram-project me-2"></i> Documentos em Tramitação
+            </h4>
         </div>
-    </div>
 
-</div>
+        <!-- FILTROS -->
+        <div class="card mb-3">
+            <div class="card-body">
+
+                <form method="get" class="row g-3">
+
+                    <div class="col-md-3">
+                        <label class="form-label">Estado</label>
+                        <select name="estado" class="form-select">
+    <option value="">Todos</option>
+    {% for e in estados %}
+        <option value="{{ e.codigo }}"
+            {{ app.request.get('estado') == e.codigo ? 'selected' }}>
+            {{ e.nome }}
+        </option>
+    {% endfor %}
+</select>
+
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Área Atual</label>
+                        <select name="area" class="form-select">
+                            <option value="">Todas</option>
+                            {% for a in areas %}
+                                <option value="{{ a.nome }}"
+                                        {{ app.request.get('area') == a.nome ? 'selected' }}>
+                                    {{ a.nome }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Criado Por</label>
+                        <select name="criador" class="form-select">
+                            <option value="">Todos</option>
+                            {% for u in utilizadores %}
+                                <option value="{{ u.nome }}"
+                                        {{ app.request.get('criador') == u.nome ? 'selected' }}>
+                                    {{ u.nome }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Tipo</label>
+                        <select name="tipo" class="form-select">
+                            <option value="">Todos</option>
+                            {% for t in tipos %}
+                                <option value="{{ t.nome }}"
+                                        {{ app.request.get('tipo') == t.nome ? 'selected' }}>
+                                    {{ t.nome }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Data Inicial</label>
+                        <input type="date" name="data_inicio" class="form-control"
+                               value="{{ app.request.get('data_inicio') }}">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Data Final</label>
+                        <input type="date" name="data_fim" class="form-control"
+                               value="{{ app.request.get('data_fim') }}">
+                    </div>
+
+                    <div class="col-md-12 text-end">
+                        <button class="btn btn-primary">
+                            <i class="fa fa-filter me-1"></i> Filtrar
+                        </button>
+                        <a href="/admin/tramitacao" class="btn btn-secondary">
+                            Limpar
+                        </a>
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+
+        <!-- CARTÃO -->
+        <div class="card">
+            <div class="card-body">
+
+                {% if documentos is empty %}
+                    <p class="text-muted">Não existem documentos em tramitação.</p>
+                {% else %}
+
+                    <div class="table-responsive">
+                        <table class="table table-striped align-middle">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Título</th>
+                                    <th>Tipo</th>
+                                    <th>Estado</th>
+                                    <th>Área Atual</th>
+                                    <th>Criado Por</th>
+                                    <th>Data</th>
+                                    <th class="text-end">Ações</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for d in documentos %}
+                                    <tr>
+                                        <td>{{ d.id }}</td>
+
+                                        <td><strong>{{ d.titulo }}</strong></td>
+
+                                        <td>{{ d.tipo_nome }}</td>
+
+                                        <td>
+                                            <span class="badge badge-estado badge-{{ d.estado_atual|trim|lower|replace({' ':'_','-':'_'}) }}">
+                                                {{ d.estado_atual|replace({'_':' '})|upper }}
+                                            </span>
+                                        </td>
+
+                                        <td>{{ d.area_atual_nome }}</td>
+
+                                        <td>{{ d.criador_nome }}</td>
+
+                                        <td>{{ d.criado_em|date("d/m/Y") }}</td>
+
+                                        <td class="text-end">
+
+                                            <!-- Ver Tramitação -->
+                                            <a href="/admin/tramitacao/{{ d.id }}"
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fa fa-random me-1"></i> Tramitação
+                                            </a>
+
+                                            <!-- Ver Documento -->
+                                            <a href="/admin/documentos/ver/{{ d.id }}"
+                                               class="btn btn-sm btn-secondary">
+                                                <i class="fa fa-file me-1"></i> Documento
+                                            </a>
+
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+
+                        </table>
+                    </div>
+
+                {% endif %}
+
+            </div>
+        </div>
+
+    </div>
 
 {% endblock %}
 
 {% block scripts %}
-<!-- Este módulo NÃO usa AJAX nem modais -->
+    <!-- Este módulo NÃO usa AJAX nem modais -->
 {% endblock %}

@@ -98,8 +98,16 @@ class TramitacaoAdminController extends BaseController
             return $this->redirect('/admin/documentos');
         }
 
-        // HISTÓRICO CORRETO
-        $historico = \App\Models\DocumentoTramitacao::porDocumento($documento_id);
+        // FILTROS
+        $filtros = [
+            'acao' => $_GET['acao'] ?? null,
+            'utilizador' => $_GET['utilizador'] ?? null,
+            'data_inicio' => $_GET['data_inicio'] ?? null,
+            'data_fim' => $_GET['data_fim'] ?? null,
+        ];
+
+        // HISTÓRICO COM FILTROS
+        $historico = \App\Models\DocumentoTramitacao::filtrar($documento_id, $filtros);
 
         // ÁREAS
         $areas = \App\Models\DocumentoArea::all();
@@ -112,6 +120,7 @@ class TramitacaoAdminController extends BaseController
                     'historico' => $historico,
                     'areas' => $areas,
                     'estados' => $estados,
+                    'filtros' => $filtros,
                     'user' => Auth::user()
         ]);
     }
@@ -486,27 +495,86 @@ class TramitacaoAdminController extends BaseController
 
         $db = \App\Core\Conexao::getInstancia();
 
+        // FILTROS
+        $estado = $_GET['estado'] ?? null;
+        $area = $_GET['area'] ?? null;
+        $criador = $_GET['criador'] ?? null;
+        $tipo = $_GET['tipo'] ?? null;
+        $dataInicio = $_GET['data_inicio'] ?? null;
+        $dataFim = $_GET['data_fim'] ?? null;
+
         $sql = "
         SELECT 
-    d.id,
-    d.titulo,
-    d.estado_atual,
-    d.criado_em,
-    t.nome AS tipo_nome,
-    a.nome AS area_atual_nome,
-    u.nome AS criador_nome
-FROM documentos d
-LEFT JOIN documento_tipos t ON t.tipo_id = d.tipo_id
-LEFT JOIN documento_areas a ON a.id = d.area_atual_id
-LEFT JOIN utilizadores u ON u.id = d.criado_por
-WHERE d.estado_atual IN ('novo', 'pendente', 'analise', 'em_tramitacao')
-ORDER BY d.criado_em DESC
+            d.id,
+            d.titulo,
+            d.estado_atual,
+            d.criado_em,
+            t.nome AS tipo_nome,
+            a.nome AS area_atual_nome,
+            u.nome AS criador_nome
+        FROM documentos d
+        LEFT JOIN documento_tipos t ON t.tipo_id = d.tipo_id
+        LEFT JOIN documento_areas a ON a.id = d.area_atual_id
+        LEFT JOIN utilizadores u ON u.id = d.criado_por
+        WHERE d.estado_atual IN ('novo', 'pendente', 'analise', 'em_tramitacao')
     ";
 
-        $documentos = $db->query($sql)->fetchAll(\PDO::FETCH_ASSOC);
+        $params = [];
+
+        // FILTRO ESTADO
+        if (!empty($estado)) {
+            $sql .= " AND d.estado_atual = ? ";
+            $params[] = $estado;
+        }
+
+        // FILTRO ÁREA
+        if (!empty($area)) {
+            $sql .= " AND a.nome = ? ";
+            $params[] = $area;
+        }
+
+        // FILTRO CRIADOR
+        if (!empty($criador)) {
+            $sql .= " AND u.nome LIKE ? ";
+            $params[] = "%$criador%";
+        }
+
+        // FILTRO TIPO
+        if (!empty($tipo)) {
+            $sql .= " AND t.nome LIKE ? ";
+            $params[] = "%$tipo%";
+        }
+
+        // FILTRO DATA INICIAL
+        if (!empty($dataInicio)) {
+            $sql .= " AND DATE(d.criado_em) >= ? ";
+            $params[] = $dataInicio;
+        }
+
+        // FILTRO DATA FINAL
+        if (!empty($dataFim)) {
+            $sql .= " AND DATE(d.criado_em) <= ? ";
+            $params[] = $dataFim;
+        }
+
+        $sql .= " ORDER BY d.criado_em DESC ";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        $documentos = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        // LISTAS PARA OS SELECTS
+        $areas = \App\Models\DocumentoArea::all();
+        $estados = \App\Models\DocumentoEstado::all();
+        $tipos = \App\Models\DocumentoTipo::all();
+        $utilizadores = \App\Models\Utilizador::all();
 
         return $this->render('@admin/tramitacao/lista.twig', [
-                    'documentos' => $documentos
+                    'documentos' => $documentos,
+                    'areas' => $areas,
+                    'estados' => $estados,
+                    'tipos' => $tipos,
+                    'utilizadores' => $utilizadores
         ]);
     }
 }

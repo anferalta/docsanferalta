@@ -6,6 +6,52 @@ use App\Core\Conexao;
 
 class DocumentoTramitacao
 {
+    public static function filtrar($documento_id, $filtros)
+    {
+        $db = Conexao::getInstancia();
+
+        $sql = "
+        SELECT t.*, u.nome AS utilizador_nome, a.nome AS area_nome
+        FROM documento_tramitacao t
+        LEFT JOIN utilizadores u ON u.id = t.utilizador_id
+        LEFT JOIN documento_areas a ON a.id = t.area_id
+        WHERE t.documento_id = ?
+    ";
+
+        $params = [$documento_id];
+
+        // FILTRO POR AÇÃO
+        if (!empty($filtros['acao'])) {
+            $sql .= " AND t.acao = ? ";
+            $params[] = $filtros['acao'];
+        }
+
+        // FILTRO POR UTILIZADOR
+        if (!empty($filtros['utilizador'])) {
+            $sql .= " AND u.nome LIKE ? ";
+            $params[] = '%' . $filtros['utilizador'] . '%';
+        }
+
+        // FILTRO POR DATA INICIAL
+        if (!empty($filtros['data_inicio'])) {
+            $sql .= " AND DATE(t.criado_em) >= ? ";
+            $params[] = $filtros['data_inicio'];
+        }
+
+        // FILTRO POR DATA FINAL
+        if (!empty($filtros['data_fim'])) {
+            $sql .= " AND DATE(t.criado_em) <= ? ";
+            $params[] = $filtros['data_fim'];
+        }
+
+        $sql .= " ORDER BY t.id DESC ";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(\PDO::FETCH_OBJ);
+    }
+
     /**
      * Registo direto (usado em partes antigas do sistema)
      */
