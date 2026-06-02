@@ -22,9 +22,9 @@
         <strong>Informações importantes:</strong>
         <ul class="mb-0">
             <li>Pode enviar vários ficheiros ao mesmo tempo.</li>
-            <li>Tamanho máximo por ficheiro: <strong>10 MB</strong>.</li>
+            <li>Tamanho máximo por ficheiro: <strong>20 MB</strong>.</li>
             <li>Máximo de <strong>10 ficheiros</strong>.</li>
-            <li>Tipos permitidos: <strong>PDF, DOCX, XLSX, JPG, PNG, TXT</strong>.</li>
+            <li>Tipos permitidos: <strong>PDF, DOCX, XLSX, JPG, PNG, TXT, ZIP, RAR, 7Z</strong>.</li>
         </ul>
     </div>
 
@@ -89,8 +89,9 @@
 {% endblock %}
 
 {% block scripts %}
-    <script src="/assets/js/documentos/upload.js?v={{ random() }}"></script>
-    <script>
+<script src="/assets/js/documentos/upload.js?v={{ random() }}"></script>
+
+<script>
 const inputFicheiros = document.getElementById("ficheiros");
 
 function atualizarPreview() {

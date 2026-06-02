@@ -11,6 +11,7 @@ use App\Core\Conexao;
 use App\Models\Utilizador;
 use App\Models\DocumentoTramitacao;
 use App\Models\DocumentoEstado;
+use App\Models\DocumentoFicheiro;
 
 class DocumentosAdminController extends BaseController
 {
@@ -178,7 +179,13 @@ WHERE 1=1
         // ============================
         $tipos = DocumentoTipo::all();
         $utilizadores = (new Utilizador())->orderBy('nome')->get();
-        $areas = $db->query("SELECT id, nome FROM documento_areas WHERE ativo = 1 ORDER BY nome ASC")->fetchAll();
+        $areas = $db->query("
+    SELECT id, nome 
+    FROM documento_areas 
+    WHERE ativo = 1 
+      AND nome != 'Arquivo'
+    ORDER BY nome ASC
+")->fetchAll();
 
         // ============================
         // 9. Renderizar
@@ -430,161 +437,13 @@ WHERE 1=1
         echo json_encode($nomes);
         exit;
     }
+    
+    public function testar()
+{
+    echo "ROTA ADMIN OK";
+    exit;
+}
 
-    public function ver($id)
-    {
-        $documento = Documento::find($id);
-
-        if (!$documento) {
-            Sessao::flash('erro', 'Documento não encontrado.');
-            return $this->redirect('/admin/documentos');
-        }
-
-        $caminho = rtrim($documento->caminho, '/') . '/' . $documento->ficheiro;
-
-        if (!file_exists($caminho)) {
-            http_response_code(404);
-            exit("Ficheiro não encontrado.");
-        }
-
-        $ficheiro = basename($caminho);
-        $ext = strtolower(pathinfo($ficheiro, PATHINFO_EXTENSION));
-
-        // Extensões que DEVEM abrir no Google Docs Viewer
-        $usarGoogleDocs = ['docx', 'xlsx', 'pptx'];
-
-        if (in_array($ext, $usarGoogleDocs)) {
-
-            // URL pública para o ficheiro
-            $urlFicheiro = urlencode(url("/admin/documentos/download/$id"));
-
-            // Viewer do Google
-            $viewer = "https://docs.google.com/viewer?url={$urlFicheiro}&embedded=true";
-
-            header("Location: $viewer");
-            exit;
-        }
-
-        // MIME types corretos
-        $mime = [
-            'pdf' => 'application/pdf',
-            'jpg' => 'image/jpeg',
-            'jpeg' => 'image/jpeg',
-            'png' => 'image/png',
-            'gif' => 'image/gif',
-            'txt' => 'text/plain'
-        ];
-
-        header("Content-Type: " . ($mime[$ext] ?? mime_content_type($caminho)));
-        header("Content-Disposition: inline; filename=\"$ficheiro\"");
-        header("Content-Length: " . filesize($caminho));
-
-        readfile($caminho);
-        exit;
-    }
-
-    public function abrir($id)
-    {
-        $documento = Documento::find($id);
-
-        if (!$documento) {
-            http_response_code(404);
-            exit("Documento não encontrado.");
-        }
-
-        // Caminho absoluto do ficheiro original
-        $base = realpath(__DIR__ . '/../../../storage/documentos');
-        $origem = $base . '/' . $documento->caminho . $documento->ficheiro;
-
-        if (!file_exists($origem)) {
-            http_response_code(404);
-            exit("Ficheiro não encontrado.");
-        }
-
-        $ext = strtolower(pathinfo($origem, PATHINFO_EXTENSION));
-        $ficheiro = basename($origem);
-
-        // Extensões que abrem inline
-        $inline = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'txt'];
-
-        if (in_array($ext, $inline)) {
-            header("Content-Type: " . mime_content_type($origem));
-            header("Content-Disposition: inline; filename=\"$ficheiro\"");
-            header("Content-Length: " . filesize($origem));
-            readfile($origem);
-            exit;
-        }
-
-        // Extensões que devem ser convertidas para PDF
-        $convertiveis = ['docx', 'xlsx', 'pptx'];
-
-        if (in_array($ext, $convertiveis)) {
-
-            // Caminho do PDF convertido
-            $pdfDestino = $base . '/' . $documento->caminho . $documento->id . '.pdf';
-
-            // Converter apenas se ainda não existir
-            if (!file_exists($pdfDestino)) {
-                $ok = $this->converterDocxParaPdf($origem, $pdfDestino);
-
-                if (!$ok) {
-                    // fallback → download direto
-                    header("Content-Type: application/octet-stream");
-                    header("Content-Disposition: attachment; filename=\"$ficheiro\"");
-                    header("Content-Length: " . filesize($origem));
-                    readfile($origem);
-                    exit;
-                }
-            }
-
-            // Abrir PDF inline
-            header("Content-Type: application/pdf");
-            header("Content-Disposition: inline; filename=\"preview.pdf\"");
-            header("Content-Length: " . filesize($pdfDestino));
-            readfile($pdfDestino);
-            exit;
-        }
-
-        // Fallback para qualquer outro tipo → download
-        header("Content-Type: application/octet-stream");
-        header("Content-Disposition: attachment; filename=\"$ficheiro\"");
-        header("Content-Length: " . filesize($origem));
-        readfile($origem);
-        exit;
-    }
-
-    public function abrir_raw($id)
-    {
-        // 1) Obter documento
-        $documento = Documento::find($id);
-
-        if (!$documento) {
-            http_response_code(404);
-            exit("Documento não encontrado.");
-        }
-
-        // 2) Caminho absoluto do ficheiro original
-        $base = realpath(__DIR__ . '/../../../storage/documentos');
-        $caminho = $base . '/' . $documento->caminho . $documento->ficheiro;
-
-        if (!file_exists($caminho)) {
-            http_response_code(404);
-            exit("Ficheiro não encontrado.");
-        }
-
-        // 3) Determinar MIME
-        $mime = mime_content_type($caminho);
-        $ficheiro = basename($caminho);
-
-        // 4) Headers seguros para entrega direta
-        header("Content-Type: $mime");
-        header("Content-Disposition: inline; filename=\"$ficheiro\"");
-        header("Content-Length: " . filesize($caminho));
-
-        // 5) Entregar ficheiro
-        readfile($caminho);
-        exit;
-    }
 
     /**
      * Converte DOCX/XLSX/PPTX para PDF usando LibreOffice (modo headless)
@@ -744,6 +603,120 @@ WHERE 1=1
                     'documento' => $documento,
                     'historico' => $historico
         ]);
+    }
+
+    public function verAnexo($id)
+    {
+        $anexo = DocumentoFicheiro::find($id);
+
+        if (!$anexo) {
+            http_response_code(404);
+            exit("Anexo não encontrado.");
+        }
+
+        $caminho = dirname(__DIR__, 2) . '/storage/documentos/' . $anexo->ficheiro;
+
+        if (!file_exists($caminho)) {
+            http_response_code(404);
+            exit("Ficheiro não encontrado.");
+        }
+
+        $ext = strtolower(pathinfo($caminho, PATHINFO_EXTENSION));
+        $ficheiro = basename($caminho);
+
+        $mime = mime_content_type($caminho);
+
+        header("Content-Type: $mime");
+        header("Content-Disposition: inline; filename=\"$ficheiro\"");
+        header("Content-Length: " . filesize($caminho));
+
+        readfile($caminho);
+        exit;
+    }
+
+    public function downloadAnexo($id)
+    {
+        $anexo = DocumentoFicheiro::find($id);
+
+        if (!$anexo) {
+            http_response_code(404);
+            exit("Anexo não encontrado.");
+        }
+
+        $caminho = dirname(__DIR__, 2) . '/storage/documentos/' . $anexo->ficheiro;
+
+        if (!file_exists($caminho)) {
+            http_response_code(404);
+            exit("Ficheiro não encontrado.");
+        }
+
+        $ficheiro = basename($caminho);
+
+        header("Content-Type: application/octet-stream");
+        header("Content-Disposition: attachment; filename=\"$ficheiro\"");
+        header("Content-Length: " . filesize($caminho));
+
+        readfile($caminho);
+        exit;
+    }
+
+    public function abrirAnexo($id)
+    {
+        $anexo = DocumentoFicheiro::find($id);
+
+        if (!$anexo) {
+            http_response_code(404);
+            exit("Anexo não encontrado.");
+        }
+
+        $base = dirname(__DIR__, 2) . '/storage/documentos/';
+        $origem = $base . $anexo->ficheiro;
+
+        if (!file_exists($origem)) {
+            http_response_code(404);
+            exit("Ficheiro não encontrado.");
+        }
+
+        $ext = strtolower(pathinfo($origem, PATHINFO_EXTENSION));
+        $ficheiro = basename($origem);
+
+        // Inline direto
+        $inline = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'txt'];
+
+        if (in_array($ext, $inline)) {
+            header("Content-Type: " . mime_content_type($origem));
+            header("Content-Disposition: inline; filename=\"$ficheiro\"");
+            header("Content-Length: " . filesize($origem));
+            readfile($origem);
+            exit;
+        }
+
+        // Conversão para PDF
+        $convertiveis = ['docx', 'xlsx', 'pptx'];
+
+        if (in_array($ext, $convertiveis)) {
+
+            $pdfDestino = $origem . '.pdf';
+
+            if (!file_exists($pdfDestino)) {
+                $this->converterDocxParaPdf($origem, $pdfDestino);
+            }
+
+            if (file_exists($pdfDestino)) {
+                header("Content-Type: application/pdf");
+                header("Content-Disposition: inline; filename=\"preview.pdf\"");
+                header("Content-Length: " . filesize($pdfDestino));
+                readfile($pdfDestino);
+                exit;
+            }
+        }
+
+        // Fallback → download
+        header("Content-Type: application/octet-stream");
+        header("Content-Disposition: attachment; filename=\"$ficheiro\"");
+        header("Content-Length: " . filesize($origem));
+        readfile($origem);
+        exit;
     }
 
     public function recuperarArquivado($id)
@@ -1052,17 +1025,11 @@ WHERE 1=1
                     return $this->redirect('/admin/documentos/criar');
                 }
 
-
-                Documento::create([
-                    'titulo' => $titulo,
+                DocumentoFicheiro::create([
+                    'documento_id' => $documento->id,
                     'ficheiro' => $nomeGuardado,
-                    'ficheiro_original' => $nomeOriginal,
-                    'mime_type' => $mimeReal,
                     'tamanho' => $tamanho,
-                    'hash' => $hash,
-                    'criado_por' => $user->id,
-                    'caminho' => $subpasta,
-                    'tipo_id' => $tipo_id
+                    'mime' => $mimeReal
                 ]);
             }
 

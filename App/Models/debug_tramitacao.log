@@ -1598,3 +1598,113 @@ Array
     [estado] => concluido
     [criado_em] => 2026-05-30 20:15:25
 )
+Array
+(
+    [documento_id] => 387
+    [area_id] => 
+    [utilizador_id] => 3
+    [acao] => ARQUIVADO
+    [estado] => arquivado
+    [comentario] => Documento arquivado.
+    [criado_em] => 2026-06-01 18:55:35
+)
+Array
+(
+    [documento_id] => 389
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => documentos incompletos.
+    [estado] => novo
+    [criado_em] => 2026-06-01 18:58:09
+)
+Array
+(
+    [documento_id] => 389
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 
+    [comentario] => documentos incompletos.
+    [estado] => pendente
+    [criado_em] => 2026-06-01 18:58:36
+)
+Array
+(
+    [documento_id] => 394
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => novo documento
+    [estado] => novo
+    [criado_em] => 2026-06-02 16:54:30
+)
+Array
+(
+    [documento_id] => 394
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 
+    [comentario] => verificar documentos
+    [estado] => em_tramitacao
+    [criado_em] => 2026-06-02 16:55:03
+)
+Array
+(
+    [documento_id] => 398
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => teste
+    [estado] => novo
+    [criado_em] => 2026-06-02 20:35:53
+)
+Array
+(
+    [documento_id] => 398
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 
+    [comentario] => teste
+    [estado] => analise
+    [criado_em] => 2026-06-02 20:36:17
+)
+Array
+(
+    [documento_id] => 399
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 
+    [comentario] => falta doc
+    [estado] => pendente
+    [criado_em] => 2026-06-02 20:43:39
+)
+Array
+(
+    [documento_id] => 399
+    [area_id] => 1
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => 
+    [criado_em] => 2026-06-02 20:44:13
+)
+Array
+(
+    [documento_id] => 399
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 1
+    [comentario] => faltam documentos
+    [estado] => pendente
+    [criado_em] => 2026-06-02 20:45:51
+)
+Array
+(
+    [documento_id] => 398
+    [area_id] => 8
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => parecer jurídico
+    [criado_em] => 2026-06-02 20:47:05
+)

@@ -25,11 +25,11 @@
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Tipo</label>
                     <select name="tipo_id" class="form-select">
-                        <option value="">-- Todos os tipos --</option>
-                        {% for tipo in tipos %}
-                            <option value="{{ tipo.id }}"
-                                    {{ app.request.get('tipo_id') == tipo.id ? 'selected' : '' }}>
-                                {{ tipo.nome }}
+                        <option value="">Todos</option>
+                        {% for t in tipos %}
+                            <option value="{{ t.tipo_id }}"
+                                    {{ app.request.get('tipo_id') == t.tipo_id ? 'selected' }}>
+                                {{ t.nome }}
                             </option>
                         {% endfor %}
                     </select>
@@ -118,18 +118,17 @@
 
                 <thead class="table-light">
                     <tr>
-                        <th style="width: 25%">Ficheiro</th>
-                        <th>Título</th>
+                        <th style="width: 25%">Título</th>
+                        <th>Anexos</th>
                         <th>Tipo</th>
                         <th>Estado</th>
                         <th>Área Atual</th>
-                        <th>Tamanho</th>
+                        <th>Criado em</th>
 
                         {% if auth.user.perfil != 'utilizador' %}
                             <th>Criado por</th>
                             {% endif %}
 
-                        <th>Criado em</th>
                         <th class="text-end">Ações</th>
                     </tr>
                 </thead>
@@ -137,34 +136,79 @@
                 <tbody>
                     {% if documentos is empty %}
                         <tr>
-                            <td colspan="9" class="text-center py-4 text-muted">
+                            <td colspan="8" class="text-center py-4 text-muted">
                                 <i class="fa fa-info-circle me-2"></i>
                                 Nenhum documento encontrado.
                             </td>
                         </tr>
                     {% else %}
                         {% for doc in documentos %}
+                            {% set anexos = doc.anexos() %}
+
                             <tr>
 
-                                <td>
-                                    <i class="fa {{ doc.icon() }} me-2 text-primary" style="font-size:22px;"></i>
-                                    <span class="fw-semibold">{{ doc.ficheiro_original }}</span>
+                                {# TÍTULO #}
+                                <td class="fw-semibold">
+                                    {{ doc.titulo }}
                                 </td>
 
-                                <td>{{ doc.titulo }}</td>
+                                {# ANEXOS #}
+                                <td>
+                                    <span class="badge-anexos">{{ anexos|length }} anexos</span>
 
+                                    <ul class="anexos-lista mt-2">
+                                        {% for a in anexos %}
+                                            {% set nome = a.ficheiro|split('/')|last %}
+                                            {% set ext = nome|split('.')|last|lower %}
+                                            {% set icone = icones[ext] ?? 'fa-file' %}
+
+                                            <li>
+                                                <i class="fa {{ icone }} anexo-icone"></i>
+
+                                                <a href="/admin/documentos/anexo/{{ a.id }}" 
+                                                   target="_blank" 
+                                                   class="anexo-nome">
+                                                    {{ nome }}
+                                                </a>
+
+                                                <span class="anexo-tamanho">
+                                                    ({{ (a.tamanho / 1024)|number_format(1) }} KB)
+                                                </span>
+                                            </li>
+
+                                            {# PREVIEW INLINE #}
+                                            {% if ext in ['jpg','jpeg','png','gif','webp'] %}
+                                                <img src="/storage/documentos/{{ a.ficheiro }}" 
+                                                     class="img-fluid mt-2 mb-2" 
+                                                     style="max-height: 200px;">
+                                            {% endif %}
+
+                                            {% if ext == 'pdf' %}
+                                                <iframe src="/storage/documentos/{{ a.ficheiro }}" 
+                                                        class="mt-2 mb-2" 
+                                                        style="width:100%; height:300px; border:1px solid #ddd;"></iframe>
+                                                {% endif %}
+                                            {% endfor %}
+                                    </ul>
+                                </td>
+
+                                {# TIPO #}
                                 <td>{{ doc.tipo_nome }}</td>
 
+                                {# ESTADO #}
                                 <td>
                                     <span class="badge badge-estado badge-{{ doc.estado_atual }}">
                                         {{ doc.estado_atual|replace({'_':' '})|title }}
                                     </span>
                                 </td>
 
+                                {# ÁREA #}
                                 <td>{{ doc.area_nome ?? '-' }}</td>
 
-                                <td>{{ (doc.tamanho / 1024)|number_format(1) }} KB</td>
+                                {# CRIADO EM #}
+                                <td>{{ doc.criado_em_formatado() }}</td>
 
+                                {# CRIADO POR #}
                                 {% if auth.user.perfil != 'utilizador' %}
                                     <td>
                                         <img src="{{ doc.criador_avatar() }}"
@@ -174,12 +218,10 @@
                                     </td>
                                 {% endif %}
 
-                                <td>{{ doc.criado_em_formatado() }}</td>
-
+                                {# AÇÕES #}
                                 <td class="text-end">
                                     <div class="btn-group">
 
-                                        {# VER — detalhe com abas #}
                                         <a href="/admin/documentos/abrir/{{ doc.id }}" 
                                            target="_blank"
                                            class="btn btn-sm btn-secondary">
@@ -215,6 +257,7 @@
                 </tbody>
 
             </table>
+
         </div>
 
         <div class="p-3">
@@ -228,30 +271,30 @@
     <script src="/assets/js/documentos/index.js?v={{ random() }}"></script>
 
     <script>
-                                                   document.addEventListener("DOMContentLoaded", () => {
-                                                       // Remove listeners antigos que bloqueavam a paginação
-                                                       document.querySelectorAll(".pagination a.page-link").forEach(a => {
-                                                           const clone = a.cloneNode(true);
-                                                           a.parentNode.replaceChild(clone, a);
-                                                       });
+                                       document.addEventListener("DOMContentLoaded", () => {
+                                           // Remove listeners antigos que bloqueavam a paginação
+                                           document.querySelectorAll(".pagination a.page-link").forEach(a => {
+                                               const clone = a.cloneNode(true);
+                                               a.parentNode.replaceChild(clone, a);
+                                           });
 
-                                                       // Efeito dragover do dropzone (não altera o upload)
-                                                       const dz = document.getElementById("dropZone");
-                                                       if (dz) {
-                                                           dz.addEventListener("dragover", e => {
-                                                               e.preventDefault();
-                                                               dz.classList.add("dragover");
-                                                           });
+                                           // Efeito dragover do dropzone (não altera o upload)
+                                           const dz = document.getElementById("dropZone");
+                                           if (dz) {
+                                               dz.addEventListener("dragover", e => {
+                                                   e.preventDefault();
+                                                   dz.classList.add("dragover");
+                                               });
 
-                                                           dz.addEventListener("dragleave", () => {
-                                                               dz.classList.remove("dragover");
-                                                           });
+                                               dz.addEventListener("dragleave", () => {
+                                                   dz.classList.remove("dragover");
+                                               });
 
-                                                           dz.addEventListener("drop", () => {
-                                                               dz.classList.remove("dragover");
-                                                           });
-                                                       }
-                                                   });
+                                               dz.addEventListener("drop", () => {
+                                                   dz.classList.remove("dragover");
+                                               });
+                                           }
+                                       });
     </script>
 
     <style>

@@ -14,60 +14,66 @@
                 <th>Estado</th>
                 <th>Área Atual</th>
                 <th>Criado em</th>
-                <th>Tamanho</th>
-                <th>Ficheiro</th>
+                <th>Anexos</th>
             </tr>
         </thead>
 
         <tbody>
             {% for d in documentos %}
+                {% set anexos = d.anexos() %}
+
                 <tr>
                     <td>{{ d.titulo }}</td>
 
-                    {# Tipo do documento (via JOIN) #}
                     <td>{{ d.tipo_nome ?: '-' }}</td>
 
-                    {# Estado com cores (igual ao admin) #}
                     <td>
                         <span class="badge badge-estado badge-{{ d.estado_atual|lower|replace({' ':'_'}) }}">
                             {{ d.estado_atual|replace({'_':' '})|capitalize }}
                         </span>
                     </td>
 
-                    {# Área atual (via JOIN) #}
                     <td>{{ d.area_nome ?: '-' }}</td>
 
-                    {# Data formatada #}
                     <td>{{ d.criado_em_formatado() }}</td>
 
-                    {# Tamanho formatado #}
                     <td>
-                        {% if d.tamanho %}
-                            {{ (d.tamanho / 1024)|number_format(1, '.', ',') }} KB
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
+                        <span class="badge bg-primary">{{ anexos|length }} ficheiro(s)</span>
 
-                    {# Link correto para abrir o ficheiro #}
-                    <td>
-                        <a href="/documentos/abrir/{{ d.caminho|trim('/') }}/{{ d.ficheiro }}" target="_blank">
-                            Abrir
-                        </a>
+                        {% if anexos %}
+                            <ul class="mt-2" style="padding-left: 1rem;">
+                                {% for a in anexos %}
+                                    {% set nome = a.ficheiro|split('/')|last %}
+                                    {% set ext = nome|split('.')|last|lower %}
+
+                                    <li>
+                                        <i class="fa fa-file me-1"></i>
+
+                                        <a href="/documentos/anexo/abrir/{{ a.id }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                            <i class="fa fa-eye"></i> Ver
+                                        </a>
+
+                                        <a href="/documentos/download/{{ a.id }}" class="btn btn-sm btn-outline-secondary">
+                                            <i class="fa fa-download"></i> Download
+                                        </a>
+
+                                        <small class="text-muted">
+                                            ({{ (a.tamanho / 1024)|number_format(1) }} KB)
+                                        </small>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
                     </td>
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="7" class="text-center text-muted">
+                    <td colspan="6" class="text-center text-muted">
                         Nenhum documento encontrado.
                     </td>
                 </tr>
             {% endfor %}
         </tbody>
     </table>
-
-{% endblock %}
-
-{% block scripts %}
 
 {% endblock %}

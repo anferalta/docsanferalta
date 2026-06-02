@@ -42,22 +42,11 @@ class Documento extends Model
     // ============================================================
     //  CAMPOS GRAVÁVEIS (CORRIGIDO!)
     // ============================================================
-    protected array $fillable = [
+    protected $fillable = [
         'titulo',
-        'ficheiro',
-        'ficheiro_original',
-        'mime_type',
-        'tamanho',
-        'hash',
-        'criado_por',
-        //'criado_em',
-        'caminho',
         'tipo_id',
-        'estado',
-        'estado_atual',
-        'area_atual_id',
-        'arquivado_em',
-        'arquivado_por_id'
+        'criado_por',
+        'estado_atual'
     ];
 
     /* ============================================================
@@ -246,5 +235,11 @@ class Documento extends Model
                         "id = :id",
                         [':id' => $this->id]
                 );
+    }
+
+    public function anexos()
+    {
+        $m = new \App\Models\DocumentoFicheiro();
+        return $m->where('documento_id', '=', $this->id)->get();
     }
 }

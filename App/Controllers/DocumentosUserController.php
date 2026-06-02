@@ -6,18 +6,17 @@ use App\Core\BaseController;
 use App\Core\Auth;
 use App\Models\Documento;
 use App\Models\DocumentoTipo;
+use App\Models\DocumentoFicheiro;
 use App\Core\Conexao;
 
 class DocumentosUserController extends BaseController
 {
-
     /**
      * Lista apenas os documentos do utilizador autenticado
      */
     public function index()
     {
         $user = Auth::user();
-
         if (!$user) {
             return $this->redirect('/login');
         }
@@ -41,19 +40,25 @@ class DocumentosUserController extends BaseController
 
         $documentos = [];
         while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+
             $doc = new Documento();
+
             foreach ($row as $campo => $valor) {
                 if (property_exists($doc, $campo)) {
                     $doc->$campo = $valor;
                 }
             }
+
             $doc->tipo_nome = $row['tipo_nome'];
             $doc->area_nome = $row['area_nome'];
+
+            // Carregar anexos
+           
             $documentos[] = $doc;
         }
 
         return $this->render('documentos_user/index.twig', [
-                    'documentos' => $documentos
+            'documentos' => $documentos
         ]);
     }
 
@@ -70,7 +75,7 @@ class DocumentosUserController extends BaseController
         $tipos = DocumentoTipo::all();
 
         return $this->render('documentos_user/criar.twig', [
-                    'tipos' => $tipos
+            'tipos' => $tipos
         ]);
     }
 
@@ -79,7 +84,6 @@ class DocumentosUserController extends BaseController
      */
     public function criarSubmit()
     {
-        // 1. Garantir que é POST
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             return $this->redirect('/documentos/criar');
         }
@@ -89,7 +93,7 @@ class DocumentosUserController extends BaseController
             return $this->redirect('/login');
         }
 
-        // 2. Validação dos campos obrigatórios
+        // Validação
         $titulo = trim($_POST['titulo'] ?? '');
         $tipo_id = intval($_POST['tipo_id'] ?? 0);
 
@@ -101,91 +105,77 @@ class DocumentosUserController extends BaseController
             return $this->redirect('/documentos/criar?erro=tipo');
         }
 
-        // 3. Validar ficheiros
         if (empty($_FILES['ficheiros']['name'][0])) {
             return $this->redirect('/documentos/criar?erro=ficheiros');
         }
 
-        // ============================================================
-        // 4. Criar diretório baseado na data (ABSOLUTO + CORRIGIDO)
-        // ============================================================
-        // Caminho relativo guardado na BD
+        // Criar documento
+        $documentoId = Documento::create([
+            'titulo' => $titulo,
+            'tipo_id' => $tipo_id,
+            'criado_por' => $user->id,
+            'estado_atual' => 'novo',
+            'area_atual_id' => null
+        ]);
+
+        // Diretório por data
         $baseDir = date('Y/m/d/');
-
-        // Caminho absoluto até à raiz do projeto
-        // __DIR__ = App/Controllers
-        // /../../.. = volta até à raiz do projeto
         $root = realpath(__DIR__ . '/../../');
-
-        // Caminho absoluto final onde os ficheiros serão guardados
         $fullPath = $root . '/storage/documentos/' . $baseDir;
 
         if (!is_dir($fullPath)) {
             mkdir($fullPath, 0777, true);
         }
 
-        // ============================================================
-        // 5. Processar cada ficheiro enviado
-        // ============================================================
+        // Processar anexos
         foreach ($_FILES['ficheiros']['name'] as $i => $nomeOriginal) {
 
             $tmp = $_FILES['ficheiros']['tmp_name'][$i];
-            $ext = strtolower(pathinfo($nomeOriginal, PATHINFO_EXTENSION));
-
-            // Nome único
             $novoNome = uniqid() . '_' . preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $nomeOriginal);
             $destino = $fullPath . $novoNome;
 
-            // Mover ficheiro
             if (!move_uploaded_file($tmp, $destino)) {
                 return $this->redirect('/documentos/criar?erro=upload');
             }
 
-            // 6. Criar objeto Documento
-            $doc = new Documento();
-
-            $doc->titulo = $titulo;
-            $doc->tipo_id = $tipo_id;
-            $doc->ficheiro = $novoNome;
-            $doc->ficheiro_original = $nomeOriginal;
-
-            // Guardar apenas o caminho relativo
-            $doc->caminho = $baseDir;
-
-            $doc->mime_type = mime_content_type($destino);
-            $doc->tamanho = filesize($destino);
-            $doc->criado_por = $user->id;
-
-            // Estado inicial
-            $doc->estado = 1;
-            $doc->estado_atual = 'novo';
-            $doc->area_atual_id = null;
-
-            $doc->save();
+            DocumentoFicheiro::create([
+                'documento_id' => $documentoId,
+                'ficheiro' => $baseDir . $novoNome,
+                'tamanho' => filesize($destino),
+                'mime' => mime_content_type($destino),
+                'criado_em' => date('Y-m-d H:i:s')
+            ]);
         }
 
-        // 7. Sucesso
         return $this->redirect('/documentos?sucesso=1');
     }
 
-    public function abrir($ano, $mes, $dia, $ficheiro)
+    /**
+     * Abrir anexo (utilizador normal)
+     */
+    public function abrir($idAnexo)
     {
         $user = Auth::user();
         if (!$user) {
             return $this->redirect('/login');
         }
 
+        $anexo = DocumentoFicheiro::find($idAnexo);
+
+        if (!$anexo) {
+            http_response_code(404);
+            exit("Anexo não encontrado.");
+        }
+
         $root = realpath(__DIR__ . '/../../');
-        $path = $root . "/storage/documentos/$ano/$mes/$dia/$ficheiro";
+        $path = $root . '/storage/documentos/' . $anexo->ficheiro;
 
         if (!file_exists($path)) {
             http_response_code(404);
-            echo "Ficheiro não encontrado.";
-            exit;
+            exit("Ficheiro não encontrado.");
         }
 
-        $mime = mime_content_type($path);
-        header("Content-Type: $mime");
+        header("Content-Type: " . mime_content_type($path));
         header("Content-Length: " . filesize($path));
 
         readfile($path);

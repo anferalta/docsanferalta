@@ -496,12 +496,12 @@ class TramitacaoAdminController extends BaseController
         $db = \App\Core\Conexao::getInstancia();
 
         // FILTROS
-        $estado = $_GET['estado'] ?? null;
-        $area = $_GET['area'] ?? null;
-        $criador = $_GET['criador'] ?? null;
-        $tipo = $_GET['tipo'] ?? null;
-        $dataInicio = $_GET['data_inicio'] ?? null;
-        $dataFim = $_GET['data_fim'] ?? null;
+        $estado = $_GET['estado'] ?? '';
+        $area = $_GET['area'] ?? '';
+        $criador = $_GET['criador'] ?? '';
+        $tipo = $_GET['tipo'] ?? '';
+        $dataInicio = $_GET['data_inicio'] ?? '';
+        $dataFim = $_GET['data_fim'] ?? '';
 
         $sql = "
         SELECT 
@@ -516,43 +516,43 @@ class TramitacaoAdminController extends BaseController
         LEFT JOIN documento_tipos t ON t.tipo_id = d.tipo_id
         LEFT JOIN documento_areas a ON a.id = d.area_atual_id
         LEFT JOIN utilizadores u ON u.id = d.criado_por
-        WHERE d.estado_atual IN ('novo', 'pendente', 'analise', 'em_tramitacao')
+        WHERE d.estado_atual IN ('novo', 'pendente', 'analise', 'em_tramitacao', 'concluido')
     ";
 
         $params = [];
 
-        // FILTRO ESTADO
-        if (!empty($estado)) {
+        // FILTRO ESTADO (usa codigo)
+        if ($estado !== '') {
             $sql .= " AND d.estado_atual = ? ";
             $params[] = $estado;
         }
 
         // FILTRO ÁREA
-        if (!empty($area)) {
+        if ($area !== '') {
             $sql .= " AND a.nome = ? ";
             $params[] = $area;
         }
 
         // FILTRO CRIADOR
-        if (!empty($criador)) {
+        if ($criador !== '') {
             $sql .= " AND u.nome LIKE ? ";
             $params[] = "%$criador%";
         }
 
-        // FILTRO TIPO
-        if (!empty($tipo)) {
-            $sql .= " AND t.nome LIKE ? ";
-            $params[] = "%$tipo%";
+        // FILTRO TIPO (usa codigo)
+        if ($tipo !== '') {
+            $sql .= " AND t.codigo = ? ";
+            $params[] = $tipo;
         }
 
         // FILTRO DATA INICIAL
-        if (!empty($dataInicio)) {
+        if ($dataInicio !== '') {
             $sql .= " AND DATE(d.criado_em) >= ? ";
             $params[] = $dataInicio;
         }
 
         // FILTRO DATA FINAL
-        if (!empty($dataFim)) {
+        if ($dataFim !== '') {
             $sql .= " AND DATE(d.criado_em) <= ? ";
             $params[] = $dataFim;
         }
@@ -563,7 +563,7 @@ class TramitacaoAdminController extends BaseController
         $stmt->execute($params);
         $documentos = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-        // LISTAS PARA OS SELECTS
+        // LISTAS PARA SELECTS
         $areas = \App\Models\DocumentoArea::all();
         $estados = \App\Models\DocumentoEstado::all();
         $tipos = \App\Models\DocumentoTipo::all();

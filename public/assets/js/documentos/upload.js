@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-    console.log("UPLOAD.JS carregado (versão finalíssima)");
+    console.log("UPLOAD.JS carregado (versão compatível com anexos)");
 
     const form = document.getElementById("upload-form");
     const dropZone = document.getElementById("dropZone");
@@ -9,18 +9,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const fileLimitWarning = document.getElementById("fileLimitWarning");
 
     const MAX_FILES = 10;
-    const MAX_SIZE_MB = 10;
+    const MAX_SIZE_MB = 20;     // atualizado
     const MAX_TOTAL_MB = 100;
 
     const ALLOWED_EXT = [
         "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
-        "jpg", "jpeg", "png", "gif", "webp", "txt"
+        "jpg", "jpeg", "png", "gif", "webp", "txt",
+        "zip", "rar", "7z"      // novos
     ];
 
     const PAGE_SIZE = 5;
     let currentPage = 1;
 
-    // Buffer real dos ficheiros
     let fileBuffer = new DataTransfer();
 
     const bytesToMB = b => b / (1024 * 1024);
@@ -116,15 +116,10 @@ document.addEventListener("DOMContentLoaded", () => {
             fileBuffer.items.add(f);
         }
 
-        // Garantir atualização do input
         await new Promise(resolve => setTimeout(resolve, 20));
         updateFileInput();
         renderFileList();
     }
-
-    // ============================
-    // EVENTOS DO DROPZONE
-    // ============================
 
     dropZone.addEventListener("click", () => fileInput.click());
 
@@ -143,26 +138,16 @@ document.addEventListener("DOMContentLoaded", () => {
         addFiles(e.dataTransfer.files);
     });
 
-    // ============================
-    // INPUT DE FICHEIROS
-    // ============================
-
     fileInput.addEventListener("change", async () => {
         await addFiles(fileInput.files);
 
-        // FIX CRÍTICO DO PRIMEIRO CLICK
         await new Promise(resolve => setTimeout(resolve, 20));
         updateFileInput();
     });
 
-    // ============================
-    // SUBMISSÃO DO FORMULÁRIO
-    // ============================
-
     form.addEventListener("submit", async e => {
-        e.preventDefault(); // impedir submissão imediata
+        e.preventDefault();
 
-        // Garantir que o input atualiza ANTES de enviar
         await new Promise(resolve => setTimeout(resolve, 50));
         updateFileInput();
 
@@ -171,7 +156,6 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // Agora sim, submeter com ficheiros corretos
         form.submit();
     });
 });

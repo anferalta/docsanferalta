@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Documento;
+use App\Models\DocumentoFicheiro;
 
 class DocumentoUploader
 {
@@ -14,6 +15,23 @@ class DocumentoUploader
         $ficheiros = $files['ficheiros'];
         $total = count($ficheiros['name']);
 
+        if ($total < 1) {
+            throw new \Exception("Nenhum ficheiro enviado.");
+        }
+
+        // ============================
+        // 1. Criar o DOCUMENTO (único)
+        // ============================
+        $documento = Documento::create([
+            'titulo' => $titulo,
+            'tipo_id' => $tipo_id,
+            'criado_por' => $user->id,
+            'estado_atual' => 'novo'
+        ]);
+
+        // ============================
+        // 2. Validações e limites
+        // ============================
         $extPermitidas = [
             'pdf','doc','docx','xls','xlsx','ppt','pptx','txt',
             'jpg','jpeg','png','gif','webp','zip','rar','7z'
@@ -37,18 +55,13 @@ class DocumentoUploader
         $finfo = new \finfo(FILEINFO_MIME_TYPE);
 
         // ============================
-        // 1. Caminho ABSOLUTO SEGURO (SEM trim, SEM barras soltas)
+        // 3. Caminho seguro
         // ============================
         $root = dirname(__DIR__, 2);
 
-        // Construção segura da data
         $ano = date('Y');
         $mes = date('m');
         $dia = date('d');
-
-        if (!$ano || !$mes || !$dia) {
-            throw new \Exception("Erro interno: data inválida ($ano/$mes/$dia).");
-        }
 
         $subpasta = "$ano/$mes/$dia";
         $base = $root . "/storage/documentos/$subpasta/";
@@ -58,7 +71,7 @@ class DocumentoUploader
         }
 
         // ============================
-        // 2. Processar ficheiros
+        // 4. Processar cada ficheiro (ANEXOS)
         // ============================
         for ($i = 0; $i < $total; $i++) {
 
@@ -106,11 +119,14 @@ class DocumentoUploader
                 throw new \Exception("Erro ao guardar o ficheiro: {$nomeOriginal}");
             }
 
+            // ============================
+            // 5. Hash anti-duplicação
+            // ============================
             $hash = hash_file('sha256', $destino);
 
-            $existe = Documento::query()
+            $existe = DocumentoFicheiro::query()
+                ->where('documento_id', '=', $documento->id)
                 ->where('hash', '=', $hash)
-                ->where('criado_por', '=', $user->id)
                 ->first();
 
             if ($existe) {
@@ -118,16 +134,14 @@ class DocumentoUploader
                 throw new \Exception("Este ficheiro já foi enviado anteriormente: {$nomeOriginal}");
             }
 
-            Documento::create([
-                'titulo' => $titulo,
-                'ficheiro' => $nomeGuardado,
-                'ficheiro_original' => $nomeOriginal,
-                'mime_type' => $mimeReal,
+            // ============================
+            // 6. Criar ANEXO
+            // ============================
+            DocumentoFicheiro::create([
+                'documento_id' => $documento->id,
+                'ficheiro' => $subpasta . '/' . $nomeGuardado,
                 'tamanho' => $tamanho,
-                'hash' => $hash,
-                'criado_por' => $user->id,
-                'caminho' => $subpasta . '/',
-                'tipo_id' => $tipo_id
+                'mime' => $mimeReal
             ]);
         }
     }

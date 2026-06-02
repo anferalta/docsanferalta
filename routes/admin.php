@@ -34,7 +34,8 @@ $router->get('/dashboard', 'DashboardUserController@index');
 $router->get('/documentos', 'DocumentosUserController@index');
 $router->get('/documentos/criar', 'DocumentosUserController@criar');
 $router->post('/documentos/criar', 'DocumentosUserController@criarSubmit');
-$router->get('/documentos/abrir/{ano}/{mes}/{dia}/{ficheiro}', 'DocumentosUserController@abrir');
+$router->get('/documentos/anexo/abrir/{id:\d+}', 'DocumentosUserController@abrir');
+$router->get('/documentos/abrir/{id}', 'DocumentosUserController@abrir');
 
 // ============================================================
 // ROTAS ADMIN (PROTEGIDAS POR AUTH)
@@ -86,30 +87,55 @@ $router->group([
             // ============================================================
             // DOCUMENTOS (ADMIN)
             // ============================================================
-            $router->get('/documentos', 'Admin\DocumentosAdminController@index')->name('admin.documentos.ver');
 
-            $router->get('/documentos/criar', 'Admin\DocumentosAdminController@criar')->name('admin.documentos.criar');
-            $router->post('/documentos/criar', 'Admin\DocumentosAdminController@criarSubmit')->name('admin.documentos.criar.submit');
+            $router->get('/documentos', 'Admin\DocumentosAdminController@index')
+                    ->name('admin.documentos.ver');
 
-            $router->get('/documentos/editar/{id:\d+}', 'Admin\DocumentosAdminController@editar')->name('admin.documentos.editar');
-            $router->post('/documentos/editar/{id:\d+}', 'Admin\DocumentosAdminController@editarSubmit')->name('admin.documentos.editar.submit');
+            $router->get('/documentos/criar', 'Admin\DocumentosAdminController@criar')
+                    ->name('admin.documentos.criar');
 
-            $router->get('/documentos/abrir/{id:\d+}', 'Admin\DocumentosAdminController@abrir')->name('admin.documentos.abrir');
-            $router->get('/documentos/abrir_raw/{id:\d+}', 'Admin\DocumentosAdminController@abrir_raw')->name('admin.documentos.abrir_raw');
+            $router->post('/documentos/criar', 'Admin\DocumentosAdminController@criarSubmit')
+                    ->name('admin.documentos.criar.submit');
 
-            $router->get('/documentos/ver/{id:\d+}', 'Admin\DocumentosAdminController@ver')->name('admin.documentos.ver_detalhe');
+            $router->get('/documentos/editar/{id:\d+}', 'Admin\DocumentosAdminController@editar')
+                    ->name('admin.documentos.editar');
 
-            $router->get('/documentos/ver/{ano:\d+}/{mes:\d+}/{dia:\d+}/{ficheiro:.+}', 'Admin\DocumentosAdminController@verFicheiro');
+            $router->post('/documentos/editar/{id:\d+}', 'Admin\DocumentosAdminController@editarSubmit')
+                    ->name('admin.documentos.editar.submit');
 
-            $router->get('/documentos/arquivados', 'Admin\DocumentosAdminController@arquivados')->name('admin.documentos.arquivados');
-            $router->get('/documentos/arquivado/{id:\d+}', 'Admin\DocumentosAdminController@verArquivado')->name('admin.documentos.arquivado.ver');
-            $router->post('/documentos/arquivado/{id:\d+}/recuperar', 'Admin\DocumentosAdminController@recuperarArquivado')->name('admin.documentos.arquivado.recuperar');
+            // NOVAS ROTAS PARA ANEXOS
+            $router->get('/documentos/anexo/ver/{id:\d+}', 'Admin\DocumentosAdminController@verAnexo')
+                    ->name('admin.documentos.anexo.ver');
 
-            $router->get('/documentos/eliminar/{id:\d+}', 'Admin\DocumentosAdminController@eliminar')->name('admin.documentos.apagar');
+            $router->get('/documentos/anexo/abrir/{id:\d+}', 'Admin\DocumentosAdminController@abrirAnexo')
+                    ->name('admin.documentos.anexo.abrir');
 
-            $router->get('/documentos/download/{id:\d+}', 'Admin\DocumentosAdminController@download')->name('admin.documentos.download');
-            $router->post('/documentos/download-multiple', 'Admin\DocumentosAdminController@downloadMultiple')->name('admin.documentos.download_multiple');
+            $router->get('/documentos/anexo/download/{id:\d+}', 'Admin\DocumentosAdminController@downloadAnexo')
+                    ->name('admin.documentos.anexo.download');
 
+            // DOCUMENTO DETALHE (sem ficheiro principal)
+            $router->get('/documentos/ver/{id:\d+}', 'Admin\DocumentosAdminController@ver')
+                    ->name('admin.documentos.ver_detalhe');
+
+            // Arquivados
+            $router->get('/documentos/arquivados', 'Admin\DocumentosAdminController@arquivados')
+                    ->name('admin.documentos.arquivados');
+
+            $router->get('/documentos/arquivado/{id:\d+}', 'Admin\DocumentosAdminController@verArquivado')
+                    ->name('admin.documentos.arquivado.ver');
+
+            $router->post('/documentos/arquivado/{id:\d+}/recuperar', 'Admin\DocumentosAdminController@recuperarArquivado')
+                    ->name('admin.documentos.arquivado.recuperar');
+
+            // Eliminar documento
+            $router->get('/documentos/eliminar/{id:\d+}', 'Admin\DocumentosAdminController@eliminar')
+                    ->name('admin.documentos.apagar');
+
+            // Download múltiplo (mantém-se)
+            $router->post('/documentos/download-multiple', 'Admin\DocumentosAdminController@downloadMultiple')
+                    ->name('admin.documentos.download_multiple');
+
+            // Ficheiros existentes (mantém-se)
             $router->get('/documentos/existentes', 'Admin\DocumentosAdminController@ficheirosExistentes');
 
             // ============================================================
