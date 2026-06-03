@@ -43,7 +43,7 @@
                         {% if anexos %}
                             <ul class="mt-2" style="padding-left: 1rem;">
                                 {% for a in anexos %}
-                                    {% set nome = a.ficheiro|split('/')|last %}
+                                    {% set nome = a.nome()|split('/')|last %}
                                     {% set ext = nome|split('.')|last|lower %}
 
                                     <li>
@@ -57,10 +57,13 @@
                                             <i class="fa fa-download"></i> Download
                                         </a>
 
+                                        <span class="ms-2">{{ a.nome() }}</span>
+
                                         <small class="text-muted">
                                             ({{ (a.tamanho / 1024)|number_format(1) }} KB)
                                         </small>
                                     </li>
+
                                 {% endfor %}
                             </ul>
                         {% endif %}

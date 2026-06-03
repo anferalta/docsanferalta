@@ -19,7 +19,6 @@
             padding: 0;
         }
 
-        /* SIDEBAR FIXO */
         .sidebar-user {
             width: 240px;
             height: 100vh;
@@ -32,14 +31,12 @@
             overflow-y: auto;
         }
 
-        /* CONTEÚDO */
         .content-area {
             margin-left: 240px;
             padding: 30px;
             min-height: 100vh;
         }
 
-        /* LINKS DO SIDEBAR */
         .nav-link {
             color: #333;
             font-weight: 500;
@@ -60,18 +57,59 @@
 
 <body>
 
-    <!-- SIDEBAR -->
     <div class="sidebar-user">
         {% include "partials/sidebar_user.twig" %}
     </div>
 
-    <!-- CONTEÚDO -->
     <div class="content-area">
+
+        <!-- MENSAGENS (PADRÃO DO PROJETO) -->
+        {% if sucesso %}
+            <div class="alert alert-success alert-dismissible fade show mb-3">
+                <i class="fa fa-check-circle me-2"></i>
+                Operação concluída com sucesso.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endif %}
+
+        {% if erro == 'ficheiros' %}
+            <div class="alert alert-danger alert-dismissible fade show mb-3">
+                <i class="fa fa-exclamation-circle me-2"></i>
+                Selecione pelo menos um ficheiro.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endif %}
+
+        {% if erro == 'extensao' %}
+            <div class="alert alert-danger alert-dismissible fade show mb-3">
+                <i class="fa fa-ban me-2"></i>
+                Tipo de ficheiro não permitido.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endif %}
+
+        {% if erro == 'tamanho' %}
+            <div class="alert alert-danger alert-dismissible fade show mb-3">
+                <i class="fa fa-exclamation-triangle me-2"></i>
+                O ficheiro excede o tamanho máximo permitido (20MB).
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endif %}
+
+        {% if erro == 'ficheiro_duplicado' %}
+            <div class="alert alert-warning alert-dismissible fade show mb-3">
+                <i class="fa fa-clone me-2"></i>
+                Já enviou este ficheiro anteriormente. Não é permitido duplicar anexos.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endif %}
+
         {% block content %}{% endblock %}
     </div>
 
-    <!-- SCRIPTS DEVEM FICAR AQUI (IMPORTANTE PARA O UPLOAD.JS FUNCIONAR) -->
     {% block scripts %}{% endblock %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
 </html>

@@ -437,13 +437,12 @@ WHERE 1=1
         echo json_encode($nomes);
         exit;
     }
-    
-    public function testar()
-{
-    echo "ROTA ADMIN OK";
-    exit;
-}
 
+    public function testar()
+    {
+        echo "ROTA ADMIN OK";
+        exit;
+    }
 
     /**
      * Converte DOCX/XLSX/PPTX para PDF usando LibreOffice (modo headless)
@@ -614,7 +613,7 @@ WHERE 1=1
             exit("Anexo não encontrado.");
         }
 
-        $caminho = dirname(__DIR__, 2) . '/storage/documentos/' . $anexo->ficheiro;
+        $caminho = dirname(__DIR__, 3) . '/storage/documentos/' . $anexo->ficheiro;
 
         if (!file_exists($caminho)) {
             http_response_code(404);
@@ -643,7 +642,7 @@ WHERE 1=1
             exit("Anexo não encontrado.");
         }
 
-        $caminho = dirname(__DIR__, 2) . '/storage/documentos/' . $anexo->ficheiro;
+        $caminho = dirname(__DIR__, 3) . '/storage/documentos/' . $anexo->ficheiro;
 
         if (!file_exists($caminho)) {
             http_response_code(404);
@@ -660,62 +659,53 @@ WHERE 1=1
         exit;
     }
 
-    public function abrirAnexo($id)
+    public function abrir($idAnexo)
     {
-        $anexo = DocumentoFicheiro::find($id);
+        // 1. Verificar login
+        $user = Auth::user();
+        if (!$user) {
+            return $this->redirect('/login');
+        }
+
+        // 2. Buscar o anexo
+        $anexo = DocumentoFicheiro::find($idAnexo);
 
         if (!$anexo) {
             http_response_code(404);
             exit("Anexo não encontrado.");
         }
 
-        $base = dirname(__DIR__, 2) . '/storage/documentos/';
-        $origem = $base . $anexo->ficheiro;
+        // 3. Construir caminho absoluto
+        $root = realpath(__DIR__ . '/../../../');
+        $path = $root . '/storage/documentos/' . $anexo->ficheiro;
 
-        if (!file_exists($origem)) {
+        if (!file_exists($path)) {
             http_response_code(404);
             exit("Ficheiro não encontrado.");
         }
 
-        $ext = strtolower(pathinfo($origem, PATHINFO_EXTENSION));
-        $ficheiro = basename($origem);
+        // 4. Determinar MIME
+        $mime = mime_content_type($path);
+        $nome = basename($anexo->ficheiro);
 
-        // Inline direto
-        $inline = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'txt'];
+        // 5. Tipos que podem abrir inline
+        $inline = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'txt', 'webp'];
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
 
+        // 6. Se for inline → abrir no browser
         if (in_array($ext, $inline)) {
-            header("Content-Type: " . mime_content_type($origem));
-            header("Content-Disposition: inline; filename=\"$ficheiro\"");
-            header("Content-Length: " . filesize($origem));
-            readfile($origem);
+            header("Content-Type: {$mime}");
+            header("Content-Disposition: inline; filename=\"{$nome}\"");
+            header("Content-Length: " . filesize($path));
+            readfile($path);
             exit;
         }
 
-        // Conversão para PDF
-        $convertiveis = ['docx', 'xlsx', 'pptx'];
-
-        if (in_array($ext, $convertiveis)) {
-
-            $pdfDestino = $origem . '.pdf';
-
-            if (!file_exists($pdfDestino)) {
-                $this->converterDocxParaPdf($origem, $pdfDestino);
-            }
-
-            if (file_exists($pdfDestino)) {
-                header("Content-Type: application/pdf");
-                header("Content-Disposition: inline; filename=\"preview.pdf\"");
-                header("Content-Length: " . filesize($pdfDestino));
-                readfile($pdfDestino);
-                exit;
-            }
-        }
-
-        // Fallback → download
+        // 7. Fallback → download
         header("Content-Type: application/octet-stream");
-        header("Content-Disposition: attachment; filename=\"$ficheiro\"");
-        header("Content-Length: " . filesize($origem));
-        readfile($origem);
+        header("Content-Disposition: attachment; filename=\"{$nome}\"");
+        header("Content-Length: " . filesize($path));
+        readfile($path);
         exit;
     }
 

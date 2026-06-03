@@ -12,13 +12,13 @@ class DocumentoFicheiro extends Model
      */
     protected string $table = 'documento_ficheiros';
     protected string $primaryKey = 'id';
-
     public ?int $id = null;
     public ?int $documento_id = null;
     public ?string $ficheiro = null;
     public ?int $tamanho = null;
     public ?string $mime = null;
     public ?string $criado_em = null;
+    public ?string $ficheiro_original = null;
 
     /**
      * Campos permitidos para mass assignment
@@ -29,7 +29,8 @@ class DocumentoFicheiro extends Model
         'ficheiro',
         'tamanho',
         'mime',
-        'criado_em'
+        'criado_em',
+        'ficheiro_original',
     ];
 
     /**
@@ -46,6 +47,12 @@ class DocumentoFicheiro extends Model
      */
     public function nome()
     {
+        // Se existir nome original, usa-o
+        if (!empty($this->ficheiro_original)) {
+            return $this->ficheiro_original;
+        }
+
+        // Caso contrário, usa o nome renomeado
         return basename($this->ficheiro);
     }
 
@@ -70,7 +77,7 @@ class DocumentoFicheiro extends Model
      */
     public function urlVer()
     {
-        return "/admin/documentos/anexo/ver/{$this->id}";
+        return "/admin/documentos/anexo/abrir/{$this->id}";
     }
 
     /**

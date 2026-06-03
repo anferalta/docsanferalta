@@ -154,42 +154,34 @@
 
                                 {# ANEXOS #}
                                 <td>
-                                    <span class="badge-anexos">{{ anexos|length }} anexos</span>
+                                    <span class="badge bg-primary">{{ anexos|length }} ficheiro(s)</span>
 
-                                    <ul class="anexos-lista mt-2">
-                                        {% for a in anexos %}
-                                            {% set nome = a.ficheiro|split('/')|last %}
-                                            {% set ext = nome|split('.')|last|lower %}
-                                            {% set icone = icones[ext] ?? 'fa-file' %}
+                                    {% if anexos %}
+                                        <ul class="mt-2" style="padding-left: 1rem;">
+                                            {% for a in anexos %}
+                                                <li>
+                                                    <i class="fa fa-file me-1"></i>
 
-                                            <li>
-                                                <i class="fa {{ icone }} anexo-icone"></i>
+                                                    <a href="/admin/documentos/anexo/abrir/{{ a.id }}" 
+                                                       class="btn btn-sm btn-outline-primary" 
+                                                       target="_blank">
+                                                        <i class="fa fa-eye"></i> Ver
+                                                    </a>
 
-                                                <a href="/admin/documentos/anexo/{{ a.id }}" 
-                                                   target="_blank" 
-                                                   class="anexo-nome">
-                                                    {{ nome }}
-                                                </a>
+                                                    <a href="/admin/documentos/anexo/download/{{ a.id }}" 
+                                                       class="btn btn-sm btn-outline-secondary">
+                                                        <i class="fa fa-download"></i> Download
+                                                    </a>
 
-                                                <span class="anexo-tamanho">
-                                                    ({{ (a.tamanho / 1024)|number_format(1) }} KB)
-                                                </span>
-                                            </li>
+                                                    <span class="ms-2">{{ a.nome() }}</span>
 
-                                            {# PREVIEW INLINE #}
-                                            {% if ext in ['jpg','jpeg','png','gif','webp'] %}
-                                                <img src="/storage/documentos/{{ a.ficheiro }}" 
-                                                     class="img-fluid mt-2 mb-2" 
-                                                     style="max-height: 200px;">
-                                            {% endif %}
-
-                                            {% if ext == 'pdf' %}
-                                                <iframe src="/storage/documentos/{{ a.ficheiro }}" 
-                                                        class="mt-2 mb-2" 
-                                                        style="width:100%; height:300px; border:1px solid #ddd;"></iframe>
-                                                {% endif %}
+                                                    <small class="text-muted">
+                                                        ({{ (a.tamanho / 1024)|number_format(1) }} KB)
+                                                    </small>
+                                                </li>
                                             {% endfor %}
-                                    </ul>
+                                        </ul>
+                                    {% endif %}
                                 </td>
 
                                 {# TIPO #}
@@ -221,17 +213,6 @@
                                 {# AÇÕES #}
                                 <td class="text-end">
                                     <div class="btn-group">
-
-                                        <a href="/admin/documentos/abrir/{{ doc.id }}" 
-                                           target="_blank"
-                                           class="btn btn-sm btn-secondary">
-                                            <i class="fa fa-eye"></i> Ver
-                                        </a>
-
-                                        <a href="/admin/documentos/download/{{ doc.id }}"
-                                           class="btn btn-sm btn-success">
-                                            <i class="fa fa-download"></i> Download
-                                        </a>
 
                                         {% if isGranted('admin.tramitacao.ver') %}
                                             <a href="/admin/documentos/editar/{{ doc.id }}?tab=tramitacao"
@@ -271,30 +252,30 @@
     <script src="/assets/js/documentos/index.js?v={{ random() }}"></script>
 
     <script>
-                                       document.addEventListener("DOMContentLoaded", () => {
-                                           // Remove listeners antigos que bloqueavam a paginação
-                                           document.querySelectorAll(".pagination a.page-link").forEach(a => {
-                                               const clone = a.cloneNode(true);
-                                               a.parentNode.replaceChild(clone, a);
-                                           });
+                                                   document.addEventListener("DOMContentLoaded", () => {
+                                                       // Remove listeners antigos que bloqueavam a paginação
+                                                       document.querySelectorAll(".pagination a.page-link").forEach(a => {
+                                                           const clone = a.cloneNode(true);
+                                                           a.parentNode.replaceChild(clone, a);
+                                                       });
 
-                                           // Efeito dragover do dropzone (não altera o upload)
-                                           const dz = document.getElementById("dropZone");
-                                           if (dz) {
-                                               dz.addEventListener("dragover", e => {
-                                                   e.preventDefault();
-                                                   dz.classList.add("dragover");
-                                               });
+                                                       // Efeito dragover do dropzone (não altera o upload)
+                                                       const dz = document.getElementById("dropZone");
+                                                       if (dz) {
+                                                           dz.addEventListener("dragover", e => {
+                                                               e.preventDefault();
+                                                               dz.classList.add("dragover");
+                                                           });
 
-                                               dz.addEventListener("dragleave", () => {
-                                                   dz.classList.remove("dragover");
-                                               });
+                                                           dz.addEventListener("dragleave", () => {
+                                                               dz.classList.remove("dragover");
+                                                           });
 
-                                               dz.addEventListener("drop", () => {
-                                                   dz.classList.remove("dragover");
-                                               });
-                                           }
-                                       });
+                                                           dz.addEventListener("drop", () => {
+                                                               dz.classList.remove("dragover");
+                                                           });
+                                                       }
+                                                   });
     </script>
 
     <style>

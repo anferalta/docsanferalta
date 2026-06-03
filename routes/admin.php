@@ -36,6 +36,7 @@ $router->get('/documentos/criar', 'DocumentosUserController@criar');
 $router->post('/documentos/criar', 'DocumentosUserController@criarSubmit');
 $router->get('/documentos/anexo/abrir/{id:\d+}', 'DocumentosUserController@abrir');
 $router->get('/documentos/abrir/{id}', 'DocumentosUserController@abrir');
+$router->get('/documentos/download/{id:\d+}', 'DocumentosUserController@download');
 
 // ============================================================
 // ROTAS ADMIN (PROTEGIDAS POR AUTH)
@@ -107,8 +108,7 @@ $router->group([
             $router->get('/documentos/anexo/ver/{id:\d+}', 'Admin\DocumentosAdminController@verAnexo')
                     ->name('admin.documentos.anexo.ver');
 
-            $router->get('/documentos/anexo/abrir/{id:\d+}', 'Admin\DocumentosAdminController@abrirAnexo')
-                    ->name('admin.documentos.anexo.abrir');
+            $router->get('/documentos/anexo/abrir/{id:\d+}', 'Admin\DocumentosAdminController@abrir');
 
             $router->get('/documentos/anexo/download/{id:\d+}', 'Admin\DocumentosAdminController@downloadAnexo')
                     ->name('admin.documentos.anexo.download');
