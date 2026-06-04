@@ -539,9 +539,9 @@ class TramitacaoAdminController extends BaseController
             $params[] = "%$criador%";
         }
 
-        // FILTRO TIPO (usa codigo)
+        // FILTRO TIPO (usa tipo_id)
         if ($tipo !== '') {
-            $sql .= " AND t.codigo = ? ";
+            $sql .= " AND t.tipo_id = ? ";
             $params[] = $tipo;
         }
 
@@ -576,5 +576,29 @@ class TramitacaoAdminController extends BaseController
                     'tipos' => $tipos,
                     'utilizadores' => $utilizadores
         ]);
+    }
+
+    public function guardar()
+    {
+        $id = $_POST['id'] ?? null;
+        $nome = trim($_POST['nome'] ?? '');
+        $prazo_resposta = (int) ($_POST['prazo_resposta'] ?? 3);
+
+        // validações básicas
+        if ($nome === '') {
+            // trata erro...
+        }
+
+        if ($id) {
+            $area = DocumentoArea::find($id);
+        } else {
+            $area = new DocumentoArea();
+        }
+
+        $area->nome = $nome;
+        $area->prazo_resposta = $prazo_resposta;
+        $area->save();
+
+        return $this->redirect('/admin/areas?sucesso=1');
     }
 }

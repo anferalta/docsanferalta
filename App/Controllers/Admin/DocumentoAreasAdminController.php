@@ -34,7 +34,8 @@ class DocumentoAreasAdminController extends BaseController
                 $_POST['nome'],
                 $_POST['codigo'],
                 $_POST['descricao'],
-                isset($_POST['ativo']) ? 1 : 0
+                isset($_POST['ativo']) ? 1 : 0,
+                (int) $_POST['prazo_resposta'] // NOVO CAMPO
         );
 
         if ($ok) {
@@ -71,7 +72,8 @@ class DocumentoAreasAdminController extends BaseController
                 $_POST['nome'],
                 $_POST['codigo'],
                 $_POST['descricao'],
-                isset($_POST['ativo']) ? 1 : 0
+                isset($_POST['ativo']) ? 1 : 0,
+                (int) $_POST['prazo_resposta'] // NOVO CAMPO
         );
 
         if ($ok) {

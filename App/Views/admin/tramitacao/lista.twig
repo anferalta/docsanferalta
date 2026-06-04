@@ -62,7 +62,7 @@
                         <select name="tipo" class="form-select">
                             <option value="">Todos</option>
                             {% for t in tipos %}
-                                <option value="{{ t.nome }}"
+                                <option value="{{ t.tipo_id }}"
                                         {{ app.request.get('tipo') == t.nome ? 'selected' }}>
                                     {{ t.nome }}
                                 </option>

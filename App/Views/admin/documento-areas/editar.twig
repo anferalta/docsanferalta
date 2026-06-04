@@ -25,6 +25,16 @@
                 <textarea name="descricao" class="form-control">{{ area.descricao }}</textarea>
             </div>
 
+            <div class="mb-3">
+                <label class="form-label">Prazo de resposta (dias)</label>
+                <input type="number"
+                       min="1"
+                       name="prazo_resposta"
+                       class="form-control"
+                       value="{{ area.prazo_resposta ?? 3 }}"
+                       required>
+            </div>
+
             <div class="form-check mb-3">
                 <input type="checkbox" name="ativo" class="form-check-input" {% if area.ativo %}checked{% endif %}>
                 <label class="form-check-label">Ativo</label>
@@ -37,4 +47,3 @@
 </div>
 
 {% endblock %}
-

@@ -79,7 +79,7 @@
                         <option value="">-- Todos --</option>
                         <option value="pendente"       {{ app.request.get('estado_atual') == 'pendente' ? 'selected' : '' }}>Pendente</option>
                         <option value="em_tramitacao"  {{ app.request.get('estado_atual') == 'em_tramitacao' ? 'selected' : '' }}>Em Tramitação</option>
-                        <option value="em_analise"     {{ app.request.get('estado_atual') == 'analise' ? 'selected' : '' }}>Em Análise</option>
+                        <option value="analise"     {{ app.request.get('estado_atual') == 'analise' ? 'selected' : '' }}>Em Análise</option>
                         <option value="concluido"      {{ app.request.get('estado_atual') == 'concluido' ? 'selected' : '' }}>Concluído</option>
                         <option value="devolvido"      {{ app.request.get('estado_atual') == 'devolvido' ? 'selected' : '' }}>Devolvido</option>
                         <option value="arquivado"      {{ app.request.get('estado_atual') == 'arquivado' ? 'selected' : '' }}>Arquivado</option>

@@ -4,37 +4,47 @@
 
 {% block content %}
 
-<div class="card">
-    <div class="card-body">
+    <div class="card">
+        <div class="card-body">
 
-        <form method="POST" action="{{ route('admin.documento_areas.store') }}">
-            {{ csrf_field() }}
+            <form method="POST" action="{{ route('admin.documento_areas.store') }}">
+                {{ csrf_field() }}
 
-            <div class="mb-3">
-                <label class="form-label">Nome</label>
-                <input type="text" name="nome" class="form-control" required>
-            </div>
+                <div class="mb-3">
+                    <label class="form-label">Nome</label>
+                    <input type="text" name="nome" class="form-control" required>
+                </div>
 
-            <div class="mb-3">
-                <label class="form-label">Código</label>
-                <input type="text" name="codigo" class="form-control" required>
-            </div>
+                <div class="mb-3">
+                    <label class="form-label">Código</label>
+                    <input type="text" name="codigo" class="form-control" required>
+                </div>
 
-            <div class="mb-3">
-                <label class="form-label">Descrição</label>
-                <textarea name="descricao" class="form-control"></textarea>
-            </div>
+                <div class="mb-3">
+                    <label class="form-label">Descrição</label>
+                    <textarea name="descricao" class="form-control"></textarea>
+                </div>
 
-            <div class="form-check mb-3">
-                <input type="checkbox" name="ativo" class="form-check-input" checked>
-                <label class="form-check-label">Ativo</label>
-            </div>
+                <div class="form-check mb-3">
+                    <input type="checkbox" name="ativo" class="form-check-input" checked>
+                    <label class="form-check-label">Ativo</label>
+                </div>
 
-            <button class="btn btn-success">Criar</button>
-        </form>
+                <div class="mb-3">
+                    <label for="prazo_resposta" class="form-label">Prazo de resposta (dias)</label>
+                    <input type="number"
+                           min="1"
+                           class="form-control"
+                           id="prazo_resposta"
+                           name="prazo_resposta"
+                           value="{{ area.prazo_resposta ?? 3 }}">
+                </div>
 
+                <button class="btn btn-success">Criar</button>
+            </form>
+
+        </div>
     </div>
-</div>
 
 {% endblock %}
 
