@@ -16,22 +16,38 @@
 
                 <div class="col-md-3">
                     <label class="form-label">Área</label>
-                    <input type="text" name="area" class="form-control" value="{{ app.request.get('area') }}">
+                    <select name="area" class="form-select">
+                        <option value="">Todas</option>
+                        {% for a in areas %}
+                            <option value="{{ a }}" {{ a == app.request.get('area') ? 'selected' : '' }}>
+                                {{ a }}
+                            </option>
+                        {% endfor %}
+                    </select>
                 </div>
 
                 <div class="col-md-3">
                     <label class="form-label">Estado</label>
-                    <input type="text" name="estado" class="form-control" value="{{ app.request.get('estado') }}">
+                    <select name="estado" class="form-select">
+                        <option value="">Todos</option>
+                        {% for e in estados %}
+                            <option value="{{ e }}" {{ e == app.request.get('estado') ? 'selected' : '' }}>
+                                {{ e|capitalize }}
+                            </option>
+                        {% endfor %}
+                    </select>
                 </div>
 
                 <div class="col-md-3">
                     <label class="form-label">Data Inicial</label>
-                    <input type="date" name="data_inicio" class="form-control" value="{{ app.request.get('data_inicio') }}">
+                    <input type="date" name="data_inicio" class="form-control"
+                           value="{{ app.request.get('data_inicio') }}">
                 </div>
 
                 <div class="col-md-3">
                     <label class="form-label">Data Final</label>
-                    <input type="date" name="data_fim" class="form-control" value="{{ app.request.get('data_fim') }}">
+                    <input type="date" name="data_fim" class="form-control"
+                           value="{{ app.request.get('data_fim') }}">
                 </div>
 
                 <div class="col-md-12 text-end">
@@ -51,6 +67,37 @@
                 </div>
 
             </form>
+
+        </div>
+    </div>
+
+    <!-- RESUMO SLA -->
+    <div class="card mb-3">
+        <div class="card-body">
+
+            <h6 class="mb-3">Resumo SLA</h6>
+
+            <div class="row text-center">
+
+                <div class="col-md-4">
+                    <span class="badge bg-success" style="font-size: 16px;">
+                        OK: {{ totais.ok }}
+                    </span>
+                </div>
+
+                <div class="col-md-4">
+                    <span class="badge bg-warning text-dark" style="font-size: 16px;">
+                        Alerta: {{ totais.alerta }}
+                    </span>
+                </div>
+
+                <div class="col-md-4">
+                    <span class="badge bg-danger" style="font-size: 16px;">
+                        Atrasado: {{ totais.atrasado }}
+                    </span>
+                </div>
+
+            </div>
 
         </div>
     </div>
@@ -85,12 +132,14 @@
                                     <span class="badge bg-success">OK</span>
                                 {% elseif d.sla == 'alerta' %}
                                     <span class="badge bg-warning text-dark">Alerta</span>
-                                {% else %}
+                                {% elseif d.sla == 'atrasado' %}
                                     <span class="badge bg-danger">Atrasado</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">—</span>
                                 {% endif %}
                             </td>
 
-                            <td>{{ d.dias_parado }}</td>
+                            <td>{{ d.dias_parado ?? '—' }}</td>
                             <td>{{ d.criado_em|date("d/m/Y") }}</td>
                         </tr>
                     {% endfor %}
@@ -104,4 +153,3 @@
 </div>
 
 {% endblock %}
-
