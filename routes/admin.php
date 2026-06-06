@@ -215,4 +215,9 @@ $router->group([
             $router->post('/backups/files/restaurar/{ficheiro:.+}', 'Admin\BackupsAdminController@restaurarFilesExecutar')->name('admin.backups.files.restaurar.executar');
             $router->get('/backups/files/download/{ficheiro:.+}', 'Admin\BackupsAdminController@download')->name('admin.backups.files.download');
             $router->get('/backups/files/delete/{ficheiro:.+}', 'Admin\BackupsAdminController@delete')->name('admin.backups.files.apagar');
+
+            //Relatorios
+            $router->get('/relatorios', 'Admin\\RelatoriosAdminController@index');
+            $router->get('/relatorios/exportar/pdf', 'Admin\\RelatoriosAdminController@exportarPDF');
+            $router->get('/relatorios/exportar/excel', 'Admin\\RelatoriosAdminController@exportarExcel');
         });

@@ -10,10 +10,11 @@ use App\Models\Auditoria;
 use App\Models\Perfil;
 use App\Models\Permissao;
 
-class DashboardAdminController extends BaseController {
+class DashboardAdminController extends BaseController
+{
 
-    public function index() {
-
+    public function index()
+    {
         // ACL
         $this->authorize('admin.dashboard.ver');
 
@@ -21,8 +22,50 @@ class DashboardAdminController extends BaseController {
         $user = \App\Core\Auth::user();
 
         // ============================================================
+        // SLA — Documentos por estado de prazo
+        // ============================================================
+
+        $slaOk = 0;
+        $slaAlerta = 0;
+        $slaAtrasado = 0;
+
+        $sqlSLA = "
+        SELECT 
+            d.id,
+            d.area_atual_desde,
+            a.prazo_resposta
+        FROM documentos d
+        LEFT JOIN documento_areas a ON a.id = d.area_atual_id
+        WHERE d.estado_atual IN ('novo','pendente','analise','em_tramitacao')
+    ";
+
+        $docsSLA = $db->query($sqlSLA)->fetchAll(\PDO::FETCH_ASSOC);
+
+        foreach ($docsSLA as $doc) {
+
+            if (!$doc['area_atual_desde'] || !$doc['prazo_resposta']) {
+                continue;
+            }
+
+            $inicio = new \DateTime($doc['area_atual_desde']);
+            $agora = new \DateTime();
+            $dias = $inicio->diff($agora)->days;
+
+            $prazo = (int) $doc['prazo_resposta'];
+
+            if ($dias <= $prazo) {
+                $slaOk++;
+            } elseif ($dias <= $prazo + 2) {
+                $slaAlerta++;
+            } else {
+                $slaAtrasado++;
+            }
+        }
+
+        // ============================================================
         // SE FOR ADMIN → CARREGA TODAS AS ESTATÍSTICAS
         // ============================================================
+
         if ($user->isAdmin()) {
 
             // UTILIZADORES
@@ -42,37 +85,37 @@ class DashboardAdminController extends BaseController {
 
             // ÚLTIMOS DOCUMENTOS
             $ultimosDocs = $db->query("
-                SELECT id, titulo, criado_em
-                FROM documentos
-                ORDER BY criado_em DESC
-                LIMIT 10
-            ")->fetchAll(\PDO::FETCH_ASSOC);
+            SELECT id, titulo, criado_em
+            FROM documentos
+            ORDER BY criado_em DESC
+            LIMIT 10
+        ")->fetchAll(\PDO::FETCH_ASSOC);
 
             // ÚLTIMOS UTILIZADORES
             $ultimosUsers = $db->query("
-                SELECT id, nome, email, criado_em
-                FROM utilizadores
-                ORDER BY criado_em DESC
-                LIMIT 10
-            ")->fetchAll(\PDO::FETCH_ASSOC);
+            SELECT id, nome, email, criado_em
+            FROM utilizadores
+            ORDER BY criado_em DESC
+            LIMIT 10
+        ")->fetchAll(\PDO::FETCH_ASSOC);
 
             // GRÁFICO DE REGISTOS
             $stmtMeses = $db->query("
-                SELECT DATE_FORMAT(criado_em, '%Y-%m') AS ano_mes, COUNT(*) AS total
-                FROM utilizadores
-                WHERE criado_em >= DATE_SUB(CURDATE(), INTERVAL 11 MONTH)
-                GROUP BY ano_mes
-                ORDER BY ano_mes ASC
-            ");
+            SELECT DATE_FORMAT(criado_em, '%Y-%m') AS ano_mes, COUNT(*) AS total
+            FROM utilizadores
+            WHERE criado_em >= DATE_SUB(CURDATE(), INTERVAL 11 MONTH)
+            GROUP BY ano_mes
+            ORDER BY ano_mes ASC
+        ");
             $rowsMeses = $stmtMeses->fetchAll(\PDO::FETCH_ASSOC);
 
             $meses = [];
             $registosPorMes = [];
 
             $periodo = new \DatePeriod(
-                (new \DateTime('first day of -11 month'))->setTime(0, 0),
-                new \DateInterval('P1M'),
-                (new \DateTime('first day of next month'))->setTime(0, 0)
+                    (new \DateTime('first day of -11 month'))->setTime(0, 0),
+                    new \DateInterval('P1M'),
+                    (new \DateTime('first day of next month'))->setTime(0, 0)
             );
 
             $map = [];
@@ -89,49 +132,75 @@ class DashboardAdminController extends BaseController {
             // LOGS
             $ultimosLogs = Auditoria::ultimos(10);
 
+            // ============================================================
+            // RANKING DE ÁREAS POR SLA
+            // ============================================================
+
+            $sqlRanking = "
+            SELECT 
+                a.nome AS area,
+                COUNT(d.id) AS total,
+                SUM(CASE 
+                        WHEN TIMESTAMPDIFF(DAY, d.area_atual_desde, NOW()) <= a.prazo_resposta 
+                        THEN 1 ELSE 0 END
+                ) AS dentro_prazo,
+                SUM(CASE 
+                        WHEN TIMESTAMPDIFF(DAY, d.area_atual_desde, NOW()) > a.prazo_resposta 
+                        THEN 1 ELSE 0 END
+                ) AS atrasados
+            FROM documentos d
+            LEFT JOIN documento_areas a ON a.id = d.area_atual_id
+            WHERE d.estado_atual IN ('novo','pendente','analise','em_tramitacao')
+            GROUP BY a.id
+            ORDER BY atrasados DESC
+        ";
+
+            $rankingAreas = $db->query($sqlRanking)->fetchAll(\PDO::FETCH_ASSOC);
+
             return $this->render('admin/dashboard/index.twig', [
-                'isAdmin' => true,
-
-                // UTILIZADORES
-                'totalUtilizadores' => $totalUtilizadores,
-                'totalAtivos' => $totalAtivos,
-                'totalPendentes' => $totalPendentes,
-                'totalBloqueados' => $totalBloqueados,
-
-                // DOCUMENTOS
-                'totalDocumentos' => $totalDocumentos,
-                'totalDocsPendentes' => $totalDocsPendentes,
-                'totalDocsTramitacao' => $totalDocsTramitacao,
-                'totalDocsAnalise' => $totalDocsAnalise,
-                'totalDocsConcluidos' => $totalDocsConcluidos,
-                'totalDocsArquivados' => $totalDocsArquivados,
-                'totalDocsDevolvidos' => $totalDocsDevolvidos,
-
-                // LISTAS
-                'ultimosDocs' => $ultimosDocs,
-                'ultimosUsers' => $ultimosUsers,
-
-                // GRÁFICOS
-                'meses' => $meses,
-                'registosPorMes' => $registosPorMes,
-
-                // LOGS
-                'ultimosLogs' => $ultimosLogs,
+                        'isAdmin' => true,
+                        // UTILIZADORES
+                        'totalUtilizadores' => $totalUtilizadores,
+                        'totalAtivos' => $totalAtivos,
+                        'totalPendentes' => $totalPendentes,
+                        'totalBloqueados' => $totalBloqueados,
+                        // DOCUMENTOS
+                        'totalDocumentos' => $totalDocumentos,
+                        'totalDocsPendentes' => $totalDocsPendentes,
+                        'totalDocsTramitacao' => $totalDocsTramitacao,
+                        'totalDocsAnalise' => $totalDocsAnalise,
+                        'totalDocsConcluidos' => $totalDocsConcluidos,
+                        'totalDocsArquivados' => $totalDocsArquivados,
+                        'totalDocsDevolvidos' => $totalDocsDevolvidos,
+                        // LISTAS
+                        'ultimosDocs' => $ultimosDocs,
+                        'ultimosUsers' => $ultimosUsers,
+                        // GRÁFICOS
+                        'meses' => $meses,
+                        'registosPorMes' => $registosPorMes,
+                        // LOGS
+                        'ultimosLogs' => $ultimosLogs,
+                        // ⭐ SLA
+                        'slaOk' => $slaOk,
+                        'slaAlerta' => $slaAlerta,
+                        'slaAtrasado' => $slaAtrasado,
+                        // ⭐ RANKING
+                        'rankingAreas' => $rankingAreas,
             ]);
         }
 
         // ============================================================
-        // UTILIZADOR NORMAL → APENAS OS DOCUMENTOS DELE
+        // UTILIZADOR NORMAL
         // ============================================================
 
         $userId = $user->id;
 
         $stmt = $db->prepare("
-            SELECT estado_atual, COUNT(*) total
-            FROM documentos
-            WHERE criado_por = :uid
-            GROUP BY estado_atual
-        ");
+        SELECT estado_atual, COUNT(*) total
+        FROM documentos
+        WHERE criado_por = :uid
+        GROUP BY estado_atual
+    ");
         $stmt->execute(['uid' => $userId]);
         $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
@@ -152,12 +221,10 @@ class DashboardAdminController extends BaseController {
         }
 
         return $this->render('admin/dashboard/index.twig', [
-            'isAdmin' => false,
-
-            // DOCUMENTOS DO UTILIZADOR
-            'totalDocsDoUtilizador' => $totalDocsDoUtilizador,
-            'docsUserPendentes' => $docsUserPendentes,
-            'docsUserConcluidos' => $docsUserConcluidos,
+                    'isAdmin' => false,
+                    'totalDocsDoUtilizador' => $totalDocsDoUtilizador,
+                    'docsUserPendentes' => $docsUserPendentes,
+                    'docsUserConcluidos' => $docsUserConcluidos,
         ]);
     }
 }

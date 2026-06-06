@@ -152,8 +152,10 @@ class TramitacaoAdminController extends BaseController
         $db = \App\Core\Conexao::getInstancia();
 
         $sql = "UPDATE documentos 
-        SET area_atual_id = ?, estado_atual = ? 
-        WHERE id = ?";
+SET area_atual_id = ?, 
+    estado_atual = ?, 
+    area_atual_desde = NOW() 
+WHERE id = ?";
 
         $stmt = $db->prepare($sql);
         $stmt->execute([
@@ -505,19 +507,20 @@ class TramitacaoAdminController extends BaseController
 
         $sql = "
         SELECT 
-            d.id,
-            d.titulo,
-            d.estado_atual,
-            d.criado_em,
-            t.nome AS tipo_nome,
-            a.nome AS area_atual_nome,
-            u.nome AS criador_nome
-        FROM documentos d
-        LEFT JOIN documento_tipos t ON t.tipo_id = d.tipo_id
-        LEFT JOIN documento_areas a ON a.id = d.area_atual_id
-        LEFT JOIN utilizadores u ON u.id = d.criado_por
-        WHERE d.estado_atual IN ('novo', 'pendente', 'analise', 'em_tramitacao', 'concluido')
-    ";
+    d.id,
+    d.titulo,
+    d.estado_atual,
+    d.criado_em,
+    d.area_atual_desde,
+    t.nome AS tipo_nome,
+    a.nome AS area_atual_nome,
+    a.prazo_resposta,
+    u.nome AS criador_nome
+FROM documentos d
+LEFT JOIN documento_tipos t ON t.tipo_id = d.tipo_id
+LEFT JOIN documento_areas a ON a.id = d.area_atual_id
+LEFT JOIN utilizadores u ON u.id = d.criado_por
+WHERE d.estado_atual IN ('novo', 'pendente', 'analise', 'em_tramitacao', 'concluido') ";
 
         $params = [];
 
@@ -562,6 +565,32 @@ class TramitacaoAdminController extends BaseController
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
         $documentos = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        foreach ($documentos as &$doc) {
+
+            if (!empty($doc['area_atual_desde']) && !empty($doc['prazo_resposta'])) {
+
+                $inicio = new \DateTime($doc['area_atual_desde']);   // CORRIGIDO
+                $agora = new \DateTime();                           // CORRIGIDO
+
+                $dias = $inicio->diff($agora)->days;
+
+                $prazo = (int) $doc['prazo_resposta'];
+
+                if ($dias <= $prazo) {
+                    $doc['sla'] = 'ok';
+                } elseif ($dias <= $prazo + 2) {
+                    $doc['sla'] = 'alerta';
+                } else {
+                    $doc['sla'] = 'atrasado';
+                }
+
+                $doc['dias_parado'] = $dias;
+            } else {
+                $doc['sla'] = 'indefinido';
+                $doc['dias_parado'] = null;
+            }
+        }
 
         // LISTAS PARA SELECTS
         $areas = \App\Models\DocumentoArea::all();

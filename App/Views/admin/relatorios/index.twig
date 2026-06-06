@@ -1,0 +1,107 @@
+{% extends "@admin/layout.twig" %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <h4 class="mb-3">
+        <i class="fa fa-file-export me-2"></i> Relatórios SLA
+    </h4>
+
+    <!-- FILTROS -->
+    <div class="card mb-3">
+        <div class="card-body">
+
+            <form method="get" class="row g-3">
+
+                <div class="col-md-3">
+                    <label class="form-label">Área</label>
+                    <input type="text" name="area" class="form-control" value="{{ app.request.get('area') }}">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Estado</label>
+                    <input type="text" name="estado" class="form-control" value="{{ app.request.get('estado') }}">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Data Inicial</label>
+                    <input type="date" name="data_inicio" class="form-control" value="{{ app.request.get('data_inicio') }}">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Data Final</label>
+                    <input type="date" name="data_fim" class="form-control" value="{{ app.request.get('data_fim') }}">
+                </div>
+
+                <div class="col-md-12 text-end">
+                    <button class="btn btn-primary">
+                        <i class="fa fa-filter me-1"></i> Filtrar
+                    </button>
+
+                    <a href="/admin/relatorios" class="btn btn-secondary">Limpar</a>
+
+                    <a href="/admin/relatorios/exportar/pdf?{{ app.request.queryString }}" class="btn btn-danger">
+                        <i class="fa fa-file-pdf me-1"></i> PDF
+                    </a>
+
+                    <a href="/admin/relatorios/exportar/excel?{{ app.request.queryString }}" class="btn btn-success">
+                        <i class="fa fa-file-excel me-1"></i> Excel
+                    </a>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+    <!-- TABELA -->
+    <div class="card">
+        <div class="card-body">
+
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Título</th>
+                        <th>Área</th>
+                        <th>Estado</th>
+                        <th>SLA</th>
+                        <th>Dias Parado</th>
+                        <th>Criado em</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for d in documentos %}
+                        <tr>
+                            <td>{{ d.id }}</td>
+                            <td>{{ d.titulo }}</td>
+                            <td>{{ d.area_nome }}</td>
+                            <td>{{ d.estado_atual }}</td>
+
+                            <td>
+                                {% if d.sla == 'ok' %}
+                                    <span class="badge bg-success">OK</span>
+                                {% elseif d.sla == 'alerta' %}
+                                    <span class="badge bg-warning text-dark">Alerta</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Atrasado</span>
+                                {% endif %}
+                            </td>
+
+                            <td>{{ d.dias_parado }}</td>
+                            <td>{{ d.criado_em|date("d/m/Y") }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
+

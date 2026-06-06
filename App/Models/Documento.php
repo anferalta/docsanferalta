@@ -24,6 +24,7 @@ class Documento extends Model
     public ?string $criado_em = null;
     public ?string $caminho = null;
     public ?int $tipo_id = null;
+    public ?string $area_atual_desde = null;
     // ============================================================
     //  CAMPOS DE TRAMITAÇÃO
     // ============================================================
@@ -46,7 +47,8 @@ class Documento extends Model
         'titulo',
         'tipo_id',
         'criado_por',
-        'estado_atual'
+        'estado_atual',
+        'area_atual_desde',
     ];
 
     /* ============================================================

@@ -155,7 +155,8 @@ class DocumentosUserController extends BaseController
             'tipo_id' => $tipo_id,
             'criado_por' => $user->id,
             'estado_atual' => 'novo',
-            'area_atual_id' => null
+            'area_atual_id' => null,
+            'area_atual_desde' => date('Y-m-d H:i:s')   // NOVO
         ]);
 
         // ============================================================

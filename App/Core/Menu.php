@@ -95,7 +95,6 @@ class Menu
                 'badge' => $docsTotal,
                 'principal' => true
             ],
-            
             [
                 'titulo' => 'Arquivados',
                 'icone' => 'bi-archive',
@@ -103,7 +102,7 @@ class Menu
                 'permissao' => 'admin.documentos.arquivados.ver',
                 'badge' => $docsArquiv
             ],
-            
+
             // ============================
             // TRAMITAÇÃO
             // ============================
@@ -133,6 +132,15 @@ class Menu
             // SISTEMA
             // ============================
             ['header' => 'SISTEMA'],
+
+            // NOVO ITEM — RELATÓRIOS SLA
+            [
+                'titulo' => 'Relatórios SLA',
+                'icone' => 'bi-file-earmark-bar-graph',
+                'url' => '/admin/relatorios',
+                'permissao' => 'admin.relatorios.ver'
+            ],
+
             [
                 'titulo' => 'Perfis',
                 'icone' => 'bi-person-badge',

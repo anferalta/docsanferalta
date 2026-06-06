@@ -10,6 +10,7 @@
         "vlucas/phpdotenv": "^5.6",
         "phpmailer/phpmailer": "^7.0",
         "phpoffice/phpword": "^1.4",
-        "phpoffice/phpspreadsheet": "*"
+        "phpoffice/phpspreadsheet": "*",
+        "dompdf/dompdf": "^3.1"
     }
 }

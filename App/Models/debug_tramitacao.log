@@ -1888,3 +1888,43 @@ Array
     [comentario] => Documento arquivado.
     [criado_em] => 2026-06-04 18:36:09
 )
+Array
+(
+    [documento_id] => 432
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => pedir parecer ao RH.
+    [estado] => novo
+    [criado_em] => 2026-06-06 18:09:40
+)
+Array
+(
+    [documento_id] => 432
+    [area_id] => 4
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => verificar BI
+    [criado_em] => 2026-06-06 18:10:23
+)
+Array
+(
+    [documento_id] => 430
+    [area_id] => 8
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => analisar estatuto
+    [criado_em] => 2026-06-06 18:27:27
+)
+Array
+(
+    [documento_id] => 430
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 8
+    [comentario] => analisar estatuto.
+    [estado] => analise
+    [criado_em] => 2026-06-06 18:28:04
+)
