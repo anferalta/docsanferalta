@@ -4,7 +4,6 @@ namespace App\Controllers\Admin;
 
 use App\Core\BaseController;
 use App\Core\Conexao;
-
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -12,6 +11,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class RelatoriosAdminController extends BaseController
 {
+
     /**
      * Página principal dos relatórios SLA
      */
@@ -20,6 +20,12 @@ class RelatoriosAdminController extends BaseController
         $this->authorize('admin.relatorios.ver');
 
         $db = Conexao::getInstancia();
+
+        // LER FILTROS DO GET (AGORA COM TRIM)
+        $area       = trim($_GET['area']        ?? '');
+        $estado     = trim($_GET['estado']      ?? '');
+        $dataInicio = trim($_GET['data_inicio'] ?? '');
+        $dataFim    = trim($_GET['data_fim']    ?? '');
 
         // Documentos filtrados + SLA calculado
         $docs = $this->getDocsFiltrados();
@@ -39,6 +45,12 @@ class RelatoriosAdminController extends BaseController
             'areas'      => $areas,
             'estados'    => $estados,
             'totais'     => $totais,
+            'filtros'    => [
+                'area'        => $area,
+                'estado'      => $estado,
+                'data_inicio' => $dataInicio,
+                'data_fim'    => $dataFim,
+            ],
         ]);
     }
 
@@ -108,10 +120,17 @@ class RelatoriosAdminController extends BaseController
      */
     private function gerarHTMLRelatorio()
     {
+        ob_clean(); // LIMPA QUALQUER HTML ANTIGO
+
         $docs   = $this->getDocsFiltrados();
         $totais = $this->calcularTotaisSla($docs);
 
-        // $docs e $totais ficam disponíveis no template
+        // Filtros vindos da query string — AGORA COM TRIM()
+        $area       = trim($_GET['area']        ?? '');
+        $estado     = trim($_GET['estado']      ?? '');
+        $dataInicio = trim($_GET['data_inicio'] ?? '');
+        $dataFim    = trim($_GET['data_fim']    ?? '');
+
         ob_start();
         include __DIR__ . '/../../Views/admin/relatorios/pdf_template.php';
         return ob_get_clean();
@@ -124,10 +143,11 @@ class RelatoriosAdminController extends BaseController
     {
         $db = Conexao::getInstancia();
 
-        $area       = $_GET['area'] ?? '';
-        $estado     = $_GET['estado'] ?? '';
-        $dataInicio = $_GET['data_inicio'] ?? '';
-        $dataFim    = $_GET['data_fim'] ?? '';
+        // TRIM APLICADO AQUI TAMBÉM
+        $area       = trim($_GET['area']        ?? '');
+        $estado     = trim($_GET['estado']      ?? '');
+        $dataInicio = trim($_GET['data_inicio'] ?? '');
+        $dataFim    = trim($_GET['data_fim']    ?? '');
 
         $sql = "
             SELECT 
@@ -175,7 +195,7 @@ class RelatoriosAdminController extends BaseController
         foreach ($docs as &$d) {
 
             if (empty($d['area_atual_desde']) || empty($d['prazo_resposta'])) {
-                $d['sla']         = 'indefinido';
+                $d['sla'] = 'indefinido';
                 $d['dias_parado'] = null;
                 continue;
             }
@@ -212,7 +232,7 @@ class RelatoriosAdminController extends BaseController
         ];
 
         foreach ($docs as $d) {
-            if (isset($totais[$d['sla']])){
+            if (isset($totais[$d['sla']])) {
                 $totais[$d['sla']]++;
             }
         }

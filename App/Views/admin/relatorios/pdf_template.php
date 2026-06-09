@@ -85,10 +85,10 @@
     <!-- FILTROS -->
     <div class="box">
         <strong>Filtros aplicados:</strong><br>
-        Área: <?= htmlspecialchars($_GET['area'] ?? '—') ?><br>
-        Estado: <?= htmlspecialchars($_GET['estado'] ?? '—') ?><br>
-        Data início: <?= htmlspecialchars($_GET['data_inicio'] ?? '—') ?><br>
-        Data fim: <?= htmlspecialchars($_GET['data_fim'] ?? '—') ?><br>
+        Área: <?= htmlspecialchars($area ?: '—') ?><br>
+        Estado: <?= htmlspecialchars($estado ?: '—') ?><br>
+        Data início: <?= htmlspecialchars($dataInicio ?: '—') ?><br>
+        Data fim: <?= htmlspecialchars($dataFim ?: '—') ?><br>
     </div>
 
     <!-- RESUMO SLA -->

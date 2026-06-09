@@ -19,7 +19,7 @@
                     <select name="area" class="form-select">
                         <option value="">Todas</option>
                         {% for a in areas %}
-                            <option value="{{ a }}" {{ a == app.request.get('area') ? 'selected' : '' }}>
+                            <option value="{{ a }}" {{ filtros.area == a ? 'selected' : '' }}>
                                 {{ a }}
                             </option>
                         {% endfor %}
@@ -31,7 +31,7 @@
                     <select name="estado" class="form-select">
                         <option value="">Todos</option>
                         {% for e in estados %}
-                            <option value="{{ e }}" {{ e == app.request.get('estado') ? 'selected' : '' }}>
+                            <option value="{{ e }}" {{ filtros.estado == e ? 'selected' : '' }}>
                                 {{ e|capitalize }}
                             </option>
                         {% endfor %}
@@ -41,29 +41,35 @@
                 <div class="col-md-3">
                     <label class="form-label">Data Inicial</label>
                     <input type="date" name="data_inicio" class="form-control"
-                           value="{{ app.request.get('data_inicio') }}">
+                           value="{{ filtros.data_inicio }}">
                 </div>
 
                 <div class="col-md-3">
                     <label class="form-label">Data Final</label>
                     <input type="date" name="data_fim" class="form-control"
-                           value="{{ app.request.get('data_fim') }}">
+                           value="{{ filtros.data_fim }}">
                 </div>
 
                 <div class="col-md-12 text-end">
+
                     <button class="btn btn-primary">
                         <i class="fa fa-filter me-1"></i> Filtrar
                     </button>
 
                     <a href="/admin/relatorios" class="btn btn-secondary">Limpar</a>
 
-                    <a href="/admin/relatorios/exportar/pdf?{{ app.request.queryString }}" class="btn btn-danger">
+                    <!-- PDF -->
+                    <a href="/admin/relatorios/exportar/pdf?area={{ filtros.area|url_encode }}&estado={{ filtros.estado|url_encode }}&data_inicio={{ filtros.data_inicio|url_encode }}&data_fim={{ filtros.data_fim|url_encode }}"
+                       class="btn btn-danger">
                         <i class="fa fa-file-pdf me-1"></i> PDF
                     </a>
 
-                    <a href="/admin/relatorios/exportar/excel?{{ app.request.queryString }}" class="btn btn-success">
+                    <!-- EXCEL -->
+                    <a href="/admin/relatorios/exportar/excel?area={{ filtros.area|url_encode }}&estado={{ filtros.estado|url_encode }}&data_inicio={{ filtros.data_inicio|url_encode }}&data_fim={{ filtros.data_fim|url_encode }}"
+                       class="btn btn-success">
                         <i class="fa fa-file-excel me-1"></i> Excel
                     </a>
+
                 </div>
 
             </form>
