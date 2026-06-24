@@ -63,3 +63,7 @@
 [2026-04-26 19:32:19] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/04/backup_db_2026-04-26_19-32-16.sql"
 [2026-04-26 19:36:23] A executar comando: "C:\wamp64\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= lojavirtual > "C:/wamp64/www/lojavirtual/backups/BaseDados/2026/04/backup_db_2026-04-26_19-36-23.sql"
 [2026-04-26 19:36:51] Backup criado e comprimido com sucesso: C:/wamp64/www/lojavirtual/backups/BaseDados/2026/04/backup_db_2026-04-26_19-36-23.sql.zip
+[2026-06-11 18:53:24] A executar comando: "C:\wamp\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= anferaltadocs > "C:/wamp/www/anferaltadocs/backups/BaseDados/2026/06/backup_db_2026-06-11_18-53-24.sql"
+[2026-06-11 18:53:25] Backup criado com sucesso: C:/wamp/www/anferaltadocs/backups/BaseDados/2026/06/backup_db_2026-06-11_18-53-24.sql.zip
+[2026-06-22 20:15:15] A executar comando: "C:\wamp\bin\mysql\mysql9.1.0\bin\mysqldump.exe" --host=localhost --user=root --password= anferaltadocs > "C:/wamp/www/anferaltadocs/backups/BaseDados/2026/06/backup_db_2026-06-22_20-15-15.sql"
+[2026-06-22 20:15:19] Backup criado com sucesso: C:/wamp/www/anferaltadocs/backups/BaseDados/2026/06/backup_db_2026-06-22_20-15-15.sql.zip

@@ -321,18 +321,21 @@ WHERE 1=1
     public function verFicheiro($ano, $mes, $dia, $ficheiro)
     {
         try {
-            $path = \App\Services\DocumentoFileService::resolverCaminhoSeguro($ano, $mes, $dia, $ficheiro);
+            $path = \App\Services\DocumentoFileService::resolverCaminhoSeguro(
+                    $ano, $mes, $dia, $ficheiro
+            );
         } catch (\Exception $e) {
-
-            error_log("Ficheiro não encontrado: $ano/$mes/$dia/$ficheiro");
-
             http_response_code(404);
             echo "Ficheiro não encontrado.";
             return;
         }
 
+        $nome = basename($ficheiro);
+
         header("Content-Type: " . mime_content_type($path));
         header("Content-Length: " . filesize($path));
+        header("Content-Disposition: inline; filename=\"$nome\"");
+
         readfile($path);
         exit;
     }
@@ -620,13 +623,10 @@ WHERE 1=1
             exit("Ficheiro não encontrado.");
         }
 
-        $ext = strtolower(pathinfo($caminho, PATHINFO_EXTENSION));
-        $ficheiro = basename($caminho);
+        $nomeDownload = $anexo->nome_original ?: basename($anexo->ficheiro);
 
-        $mime = mime_content_type($caminho);
-
-        header("Content-Type: $mime");
-        header("Content-Disposition: inline; filename=\"$ficheiro\"");
+        header("Content-Type: " . mime_content_type($caminho));
+        header("Content-Disposition: inline; filename=\"$nomeDownload\"");
         header("Content-Length: " . filesize($caminho));
 
         readfile($caminho);

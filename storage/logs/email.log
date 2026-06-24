@@ -96,3 +96,43 @@ Assunto: Backup FILES concluído
 Conteúdo:
 Template não encontrado: Backup FILES: C:/wamp64/www/lojavirtual/backups/Ficheiros/2026/04/backup_files_2026-04-26_19-37-35.zip
 
+
+=== EMAIL LOCAL ===
+Para: admin@anferaltadocs.test
+Assunto: Backup BD concluído
+Conteúdo:
+Template não encontrado: Backup BD: C:/wamp/www/anferaltadocs/backups/BaseDados/2026/06/backup_db_2026-06-11_18-53-24.sql.zip
+
+
+=== EMAIL LOCAL ===
+Para: admin@anferaltadocs.test
+Assunto: Backup FILES concluído
+Conteúdo:
+Template não encontrado: Backup FILES: C:/wamp/www/anferaltadocs/backups/Ficheiros/2026/06/backup_files_2026-06-11_18-53-40.zip
+
+
+=== EMAIL LOCAL ===
+Para: admin@anferaltadocs.test
+Assunto: Backup BD concluído
+Conteúdo:
+Template não encontrado: Backup BD: C:/wamp/www/anferaltadocs/backups/BaseDados/2026/06/backup_db_2026-06-22_20-15-15.sql.zip
+
+
+=== EMAIL LOCAL ===
+Para: admin@anferaltadocs.test
+Assunto: Backup FILES concluído
+Conteúdo:
+Template não encontrado: Backup FILES: C:/wamp/www/anferaltadocs/backups/Ficheiros/2026/06/backup_files_2026-06-22_20-15-37.zip
+
+
+=== EMAIL LOCAL ===
+Para: admin@anferaltadocs.test
+Assunto: Backup FILES concluído
+Conteúdo:
+Template não encontrado: Backup FILES: C:/wamp/www/anferaltadocs/backups/Ficheiros/2026/06/backup_files_2026-06-22_20-22-37.zip
+
+[2026-06-24 17:23:47] Erro ao enviar email: Could not access file: C:\wamp\www\anferaltadocs\public/../README.md
+[2026-06-24 17:35:48] Erro ao enviar email: SMTP Error: Could not authenticate.
+[2026-06-24 17:45:04] Erro ao enviar email: SMTP Error: Could not authenticate.
+[2026-06-24 17:48:31] Email enviado para geral@anferalta.com | Assunto: Teste de envio
+[2026-06-24 17:52:23] Email enviado para geral@anferalta.com | Assunto: Teste de envio

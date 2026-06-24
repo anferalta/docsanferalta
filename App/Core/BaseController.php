@@ -7,11 +7,13 @@ use Twig\Loader\FilesystemLoader;
 use Twig\Extension\DebugExtension;
 use Twig\TwigFunction;
 use App\Core\Menu;
+use App\Services\AnexosGuardService;
 
 class BaseController {
 
     protected Environment $twig;
-
+    protected AnexosGuardService $anexosGuard;
+    
     public function __construct() {
 
         // ============================
@@ -31,6 +33,9 @@ class BaseController {
         ]);
 
         $this->twig->addExtension(new DebugExtension());
+        
+        $this->anexosGuard = new AnexosGuardService();
+        $this->anexosGuard->garantirEstrutura();
 
         // ============================
         // ACL

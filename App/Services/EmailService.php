@@ -7,32 +7,35 @@ use PHPMailer\PHPMailer\Exception;
 
 class EmailService
 {
+
     public static function enviar(
         string $para,
         string $assunto,
         string $template,
         array $dados = [],
         array $anexos = []
-    ): bool {
-
-        // Fallback em ambiente local
-        $appEnv = $_ENV['APP_ENV'] ?? 'local';
-        if ($appEnv === 'local') {
-            self::logLocal($para, $assunto, $template, $dados);
-            return true;
-        }
-
+    ): bool
+    {
         $mail = new PHPMailer(true);
 
         try {
-            // Configuração SMTP
+            // Configuração SMTP (DinaServer)
             $mail->isSMTP();
-            $mail->Host       = 'anferalta-com.correoseguro.dinaserver.com';
-            $mail->SMTPAuth   = true;
-            $mail->Username   = 'geral@anferalta.com';
-            $mail->Password   = $_ENV['MAIL_PASS'] ?? ''; // seguro e sem Env::get()
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = 587;
+            $mail->Host = 'anferalta-com.correoseguro.dinaserver.com';
+            $mail->SMTPAuth = true;
+            $mail->Username = 'geral@anferalta.com';
+            $mail->Password = $_ENV['MAIL_PASS'] ?? '@nF1ra!ta26';
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // SSL
+            $mail->Port = 465;
+
+            // Evitar erros de certificado no Windows
+            $mail->SMTPOptions = [
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true
+                ]
+            ];
 
             // Remetente
             $mail->setFrom('geral@anferalta.com', 'Anferalta');
@@ -42,22 +45,22 @@ class EmailService
 
             // Anexos
             foreach ($anexos as $ficheiro) {
-                $mail->addAttachment($ficheiro);
+                if (file_exists($ficheiro)) {
+                    $mail->addAttachment($ficheiro);
+                }
             }
 
             // HTML
             $mail->isHTML(true);
             $mail->Subject = $assunto;
-            $mail->Body    = EmailTemplate::render($template, $dados);
-
-            // Alternativa em texto simples
+            $mail->Body = EmailTemplate::render($template, $dados);
             $mail->AltBody = strip_tags($mail->Body);
 
             $resultado = $mail->send();
 
             self::log("Email enviado para {$para} | Assunto: {$assunto}");
-
             return $resultado;
+
         } catch (Exception $e) {
             self::log("Erro ao enviar email: " . $mail->ErrorInfo);
             return false;
@@ -70,11 +73,61 @@ class EmailService
         @file_put_contents(__DIR__ . '/../../storage/logs/email.log', $linha, FILE_APPEND);
     }
 
-    private static function logLocal(string $para, string $assunto, string $template, array $dados): void
+    public static function enviarComAnexo(
+        string $para,
+        string $assunto,
+        string $mensagem,
+        string $ficheiro,
+        string $de = 'geral@anferalta.com'
+    ): bool
     {
-        $conteudo = EmailTemplate::render($template, $dados);
+        $mail = new PHPMailer(true);
 
-        $linha = "\n=== EMAIL LOCAL ===\nPara: $para\nAssunto: $assunto\nConteúdo:\n$conteudo\n\n";
-        @file_put_contents(__DIR__ . '/../../storage/logs/email.log', $linha, FILE_APPEND);
+        try {
+            // SMTP (DinaServer)
+            $mail->isSMTP();
+            $mail->Host = 'anferalta-com.correoseguro.dinaserver.com';
+            $mail->SMTPAuth = true;
+            $mail->Username = 'geral@anferalta.com';
+            $mail->Password = $_ENV['MAIL_PASS'] ?? '@nF1ra!ta26';
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // SSL
+            $mail->Port = 465;
+
+            // Evitar erros de certificado no Windows
+            $mail->SMTPOptions = [
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true
+                ]
+            ];
+
+            // Remetente
+            $mail->setFrom($de, 'AnferaltaDocs');
+
+            // Destinatário
+            $mail->addAddress($para);
+
+            // Conteúdo
+            $mail->isHTML(false);
+            $mail->Subject = $assunto;
+            $mail->Body = $mensagem;
+
+            // Anexo
+            if (file_exists($ficheiro)) {
+                $mail->addAttachment($ficheiro);
+            } else {
+                self::log("Aviso: anexo não encontrado: {$ficheiro}");
+            }
+
+            $mail->send();
+
+            self::log("Email enviado para {$para} | Assunto: {$assunto}");
+            return true;
+
+        } catch (Exception $e) {
+            self::log("Erro ao enviar email: " . $mail->ErrorInfo);
+            return false;
+        }
     }
 }

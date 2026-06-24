@@ -112,6 +112,8 @@ $router->group([
 
             $router->get('/documentos/anexo/download/{id:\d+}', 'Admin\DocumentosAdminController@downloadAnexo')
                     ->name('admin.documentos.anexo.download');
+            
+            $router->get('/documentos/{id}/abrir', 'DocumentosController@abrir', ['auth', 'anexos_guard']);
 
             // DOCUMENTO DETALHE (sem ficheiro principal)
             $router->get('/documentos/ver/{id:\d+}', 'Admin\DocumentosAdminController@ver')

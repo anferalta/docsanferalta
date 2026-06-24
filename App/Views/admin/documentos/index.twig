@@ -214,13 +214,6 @@
                                 <td class="text-end">
                                     <div class="btn-group">
 
-                                        {% if isGranted('admin.tramitacao.ver') %}
-                                            <a href="/admin/documentos/editar/{{ doc.id }}?tab=tramitacao"
-                                               class="btn btn-sm btn-warning">
-                                                <i class="fa fa-random"></i> Tramitar
-                                            </a>
-                                        {% endif %}
-
                                         {% if isGranted('admin.documentos.apagar') %}
                                             <a href="/admin/documentos/eliminar/{{ doc.id }}"
                                                class="btn btn-sm btn-danger"
