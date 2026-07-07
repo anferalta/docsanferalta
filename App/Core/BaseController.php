@@ -9,12 +9,14 @@ use Twig\TwigFunction;
 use App\Core\Menu;
 use App\Services\AnexosGuardService;
 
-class BaseController {
+class BaseController
+{
 
     protected Environment $twig;
     protected AnexosGuardService $anexosGuard;
-    
-    public function __construct() {
+
+    public function __construct()
+    {
 
         // ============================
         // TWIG LOADER
@@ -33,7 +35,7 @@ class BaseController {
         ]);
 
         $this->twig->addExtension(new DebugExtension());
-        
+
         $this->anexosGuard = new AnexosGuardService();
         $this->anexosGuard->garantirEstrutura();
 
@@ -52,29 +54,35 @@ class BaseController {
         $this->twig->addFunction(new TwigFunction('isGranted', fn($p) => $acl->has($p)));
 
         $this->twig->addFunction(new TwigFunction('route', function ($name, $params = []) {
-            return \App\Core\Router::route($name, $params);
-        }));
+                            return \App\Core\Router::route($name, $params);
+                        }));
 
         // ============================
-        // CSRF — CORRIGIDO
-        // ============================
-
-        // NÃO regenerar token sempre que o Twig chama csrf_token()
+// CSRF — CORRIGIDO
+// ============================
+// NÃO regenerar token sempre que o Twig chama csrf_token()
         $this->twig->addFunction(new TwigFunction('csrf_token', function () {
-            return $_SESSION['_csrf_token'] ?? CSRF::token();
-        }));
+                            return $_SESSION['_csrf_token'] ?? CSRF::token();
+                        }));
 
-        // Campo hidden com token estável
+// Campo hidden com token estável
         $this->twig->addFunction(
-            new TwigFunction(
-                'csrf_field',
-                function () {
-                    $token = $_SESSION['_csrf_token'] ?? CSRF::token();
-                    return '<input type="hidden" name="' . CSRF::fieldName() . '" value="' . $token . '">';
-                },
-                ['is_safe' => ['html']]
-            )
+                new TwigFunction(
+                        'csrf_field',
+                        function () {
+                            $token = $_SESSION['_csrf_token'] ?? CSRF::token();
+                            return '<input type="hidden" name="' . CSRF::fieldName() . '" value="' . $token . '">';
+                        },
+                        ['is_safe' => ['html']]
+                )
         );
+
+// ============================
+// FLASH MESSAGES — FUNÇÃO TWIG
+// ============================
+        $this->twig->addFunction(new TwigFunction('sessao', function ($key) {
+                            return \App\Core\Sessao::flash($key);
+                        }));
 
         // ============================
         // UTILIZADOR
@@ -118,16 +126,18 @@ class BaseController {
     // ============================
     // INJETAR UTILIZADOR NO TWIG
     // ============================
-    protected function injectUser(): void {
-        $this->twig->addGlobal('auth', (object)[
-            'user' => Auth::user()
+    protected function injectUser(): void
+    {
+        $this->twig->addGlobal('auth', (object) [
+                    'user' => Auth::user()
         ]);
     }
 
     // ============================
     // RENDERIZAÇÃO
     // ============================
-    protected function render(string $template, array $data = []): void {
+    protected function render(string $template, array $data = []): void
+    {
         $this->injectUser();
         echo $this->twig->render($template, $data);
         exit;
@@ -136,7 +146,8 @@ class BaseController {
     // ============================
     // REDIRECIONAMENTO
     // ============================
-    protected function redirect(string $url): void {
+    protected function redirect(string $url): void
+    {
         header("Location: $url");
         exit;
     }
@@ -144,7 +155,8 @@ class BaseController {
     // ============================
     // AUTORIZAÇÃO
     // ============================
-    protected function authorize(string $permission) {
+    protected function authorize(string $permission)
+    {
         $user = Auth::user();
 
         if ($user && $user->isAdmin()) {
@@ -158,7 +170,8 @@ class BaseController {
         }
     }
 
-    protected function authorizeAny(array $permissoes) {
+    protected function authorizeAny(array $permissoes)
+    {
         $user = Auth::user();
 
         if ($user && $user->isAdmin()) {
@@ -174,7 +187,8 @@ class BaseController {
         return $this->acessoNegado();
     }
 
-    protected function acessoNegado() {
+    protected function acessoNegado()
+    {
         http_response_code(403);
         return $this->render('@admin/errors/403.twig');
     }

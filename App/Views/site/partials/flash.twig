@@ -1,13 +1,15 @@
-{% if flash.sucesso %}
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        {{ flash.sucesso }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
+{% set flash = sessao.getFlash() %}
+
+{% if flash.error %}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{ flash.error|raw }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
 {% endif %}
 
-{% if flash.erro %}
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        {{ flash.erro }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
+{% if flash.success %}
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+    {{ flash.success|raw }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
 {% endif %}

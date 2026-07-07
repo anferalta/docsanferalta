@@ -2,71 +2,92 @@
 
 namespace App\Core;
 
-class Helpers {
+class Helpers
+{
 
     /**
      * Regista uma entrada de log num ficheiro diário
      */
-    public static function log(string $acao, string $detalhes = ''): void {
-        // Garante que a sessão está ativa
+    public static function log(string $acao, string $detalhes = ''): void
+    {
         Sessao::set('last_action', $acao);
 
-        // Diretório dos logs
         $dir = __DIR__ . '/../../logs';
 
         if (!is_dir($dir)) {
             mkdir($dir, 0777, true);
         }
 
-        // Nome do ficheiro (um por dia)
         $ficheiro = $dir . '/' . date('Y-m-d') . '.log';
 
-        // Dados do utilizador
         $userId = Sessao::get('user_id') ?? 'guest';
         $userEmail = Sessao::get('user_email') ?? 'guest';
-
-        // IP do utilizador
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
 
-        // Linha de log
         $linha = sprintf(
-                "[%s] | IP: %s | User: %s (%s) | Ação: %s | Detalhes: %s%s",
-                date('Y-m-d H:i:s'),
-                $ip,
-                $userId,
-                $userEmail,
-                $acao,
-                $detalhes,
-                PHP_EOL
+            "[%s] | IP: %s | User: %s (%s) | Ação: %s | Detalhes: %s%s",
+            date('Y-m-d H:i:s'),
+            $ip,
+            $userId,
+            $userEmail,
+            $acao,
+            $detalhes,
+            PHP_EOL
         );
 
-        // Escrever no ficheiro
         file_put_contents($ficheiro, $linha, FILE_APPEND);
     }
 
-    function auth() {
+    function auth()
+    {
         return \App\Core\Auth::user();
     }
 
-    public static function url(string $path): string {
-        // Garante que começa com /
+    /**
+     * Gera URL absoluta com base no APP_URL
+     */
+    public static function url(string $path): string
+    {
         if ($path[0] !== '/') {
             $path = '/' . ltrim($path, '/');
         }
 
-        // Base da aplicação
-        $base = $_ENV['APP_URL'] ?? '';
+        $base = rtrim($_ENV['APP_URL'] ?? '', '/');
 
-        return rtrim($base, '/') . $path;
+        return $base . $path;
     }
 
-    public static function redirect(string $url): void {
+    /**
+     * Redirecionamento HTTP
+     */
+    public static function redirect(string $url): void
+    {
         header("Location: $url");
         exit;
     }
 
-    public static function route(string $name, array $params = []): string {
-        global $router; // o router principal
+    /**
+     * Gera URL absoluta baseada no ambiente
+     */
+    public static function baseUrl(): string
+    {
+        // Se APP_URL estiver definido, usar sempre
+        if (!empty($_ENV['APP_URL'])) {
+            return rtrim($_ENV['APP_URL'], '/');
+        }
+
+        // Fallback para ambiente local
+        if ($_ENV['APP_ENV'] === 'local') {
+            return 'https://anferaltadocs.local';
+        }
+
+        // Produção
+        return 'https://anferalta.com';
+    }
+
+    public static function route(string $name, array $params = []): string
+    {
+        global $router;
 
         $route = $router->getRouteByName($name);
 
@@ -76,7 +97,6 @@ class Helpers {
 
         $uri = $route['uri'];
 
-        // Substituir parâmetros {id}, {slug}, etc.
         foreach ($params as $key => $value) {
             $uri = str_replace("{{$key}}", $value, $uri);
         }
@@ -84,7 +104,8 @@ class Helpers {
         return $uri;
     }
 
-    function can(string $codigo): bool {
+    function can(string $codigo): bool
+    {
         if (!isset($_SESSION['utilizador_id'])) {
             return false;
         }
@@ -92,7 +113,8 @@ class Helpers {
         return \App\Models\Permissao::userHasPermission($_SESSION['utilizador_id'], $codigo);
     }
 
-    function iconForExtension($ext) {
+    function iconForExtension($ext)
+    {
         $ext = strtolower($ext);
 
         $map = [
@@ -111,5 +133,23 @@ class Helpers {
         ];
 
         return $map[$ext] ?? 'fa-file';
+    }
+}
+
+// ============================================================
+// CSRF HELPERS (FUNÇÕES GLOBAIS)
+// ============================================================
+
+if (!function_exists('csrf_token')) {
+    function csrf_token(): string
+    {
+        return \App\Core\CSRF::token();
+    }
+}
+
+if (!function_exists('csrf_field')) {
+    function csrf_field(): string
+    {
+        return '<input type="hidden" name="_csrf" value="' . \App\Core\CSRF::token() . '">';
     }
 }

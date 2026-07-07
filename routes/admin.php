@@ -14,10 +14,17 @@ $router->post('/login', 'AuthController@loginSubmit');
 $router->get('/registar', 'AuthController@registar')->name('auth.register');
 $router->post('/registar', 'AuthController@registarSubmit');
 
-// Recuperação de password
+// Recuperação de password (pedido)
 $router->get('/recuperar', 'AuthController@recuperar')->name('auth.recover');
 $router->post('/recuperar', 'AuthController@recuperarSubmit');
-
+$router->get('/limpar-sessao', 'DebugController@limparSessao');
+// ===============================
+//  RECUPERAÇÃO DE PASSWORD (PÚBLICA)
+// ===============================
+// Formulário de redefinição de password (com token)
+$router->get('/reset-password/token/{token}', 'PasswordResetController@formNovaPassword');
+// Submissão da nova password
+$router->post('/reset-password/token/{token}', 'PasswordResetController@guardarNovaPassword');
 // Logout
 $router->get('/logout', 'AuthController@logout')->name('auth.logout');
 
@@ -88,56 +95,34 @@ $router->group([
             // ============================================================
             // DOCUMENTOS (ADMIN)
             // ============================================================
-
-            $router->get('/documentos', 'Admin\DocumentosAdminController@index')
-                    ->name('admin.documentos.ver');
-
-            $router->get('/documentos/criar', 'Admin\DocumentosAdminController@criar')
-                    ->name('admin.documentos.criar');
-
-            $router->post('/documentos/criar', 'Admin\DocumentosAdminController@criarSubmit')
-                    ->name('admin.documentos.criar.submit');
-
-            $router->get('/documentos/editar/{id:\d+}', 'Admin\DocumentosAdminController@editar')
-                    ->name('admin.documentos.editar');
-
-            $router->post('/documentos/editar/{id:\d+}', 'Admin\DocumentosAdminController@editarSubmit')
-                    ->name('admin.documentos.editar.submit');
+            $router->get('/documentos', 'Admin\DocumentosAdminController@index')->name('admin.documentos.ver');
+            $router->get('/documentos/criar', 'Admin\DocumentosAdminController@criar')->name('admin.documentos.criar');
+            $router->post('/documentos/criar', 'Admin\DocumentosAdminController@criarSubmit')->name('admin.documentos.criar.submit');
+            $router->get('/documentos/editar/{id:\d+}', 'Admin\DocumentosAdminController@editar')->name('admin.documentos.editar');
+            $router->post('/documentos/editar/{id:\d+}', 'Admin\DocumentosAdminController@editarSubmit')->name('admin.documentos.editar.submit');
 
             // NOVAS ROTAS PARA ANEXOS
-            $router->get('/documentos/anexo/ver/{id:\d+}', 'Admin\DocumentosAdminController@verAnexo')
-                    ->name('admin.documentos.anexo.ver');
-
+            $router->get('/documentos/anexo/ver/{id:\d+}', 'Admin\DocumentosAdminController@verAnexo')->name('admin.documentos.anexo.ver');
             $router->get('/documentos/anexo/abrir/{id:\d+}', 'Admin\DocumentosAdminController@abrir');
+            $router->get('/documentos/anexo/download/{id:\d+}', 'Admin\DocumentosAdminController@downloadAnexo')->name('admin.documentos.anexo.download');
 
-            $router->get('/documentos/anexo/download/{id:\d+}', 'Admin\DocumentosAdminController@downloadAnexo')
-                    ->name('admin.documentos.anexo.download');
-            
             $router->get('/documentos/{id}/abrir', 'DocumentosController@abrir', ['auth', 'anexos_guard']);
 
-            // DOCUMENTO DETALHE (sem ficheiro principal)
-            $router->get('/documentos/ver/{id:\d+}', 'Admin\DocumentosAdminController@ver')
-                    ->name('admin.documentos.ver_detalhe');
+            // Documento detalhe
+            $router->get('/documentos/ver/{id:\d+}', 'Admin\DocumentosAdminController@ver')->name('admin.documentos.ver_detalhe');
 
             // Arquivados
-            $router->get('/documentos/arquivados', 'Admin\DocumentosAdminController@arquivados')
-                    ->name('admin.documentos.arquivados');
-
-            $router->get('/documentos/arquivado/{id:\d+}', 'Admin\DocumentosAdminController@verArquivado')
-                    ->name('admin.documentos.arquivado.ver');
-
-            $router->post('/documentos/arquivado/{id:\d+}/recuperar', 'Admin\DocumentosAdminController@recuperarArquivado')
-                    ->name('admin.documentos.arquivado.recuperar');
+            $router->get('/documentos/arquivados', 'Admin\DocumentosAdminController@arquivados')->name('admin.documentos.arquivados');
+            $router->get('/documentos/arquivado/{id:\d+}', 'Admin\DocumentosAdminController@verArquivado')->name('admin.documentos.arquivado.ver');
+            $router->post('/documentos/arquivado/{id:\d+}/recuperar', 'Admin\DocumentosAdminController@recuperarArquivado')->name('admin.documentos.arquivado.recuperar');
 
             // Eliminar documento
-            $router->get('/documentos/eliminar/{id:\d+}', 'Admin\DocumentosAdminController@eliminar')
-                    ->name('admin.documentos.apagar');
+            $router->get('/documentos/eliminar/{id:\d+}', 'Admin\DocumentosAdminController@eliminar')->name('admin.documentos.apagar');
 
-            // Download múltiplo (mantém-se)
-            $router->post('/documentos/download-multiple', 'Admin\DocumentosAdminController@downloadMultiple')
-                    ->name('admin.documentos.download_multiple');
+            // Download múltiplo
+            $router->post('/documentos/download-multiple', 'Admin\DocumentosAdminController@downloadMultiple')->name('admin.documentos.download_multiple');
 
-            // Ficheiros existentes (mantém-se)
+            // Ficheiros existentes
             $router->get('/documentos/existentes', 'Admin\DocumentosAdminController@ficheirosExistentes');
 
             // ============================================================
@@ -218,7 +203,7 @@ $router->group([
             $router->get('/backups/files/download/{ficheiro:.+}', 'Admin\BackupsAdminController@download')->name('admin.backups.files.download');
             $router->get('/backups/files/delete/{ficheiro:.+}', 'Admin\BackupsAdminController@delete')->name('admin.backups.files.apagar');
 
-            //Relatorios
+            // Relatórios
             $router->get('/relatorios', 'Admin\\RelatoriosAdminController@index');
             $router->get('/relatorios/exportar/pdf', 'Admin\\RelatoriosAdminController@exportarPDF');
             $router->get('/relatorios/exportar/excel', 'Admin\\RelatoriosAdminController@exportarExcel');

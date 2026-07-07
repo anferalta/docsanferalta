@@ -7,17 +7,22 @@ use App\Core\Conexao;
 use App\Core\Sessao;
 use App\Core\Helpers;
 use App\Core\Auth;
+use App\Services\UserEmailService;
+use App\Services\EmailService;
 
-class UtilizadoresAdminController extends BaseController {
+class UtilizadoresAdminController extends BaseController
+{
 
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct();
     }
 
     /**
      * LISTAGEM COM FILTROS + PAGINAÇÃO
      */
-    public function index() {
+    public function index()
+    {
         $this->authorize('admin.utilizadores.ver');
 
         $db = Conexao::getInstancia();
@@ -101,7 +106,8 @@ class UtilizadoresAdminController extends BaseController {
     /**
      * FORMULÁRIO DE CRIAÇÃO
      */
-    public function criar() {
+    public function criar()
+    {
         $this->authorize('admin.utilizadores.criar');
 
         $db = Conexao::getInstancia();
@@ -116,7 +122,8 @@ class UtilizadoresAdminController extends BaseController {
     /**
      * SUBMISSÃO DE CRIAÇÃO
      */
-    public function criarSubmit() {
+    public function criarSubmit()
+    {
         $this->authorize('admin.utilizadores.criar');
 
         $dados = $_POST;
@@ -139,17 +146,27 @@ class UtilizadoresAdminController extends BaseController {
 
         // Inserção
         $stmt = $db->prepare("
-            INSERT INTO utilizadores (nome, email, password, ativo, perfil_id)
-            VALUES (:nome, :email, :password, :ativo, :perfil_id)
-        ");
+        INSERT INTO utilizadores (nome, email, password, ativo, perfil_id)
+        VALUES (:nome, :email, :password, :ativo, :perfil_id)
+    ");
 
         $stmt->execute([
             ':nome' => $dados['nome'],
             ':email' => $dados['email'],
             ':password' => password_hash($dados['password'], PASSWORD_DEFAULT),
-            ':ativo' => 1, // Utilizador novo começa sempre pendente
+            ':ativo' => 1,
             ':perfil_id' => $dados['perfil_id']
         ]);
+
+        // Buscar utilizador recém-criado
+        $user = \App\Models\Utilizador::findByEmail($dados['email']);
+
+        // Enviar email com link para definir password
+        \App\Services\UserEmailService::enviarLinkPassword(
+                $user,
+                'emails/utilizador_criado.twig',
+                'A sua conta foi criada'
+        );
 
         Sessao::flash('sucesso', 'Utilizador criado com sucesso.');
         Helpers::redirect('/admin/utilizadores');
@@ -158,7 +175,8 @@ class UtilizadoresAdminController extends BaseController {
     /**
      * APAGAR UTILIZADOR
      */
-    public function eliminar($id) {
+    public function eliminar($id)
+    {
         $this->authorize('admin.utilizadores.apagar');
 
         // Impedir que um utilizador apague a si próprio
@@ -190,7 +208,8 @@ class UtilizadoresAdminController extends BaseController {
     /**
      * LISTAR UTILIZADORES PENDENTES
      */
-    public function pendentes() {
+    public function pendentes()
+    {
         $this->authorize('admin.utilizadores.ver');
 
         $db = Conexao::getInstancia();
@@ -272,7 +291,8 @@ class UtilizadoresAdminController extends BaseController {
     /**
      * APROVAR UTILIZADOR
      */
-    public function aprovar($id) {
+    public function aprovar($id)
+    {
         $perfil = $_POST['perfil_id'] ?? null;
 
         if (!$perfil) {
@@ -282,6 +302,15 @@ class UtilizadoresAdminController extends BaseController {
 
         $db = Conexao::getInstancia();
 
+        // Buscar utilizador antes de atualizar
+        $user = \App\Models\Utilizador::find($id);
+
+        if (!$user) {
+            Sessao::flash('erro', 'Utilizador não encontrado.');
+            Helpers::redirect('/admin/utilizadores/pendentes');
+        }
+
+        // Atualizar estado
         $stmt = $db->prepare("
         UPDATE utilizadores
         SET ativo = 1,
@@ -297,6 +326,9 @@ class UtilizadoresAdminController extends BaseController {
             ':perfil' => $perfil
         ]);
 
+        // Enviar email de aprovação com link de password
+        UserEmailService::enviarLinkPassword($user, 'utilizador_aprovado', 'A sua conta foi aprovada');
+
         Sessao::flash('sucesso', 'Utilizador aprovado com sucesso.');
         Helpers::redirect('/admin/utilizadores/pendentes');
     }
@@ -304,11 +336,25 @@ class UtilizadoresAdminController extends BaseController {
     /**
      * REJEITAR UTILIZADOR (APAGAR)
      */
-    public function rejeitar($id) {
+    public function rejeitar($id)
+    {
         $this->authorize('admin.utilizadores.apagar');
 
         $db = Conexao::getInstancia();
 
+        // Buscar utilizador antes de apagar
+        $user = \App\Models\Utilizador::find($id);
+
+        if ($user) {
+            EmailService::enviar(
+                    $user->email,
+                    'Conta rejeitada',
+                    'utilizador_rejeitado',
+                    ['nome' => $user->nome]
+            );
+        }
+
+        // Apagar utilizador
         $stmt = $db->prepare("DELETE FROM utilizadores WHERE id = ?");
         $stmt->execute([$id]);
 
@@ -319,10 +365,22 @@ class UtilizadoresAdminController extends BaseController {
     /**
      * BLOQUEAR UTILIZADOR
      */
-    public function bloquear($id) {
+    public function bloquear($id)
+    {
         $this->authorize('admin.utilizadores.editar');
 
         $db = Conexao::getInstancia();
+
+        $user = \App\Models\Utilizador::find($id);
+
+        if ($user) {
+            EmailService::enviar(
+                    $user->email,
+                    'Conta bloqueada',
+                    'emails/conta_bloqueada.twig',
+                    ['nome' => $user->nome]
+            );
+        }
 
         $stmt = $db->prepare("
         UPDATE utilizadores
@@ -336,10 +394,22 @@ class UtilizadoresAdminController extends BaseController {
         $this->redirect('/admin/utilizadores/ativos');
     }
 
-    public function reativar($id) {
+    public function reativar($id)
+    {
         $this->authorize('admin.utilizadores.editar');
 
         $db = Conexao::getInstancia();
+
+        $user = \App\Models\Utilizador::find($id);
+
+        if ($user) {
+            EmailService::enviar(
+                    $user->email,
+                    'Conta reativada',
+                    'emails/conta_desbloqueada.twig',
+                    ['nome' => $user->nome]
+            );
+        }
 
         $stmt = $db->prepare("
         UPDATE utilizadores
@@ -356,10 +426,22 @@ class UtilizadoresAdminController extends BaseController {
     /**
      * DESBLOQUEAR UTILIZADOR
      */
-    public function desbloquear($id) {
+    public function desbloquear($id)
+    {
         $this->authorize('admin.utilizadores.editar');
 
         $db = Conexao::getInstancia();
+
+        $user = \App\Models\Utilizador::find($id);
+
+        if ($user) {
+            EmailService::enviar(
+                    $user->email,
+                    'Conta desbloqueada',
+                    'emails/conta_desbloqueada.twig',
+                    ['nome' => $user->nome]
+            );
+        }
 
         $stmt = $db->prepare("UPDATE utilizadores SET ativo = 1 WHERE id = ?");
         $stmt->execute([$id]);
@@ -368,7 +450,8 @@ class UtilizadoresAdminController extends BaseController {
         Helpers::redirect('/admin/utilizadores');
     }
 
-    public function ativos() {
+    public function ativos()
+    {
         $this->authorize('admin.utilizadores.ver');
 
         $db = Conexao::getInstancia();
@@ -433,7 +516,8 @@ class UtilizadoresAdminController extends BaseController {
         ]);
     }
 
-    public function bloqueados() {
+    public function bloqueados()
+    {
         $this->authorize('admin.utilizadores.ver');
 
         $db = Conexao::getInstancia();
@@ -453,7 +537,8 @@ class UtilizadoresAdminController extends BaseController {
         ]);
     }
 
-    public function exportarCSV() {
+    public function exportarCSV()
+    {
         $this->authorize('admin.utilizadores.ver');
 
         $db = Conexao::getInstancia();
@@ -476,7 +561,8 @@ class UtilizadoresAdminController extends BaseController {
     /**
      * FORMULÁRIO DE EDIÇÃO
      */
-    public function editar($id) {
+    public function editar($id)
+    {
         $this->authorize('admin.utilizadores.editar');
 
         $db = Conexao::getInstancia();
@@ -505,7 +591,8 @@ class UtilizadoresAdminController extends BaseController {
     /**
      * SUBMISSÃO DE EDIÇÃO
      */
-    public function editarSubmit($id) {
+    public function editarSubmit($id)
+    {
         $this->authorize('admin.utilizadores.editar');
 
         $db = Conexao::getInstancia();
@@ -565,7 +652,8 @@ class UtilizadoresAdminController extends BaseController {
     /**
      * BLOQUEAR EDIÇÃO/APAGAR PERFIS SUPERIORES
      */
-    private function bloquearEdicaoDePerfisSuperiores($utilizador) {
+    private function bloquearEdicaoDePerfisSuperiores($utilizador)
+    {
         $user = Auth::user();
 
         if (empty($user->is_admin) || !$user->is_admin) {

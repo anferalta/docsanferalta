@@ -12,6 +12,7 @@ use App\Models\Audit;
 
 class UtilizadoresController extends BaseController
 {
+
     /**
      * Lista todos os utilizadores
      */
@@ -22,9 +23,9 @@ class UtilizadoresController extends BaseController
         $utilizadores = Utilizador::all();
 
         return $this->render('admin/utilizadores/index.twig', [
-            'title'        => 'Utilizadores',
-            'utilizadores' => $utilizadores,
-            'user'         => Auth::user()
+                    'title' => 'Utilizadores',
+                    'utilizadores' => $utilizadores,
+                    'user' => Auth::user()
         ]);
     }
 
@@ -36,13 +37,13 @@ class UtilizadoresController extends BaseController
         $this->authorize('admin.utilizadores.ver');
 
         $pendentes = Utilizador::query()
-            ->where('estado', '=', 0)
-            ->get();
+                ->where('estado', '=', 0)
+                ->get();
 
         return $this->render('admin/utilizadores/pendentes.twig', [
-            'title'     => 'Utilizadores Pendentes',
-            'pendentes' => $pendentes,
-            'user'      => Auth::user()
+                    'title' => 'Utilizadores Pendentes',
+                    'pendentes' => $pendentes,
+                    'user' => Auth::user()
         ]);
     }
 
@@ -60,7 +61,15 @@ class UtilizadoresController extends BaseController
             return $this->redirect('/admin/utilizadores/pendentes');
         }
 
+        // Atualizar estado
         $user->update(['estado' => 1], "id = :id", [':id' => $id]);
+
+        // Email de aprovação com link para definir password
+        \App\Services\UserEmailService::enviarLinkPassword(
+                $user,
+                'emails/utilizador_aprovado.twig',
+                'A sua conta foi aprovada'
+        );
 
         Audit::log("Aprovou o utilizador ID $id");
 
@@ -74,6 +83,17 @@ class UtilizadoresController extends BaseController
     public function rejeitar($id)
     {
         $this->authorize('admin.utilizadores.eliminar');
+
+        $user = Utilizador::find($id);
+
+        if ($user) {
+            EmailService::enviar(
+                    $user->email,
+                    'Conta rejeitada',
+                    'emails/utilizador_rejeitado.twig',
+                    ['nome' => $user->nome]
+            );
+        }
 
         Utilizador::deleteWhere("id = :id", [':id' => $id]);
 
@@ -94,6 +114,14 @@ class UtilizadoresController extends BaseController
 
         if ($user) {
             $user->update(['estado' => 0], "id = :id", [':id' => $id]);
+
+            EmailService::enviar(
+                    $user->email,
+                    'Conta bloqueada',
+                    'emails/conta_bloqueada.twig',
+                    ['nome' => $user->nome]
+            );
+
             Audit::log("Bloqueou o utilizador ID $id");
         }
 
@@ -112,6 +140,14 @@ class UtilizadoresController extends BaseController
 
         if ($user) {
             $user->update(['estado' => 1], "id = :id", [':id' => $id]);
+
+            EmailService::enviar(
+                    $user->email,
+                    'Conta desbloqueada',
+                    'emails/conta_desbloqueada.twig',
+                    ['nome' => $user->nome]
+            );
+
             Audit::log("Desbloqueou o utilizador ID $id");
         }
 
@@ -127,9 +163,9 @@ class UtilizadoresController extends BaseController
         $this->authorize('admin.utilizadores.criar');
 
         return $this->render('admin/utilizadores/criar.twig', [
-            'title'  => 'Criar Utilizador',
-            'perfis' => Perfil::all(),
-            'user'   => Auth::user()
+                    'title' => 'Criar Utilizador',
+                    'perfis' => Perfil::all(),
+                    'user' => Auth::user()
         ]);
     }
 
@@ -137,10 +173,10 @@ class UtilizadoresController extends BaseController
     {
         $this->authorize('admin.utilizadores.criar');
 
-        $nome      = trim($_POST['nome'] ?? '');
-        $email     = trim($_POST['email'] ?? '');
-        $password  = trim($_POST['password'] ?? '');
-        $perfil_id = (int)($_POST['perfil_id'] ?? 0);
+        $nome = trim($_POST['nome'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $password = trim($_POST['password'] ?? '');
+        $perfil_id = (int) ($_POST['perfil_id'] ?? 0);
 
         $v = new Validator();
         $v->required('nome', $nome, 'O nome é obrigatório.');
@@ -153,12 +189,21 @@ class UtilizadoresController extends BaseController
         }
 
         (new Utilizador())->insert([
-            'nome'      => $nome,
-            'email'     => $email,
-            'password'  => password_hash($password, PASSWORD_DEFAULT),
+            'nome' => $nome,
+            'email' => $email,
+            'password' => password_hash($password, PASSWORD_DEFAULT),
             'perfil_id' => $perfil_id,
-            'estado'    => 1
+            'estado' => 1
         ]);
+
+        $user = Utilizador::findByEmail($email);
+
+        // Enviar email com link para definir password
+        \App\Services\UserEmailService::enviarLinkPassword(
+                $user,
+                'emails/utilizador_criado.twig',
+                'A sua conta foi criada'
+        );
 
         Audit::log("Criou um novo utilizador");
 
@@ -171,10 +216,10 @@ class UtilizadoresController extends BaseController
         $this->authorize('admin.utilizadores.editar');
 
         return $this->render('admin/utilizadores/editar.twig', [
-            'title'      => 'Editar Utilizador',
-            'utilizador' => Utilizador::find($id),
-            'perfis'     => Perfil::all(),
-            'user'       => Auth::user()
+                    'title' => 'Editar Utilizador',
+                    'utilizador' => Utilizador::find($id),
+                    'perfis' => Perfil::all(),
+                    'user' => Auth::user()
         ]);
     }
 
@@ -182,15 +227,23 @@ class UtilizadoresController extends BaseController
     {
         $this->authorize('admin.utilizadores.editar');
 
-        $nome      = trim($_POST['nome'] ?? '');
-        $email     = trim($_POST['email'] ?? '');
-        $perfil_id = (int)($_POST['perfil_id'] ?? 0);
+        $nome = trim($_POST['nome'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $perfil_id = (int) ($_POST['perfil_id'] ?? 0);
 
         (new Utilizador())->update([
-            'nome'      => $nome,
-            'email'     => $email,
+            'nome' => $nome,
+            'email' => $email,
             'perfil_id' => $perfil_id
-        ], "id = :id", [':id' => $id]);
+                ], "id = :id", [':id' => $id]);
+
+        // Email de aviso
+        EmailService::enviar(
+                $email,
+                'Dados da conta atualizados',
+                'emails/dados_alterados.twig',
+                ['nome' => $nome]
+        );
 
         Audit::log("Editou o utilizador ID $id");
 

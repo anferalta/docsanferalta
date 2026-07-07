@@ -5,9 +5,11 @@ namespace App\Core;
 use App\Models\Utilizador;
 use App\Core\Conexao;
 
-class Auth {
+class Auth
+{
 
-    private static function startSession(): void {
+    private static function startSession(): void
+    {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
@@ -16,8 +18,14 @@ class Auth {
     /**
      * Autentica um utilizador
      */
-    public static function attempt(string $email, string $password): false|Utilizador|null {
+    public static function attempt(string $email, string $password): false|Utilizador|null
+    {
         self::startSession();
+
+        // Normalização completa
+        $email = strtolower(trim($email));
+        $email = preg_replace('/\s+/u', '', $email);
+        $email = str_replace("\u{FEFF}", "", $email);
 
         $user = Utilizador::findByEmail($email);
 
@@ -25,45 +33,55 @@ class Auth {
             return false;
         }
 
-        // Senha incorreta
         if (!password_verify($password, $user->password)) {
             return false;
         }
 
-        // Conta pendente
         if ($user->ativo == 0 && $user->aprovado_em === null) {
             return null;
         }
 
-        // Conta bloqueada
         if ($user->ativo == 0 && $user->aprovado_em !== null) {
             return false;
         }
 
-        // Conta ativa
-        if ($user->ativo == 1 && $user->aprovado_em !== null) {
+        $_SESSION['user_id'] = $user->id;
+        $user->registarLogin();
 
-            // Guardar ID na sessão
-            $_SESSION['user_id'] = $user->id;
+        return $user;
+    }
 
-            // Registar login
-            $user->registarLogin();
+    public static function register(string $nome, string $email, string $password)
+    {
+        $email = strtolower(trim($email));
+        $email = preg_replace('/\s+/u', '', $email);
+        $email = filter_var($email, FILTER_SANITIZE_EMAIL);
 
-            return $user;
+        $id = Utilizador::create([
+            'nome' => $nome,
+            'email' => $email,
+            'password' => $password,
+            'ativo' => 0,
+            'aprovado_em' => null,
+            'perfil_id' => 2,
+        ]);
+
+        if (!$id) {
+            return null;
         }
 
-        return false;
+        return Utilizador::find($id);
     }
 
     /**
      * Login manual
      */
-    public static function login(Utilizador $user): void {
+    public static function login(Utilizador $user): void
+    {
         self::startSession();
 
         // ❌ REMOVIDO: session_regenerate_id(true)
         // Isto estava a invalidar o cookie antes do redirect
-
         // Se quiseres regenerar, usa:
         // session_regenerate_id(false);
 
@@ -73,7 +91,8 @@ class Auth {
     /**
      * Carrega o utilizador autenticado (OBJETO COMPLETO)
      */
-    public static function user(): ?Utilizador {
+    public static function user(): ?Utilizador
+    {
         self::startSession();
 
         if (!isset($_SESSION['user_id'])) {
@@ -104,7 +123,8 @@ class Auth {
     /**
      * ID do utilizador autenticado
      */
-    public static function id(): ?int {
+    public static function id(): ?int
+    {
         $u = self::user();
         return $u?->id;
     }
@@ -112,35 +132,20 @@ class Auth {
     /**
      * Verifica se está autenticado
      */
-    public static function check(): bool {
+    public static function check(): bool
+    {
         return self::user() !== null;
     }
 
     /**
      * Registo
      */
-    public static function register(string $nome, string $email, string $password) {
-
-        $id = Utilizador::create([
-            'nome' => $nome,
-            'email' => $email,
-            'password' => $password,
-            'ativo' => 0,
-            'aprovado_em' => null,
-            'perfil_id' => 2,
-        ]);
-
-        if (!$id) {
-            return null;
-        }
-
-        return Utilizador::find($id);
-    }
 
     /**
      * Logout seguro
      */
-    public static function logout(): void {
+    public static function logout(): void
+    {
         self::startSession();
 
         $_SESSION = [];
@@ -150,16 +155,68 @@ class Auth {
 
             // Mantém os MESMOS parâmetros usados no index.php
             setcookie(
-                session_name(),
-                '',
-                time() - 42000,
-                $params["path"],
-                $params["domain"],
-                $params["secure"],
-                $params["httponly"]
+                    session_name(),
+                    '',
+                    time() - 42000,
+                    $params["path"],
+                    $params["domain"],
+                    $params["secure"],
+                    $params["httponly"]
             );
         }
 
         session_destroy();
+    }
+
+    public static function redefinirPassword(int $id, string $password): bool
+    {
+        if (empty($password)) {
+            return false;
+        }
+
+        $hash = password_hash($password, PASSWORD_DEFAULT);
+
+        $db = Conexao::getInstancia();
+        $stmt = $db->prepare("
+        UPDATE utilizadores
+        SET password = :password
+        WHERE id = :id
+    ");
+
+        return $stmt->execute([
+                    'password' => $hash,
+                    'id' => $id
+        ]);
+    }
+
+    public static function validarToken(string $token): ?\App\Models\Utilizador
+    {
+        $db = Conexao::getInstancia();
+
+        $stmt = $db->prepare("
+        SELECT u.*
+        FROM utilizadores u
+        INNER JOIN recuperacao_password rp ON rp.utilizador_id = u.id
+        WHERE rp.token = :token
+          AND rp.expira_em > NOW()
+        LIMIT 1
+    ");
+
+        $stmt->execute(['token' => $token]);
+        $data = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if (!$data) {
+            return null;
+        }
+
+        $u = new \App\Models\Utilizador();
+
+        foreach ($data as $key => $value) {
+            if (property_exists($u, $key)) {
+                $u->$key = $value;
+            }
+        }
+
+        return $u;
     }
 }

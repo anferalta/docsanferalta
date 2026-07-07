@@ -1,4 +1,4 @@
-{% extends "@site/layout.twig" %}
+{% extends "site/layout.twig" %}
 
 {% block title %}Criar Conta{% endblock %}
 
@@ -10,7 +10,7 @@
 
         <form method="POST" action="/registar">
             {{ csrf_field() }}
-
+            
             <div class="mb-3">
                 <label class="form-label">Nome</label>
                 <input type="text" name="nome" class="form-control" required>

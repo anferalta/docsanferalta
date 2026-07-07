@@ -3,56 +3,51 @@
 namespace App\Controllers;
 
 use App\Core\BaseController;
-use App\Core\Conexao;
 use App\Core\Auth;
 use App\Core\Sessao;
 use App\Core\Helpers;
 use App\Core\Validator;
 use App\Models\Auditoria;
 use App\Models\Utilizador;
+use App\Services\EmailService;
 
 class AuthController extends BaseController
 {
-
     public function login()
     {
-        return $this->render('@site/login/index.twig');
+        return $this->render('site/login/index.twig');
     }
 
     public function loginSubmit()
     {
-        $email = $_POST['email'] ?? '';
-        $password = $_POST['password'] ?? '';
+        $email = strtolower(trim($_POST['email'] ?? ''));
+        $email = preg_replace('/\s+/u', '', $email);
+
+        $password = trim($_POST['password'] ?? '');
 
         $user = Utilizador::findByEmail($email);
 
         if (!$user || !password_verify($password, $user->password)) {
             Sessao::flash('erro', 'Credenciais inválidas.');
-            Helpers::redirect('/login');
+            return Helpers::redirect('/login');
         }
 
-        // Conta pendente
         if ($user->ativo == 0 && $user->aprovado_em === null) {
             Sessao::flash('erro', 'A sua conta está pendente de aprovação.');
-            Helpers::redirect('/login');
+            return Helpers::redirect('/login');
         }
 
-        // Conta bloqueada
         if ($user->ativo == 0 && $user->aprovado_em !== null) {
             Sessao::flash('erro', 'A sua conta está bloqueada.');
-            Helpers::redirect('/login');
+            return Helpers::redirect('/login');
         }
 
-        // Login OK
         Auth::login($user);
+        Auditoria::registar('login', $user->id);
 
-        // 🔥 REDIRECIONAMENTO POR PERFIL (boas práticas reais)
-        if ($user->isAdmin()) {
-            return Helpers::redirect('/admin/dashboard');
-        }
-
-        // Utilizador normal → dashboard próprio
-        return Helpers::redirect('/dashboard');
+        return $user->isAdmin()
+            ? Helpers::redirect('/admin/dashboard')
+            : Helpers::redirect('/dashboard');
     }
 
     public function logout()
@@ -64,18 +59,21 @@ class AuthController extends BaseController
         }
 
         Auth::logout();
-        return $this->redirect('/login');
+        return Helpers::redirect('/login');
     }
 
     public function registar()
     {
-        return $this->render('@site/login/registar.twig');
+        return $this->render('site/login/registar.twig');
     }
 
     public function registarSubmit()
     {
         $nome = trim($_POST['nome'] ?? '');
-        $email = trim($_POST['email'] ?? '');
+        $email = strtolower(trim($_POST['email'] ?? ''));
+        $email = preg_replace('/\s+/u', '', $email);
+        $email = filter_var($email, FILTER_SANITIZE_EMAIL);
+
         $password = trim($_POST['password'] ?? '');
         $confirm = trim($_POST['password_confirm'] ?? '');
 
@@ -84,29 +82,10 @@ class AuthController extends BaseController
         $v->required('nome', $nome, 'Nome obrigatório.');
         $v->required('email', $email, 'Email obrigatório.');
         $v->required('password', $password, 'Password obrigatória.');
-
         $v->email('email', $email, 'O email não é válido.');
 
-        if (Utilizador::query()->where('email', '=', $email)->first()) {
+        if (Utilizador::findByEmail($email)) {
             $v->addError('email', 'Este email já está registado.');
-        }
-
-        $v->min('password', $password, 8, 'A password deve ter pelo menos 8 caracteres.');
-
-        if (!preg_match('/[A-Z]/', $password)) {
-            $v->addError('password', 'A password deve conter pelo menos uma letra maiúscula.');
-        }
-
-        if (!preg_match('/[a-z]/', $password)) {
-            $v->addError('password', 'A password deve conter pelo menos uma letra minúscula.');
-        }
-
-        if (!preg_match('/[0-9]/', $password)) {
-            $v->addError('password', 'A password deve conter pelo menos um número.');
-        }
-
-        if (!preg_match('/[\W_]/', $password)) {
-            $v->addError('password', 'A password deve conter pelo menos um símbolo.');
         }
 
         if ($password !== $confirm) {
@@ -115,41 +94,53 @@ class AuthController extends BaseController
 
         if ($v->hasErrors()) {
             Sessao::flash('erro', implode("<br>", $v->getErrors()));
-            return $this->redirect('/registar');
+            Sessao::flash('old_nome', $nome);
+            Sessao::flash('old_email', $email);
+            return Helpers::redirect('/registar');
         }
 
-        // Criar utilizador pendente
         $user = Auth::register($nome, $email, $password);
 
         if (!$user) {
             Sessao::flash('erro', 'Não foi possível criar a conta.');
-            return $this->redirect('/registar');
+            return Helpers::redirect('/registar');
         }
 
+        EmailService::enviar(
+            $email,
+            'Conta criada — aguarda aprovação',
+            'utilizador_criado.twig',
+            [
+                'nome' => $nome,
+                'link' => 'A sua conta aguarda aprovação do administrador.'
+            ]
+        );
+
         Sessao::flash('sucesso', 'Conta criada com sucesso! Aguarde aprovação.');
-        return $this->redirect('/login');
+        return Helpers::redirect('/login');
     }
 
     public function recuperar()
     {
-        return $this->render('@site/login/recuperar.twig');
+        return $this->render('site/login/recuperar.twig');
     }
 
     public function recuperarSubmit()
     {
-        $email = trim($_POST['email'] ?? '');
+        $email = strtolower(trim($_POST['email'] ?? ''));
+        $email = preg_replace('/\s+/u', '', $email);
 
         $v = new Validator();
         $v->required('email', $email, 'Email obrigatório.');
 
         if ($v->hasErrors()) {
             Sessao::flash('erro', $v->firstError());
-            return $this->redirect('/recuperar');
+            return Helpers::redirect('/recuperar');
         }
 
-        Auth::sendRecoveryEmail($email);
+        (new \App\Controllers\PasswordResetController())->enviarLink($email);
 
         Sessao::flash('sucesso', 'Se o email existir, receberá instruções em breve.');
-        return $this->redirect('/login');
+        return Helpers::redirect('/login');
     }
 }

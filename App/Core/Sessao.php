@@ -14,10 +14,32 @@ class Sessao {
     }
 
     /**
+     * Gera ou obtém o token CSRF
+     */
+    public static function csrfToken(): string {
+        self::start();
+
+        if (!isset($_SESSION['_csrf'])) {
+            $_SESSION['_csrf'] = bin2hex(random_bytes(32));
+        }
+
+        return $_SESSION['_csrf'];
+    }
+
+    /**
+     * Valida o token CSRF recebido no POST
+     */
+    public static function validarCsrf(string $token): bool {
+        self::start();
+
+        return isset($_SESSION['_csrf']) && hash_equals($_SESSION['_csrf'], $token);
+    }
+
+    /**
      * Define ou obtém uma flash message
      */
     public static function flash($key, $value = null) {
-        self::start(); // ⭐ OBRIGATÓRIO
+        self::start();
 
         if ($value !== null) {
             $_SESSION['flash'][$key] = $value;
@@ -37,7 +59,7 @@ class Sessao {
      * Obtém e limpa todas as flash messages
      */
     public static function getFlash(): array {
-        self::start(); // ⭐ OBRIGATÓRIO
+        self::start();
 
         $flash = $_SESSION['flash'] ?? [];
         unset($_SESSION['flash']);
