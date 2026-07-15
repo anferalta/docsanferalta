@@ -1,15 +1,16 @@
-{% set flash = sessao.getFlash() %}
+{% set erro = sessao('erro') %}
+{% set sucesso = sessao('sucesso') %}
 
-{% if flash.error %}
+{% if erro %}
 <div class="alert alert-danger alert-dismissible fade show" role="alert">
-    {{ flash.error|raw }}
+    {{ erro|raw }}
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 </div>
 {% endif %}
 
-{% if flash.success %}
+{% if sucesso %}
 <div class="alert alert-success alert-dismissible fade show" role="alert">
-    {{ flash.success|raw }}
+    {{ sucesso|raw }}
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 </div>
 {% endif %}

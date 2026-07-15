@@ -78,7 +78,7 @@ class Helpers
 
         // Fallback para ambiente local
         if ($_ENV['APP_ENV'] === 'local') {
-            return 'https://anferaltadocs.local';
+            return 'http://anferaltadocs.local';
         }
 
         // Produção

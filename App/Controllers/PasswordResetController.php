@@ -50,14 +50,23 @@ class PasswordResetController extends BaseController
             return Helpers::redirect('/recuperar');
         }
 
+        // Garante que o CSRF é criado ANTES do layout
+        Sessao::csrfToken();
+
         return $this->render('site/login/nova_password.twig', [
                     'token' => $token,
-                    'csrf_token' => Sessao::csrfToken()
+                   // 'csrf_token' => Sessao::csrfToken()
         ]);
     }
 
     public function guardarNovaPassword()
     {
+        // VALIDAR CSRF
+        //if (!Sessao::validarCsrf($_POST['_csrf'] ?? '')) {
+        //    Sessao::flash('erro', 'Token CSRF inválido.');
+        //    return Helpers::redirect("/reset-password/token/" . ($_POST['token'] ?? ''));
+        //}
+
         $token = $_POST['token'] ?? '';
         $password = $_POST['password'] ?? '';
         $confirm = $_POST['password_confirm'] ?? '';
@@ -74,12 +83,13 @@ class PasswordResetController extends BaseController
             return Helpers::redirect("/reset-password/token/$token");
         }
 
-        if (strlen($password) < 8 ||
+        if (
+                strlen($password) < 8 ||
                 !preg_match('/[A-Z]/', $password) ||
                 !preg_match('/[a-z]/', $password) ||
                 !preg_match('/[0-9]/', $password) ||
-                !preg_match('/[\W_]/', $password)) {
-
+                !preg_match('/[\W_]/', $password)
+        ) {
             Sessao::flash('erro', 'A password deve ter pelo menos 8 caracteres, incluindo maiúsculas, minúsculas, números e símbolos.');
             return Helpers::redirect("/reset-password/token/$token");
         }
@@ -101,5 +111,4 @@ class PasswordResetController extends BaseController
         Sessao::flash('erro', 'Link inválido ou expirado.');
         return Helpers::redirect('/recuperar');
     }
-    
 }
