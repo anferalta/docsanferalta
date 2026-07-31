@@ -1,0 +1,6 @@
+<a href="{{ url }}" class="btn btn-{{ type|default('primary') }}">
+    {% if icon %}
+        <i class="bi bi-{{ icon }} me-1"></i>
+    {% endif %}
+    {{ text }}
+</a>

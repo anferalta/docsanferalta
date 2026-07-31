@@ -4,27 +4,17 @@
 
 {% block content %}
 
-<div class="card" style="padding: 40px; text-align: center;">
+<div class="card p-5 text-center shadow-sm border-0">
 
-    <h1 style="font-size: 3rem; color: #dc2626; margin-bottom: 10px;">
-        403
-    </h1>
+    <h1 class="display-4 text-danger mb-2">403</h1>
 
-    <h2 style="font-size: 1.6rem; margin-bottom: 15px;">
-        Acesso negado
-    </h2>
+    <h2 class="h4 mb-3">Acesso negado</h2>
 
-    {% if flash %}
-        <div class="alert alert-{{ flash.tipo }}" style="margin-bottom: 20px;">
-            {{ flash.mensagem }}
-        </div>
-    {% endif %}
-
-    <p style="color: #6b7280; font-size: 1rem; margin-bottom: 25px;">
+    <p class="text-muted mb-4">
         Não tem permissão para aceder a esta área do sistema.
     </p>
 
-    <a href="{{ url('/admin') }}" class="btn-primary">
+    <a href="{{ url('/admin') }}" class="btn btn-primary">
         Voltar ao painel
     </a>
 

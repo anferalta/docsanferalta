@@ -14,9 +14,6 @@ use App\Core\Sessao;
 class TramitacaoAdminController extends BaseController
 {
 
-    /**
-     * Criar notificação
-     */
     private function notificar($utilizador_id, $documento_id, $tipo, $mensagem)
     {
         Notificacao::create([
@@ -28,9 +25,6 @@ class TramitacaoAdminController extends BaseController
         ]);
     }
 
-    /**
-     * Guarda anexos de um movimento de tramitação
-     */
     private function guardarAnexos(int $tramitacao_id): void
     {
         if (empty($_FILES['anexos']['name'][0])) {
@@ -39,11 +33,12 @@ class TramitacaoAdminController extends BaseController
 
         $baseDir = ROOT_PATH . '/public/uploads/tramitacao/' . $tramitacao_id . '/';
 
-        if (!is_dir($baseDir) && !mkdir($baseDir, 0775, true) && !is_dir($baseDir)) {
-            return;
+        if (!is_dir($baseDir)) {
+            mkdir($baseDir, 0775, true);
         }
 
         foreach ($_FILES['anexos']['name'] as $i => $nomeOriginal) {
+
             if (!is_uploaded_file($_FILES['anexos']['tmp_name'][$i])) {
                 continue;
             }
@@ -63,64 +58,31 @@ class TramitacaoAdminController extends BaseController
     }
 
     /**
-     * DASHBOARD DE TRAMITAÇÃO
+     * Página principal de TRAMITAÇÃO do documento
      */
-    public function dashboard()
+    public function documento($id)
     {
-        $this->authorize('admin.tramitacao.dashboard');
-
-        $db = \App\Core\Conexao::getInstancia();
-
-        $pendentes = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'pendente'")->fetchColumn();
-        $em_tramitacao = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'em_tramitacao'")->fetchColumn();
-        $em_analise = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual IN ('analise','em_analise')")->fetchColumn();
-        $concluidos = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'concluido'")->fetchColumn();
-        $arquivados = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'arquivado'")->fetchColumn();
-
-        return $this->render('@admin/tramitacao/dashboard.twig', [
-                    'pendentes' => $pendentes,
-                    'em_tramitacao' => $em_tramitacao,
-                    'em_analise' => $em_analise,
-                    'concluidos' => $concluidos,
-                    'arquivados' => $arquivados
-        ]);
-    }
-
-    /**
-     * VER TRAMITAÇÃO DE UM DOCUMENTO
-     */
-    public function index($documento_id)
-    {
-        $documento = Documento::find($documento_id);
+        $documento = Documento::find($id);
 
         if (!$documento) {
             Sessao::flash('erro', 'Documento não encontrado.');
-            return $this->redirect('/admin/documentos');
+            return $this->redirect('/admin/tramitacao');
         }
 
-        // FILTROS
-        $filtros = [
-            'acao' => $_GET['acao'] ?? null,
-            'utilizador' => $_GET['utilizador'] ?? null,
-            'data_inicio' => $_GET['data_inicio'] ?? null,
-            'data_fim' => $_GET['data_fim'] ?? null,
-        ];
-
-        // HISTÓRICO COM FILTROS
-        $historico = \App\Models\DocumentoTramitacao::filtrar($documento_id, $filtros);
+        // HISTÓRICO — usa o método correto do teu modelo
+        $historico = DocumentoTramitacao::filtrar($id, []);
 
         // ÁREAS
-        $areas = \App\Models\DocumentoArea::all();
+        $areas = DocumentoArea::all();
 
         // ESTADOS
         $estados = \App\Models\DocumentoEstado::all();
 
-        return $this->render('@admin/tramitacao/index.twig', [
+        return $this->render('@admin/tramitacao/documento.twig', [
                     'documento' => $documento,
                     'historico' => $historico,
                     'areas' => $areas,
                     'estados' => $estados,
-                    'filtros' => $filtros,
                     'user' => Auth::user()
         ]);
     }
@@ -138,34 +100,25 @@ class TramitacaoAdminController extends BaseController
 
         if (!$id || !$nova_area) {
             Sessao::flash('erro', 'Dados inválidos.');
-            return $this->redirect('/admin/documentos');
+            return $this->redirect('/admin/tramitacao');
         }
 
-        // Buscar documento
         $documento = Documento::find($id);
+
         if (!$documento) {
             Sessao::flash('erro', 'Documento não encontrado.');
-            return $this->redirect('/admin/documentos');
+            return $this->redirect('/admin/tramitacao');
         }
 
-        // UPDATE direto
-        $db = \App\Core\Conexao::getInstancia();
+        // Atualizar documento
+        $documento->update([
+            'area_atual_id' => $nova_area,
+            'estado_atual' => 'em_tramitacao',
+            'area_atual_desde' => date('Y-m-d H:i:s')
+                ], "id = {$id}");
 
-        $sql = "UPDATE documentos 
-SET area_atual_id = ?, 
-    estado_atual = ?, 
-    area_atual_desde = NOW() 
-WHERE id = ?";
-
-        $stmt = $db->prepare($sql);
-        $stmt->execute([
-            $nova_area,
-            'em_tramitacao',
-            $id
-        ]);
-
-        // Registar histórico (CORRIGIDO)
-        DocumentoTramitacao::create([
+        // Histórico
+        $mov = DocumentoTramitacao::create([
             'documento_id' => $id,
             'area_id' => $nova_area,
             'utilizador_id' => Auth::user()->id,
@@ -175,169 +128,94 @@ WHERE id = ?";
             'criado_em' => date('Y-m-d H:i:s')
         ]);
 
-        // Notificar criador
+        // Anexos
+        $this->guardarAnexos($mov->id);
+
+        // Notificação
         $this->notificar(
                 $documento->criado_por,
                 $documento->id,
                 'encaminhamento',
-                "O documento #{$documento->id} foi encaminhado para uma nova área."
+                "O documento #{$documento->id} foi encaminhado."
         );
 
-        // Sucesso + redirect
         Sessao::flash('sucesso', 'Documento encaminhado com sucesso.');
-        return $this->redirect("/admin/documentos/editar/{$documento->id}?tab=tramitacao");
-    }
-
-    public function verAnexo($historicoId, $ficheiro)
-    {
-        // ============================
-        // 1. Validar histórico
-        // ============================
-        $historicoId = intval($historicoId);
-
-        if ($historicoId <= 0) {
-            http_response_code(404);
-            echo "Anexo inválido.";
-            return;
-        }
-
-        $historico = \App\Models\DocumentoTramitacao::find($historicoId);
-
-        if (!$historico) {
-            http_response_code(404);
-            echo "Registo de tramitação não encontrado.";
-            return;
-        }
-
-        // ============================
-        // 2. Resolver caminho seguro
-        // ============================
-        try {
-            $path = \App\Services\TramitacaoFileService::resolverCaminhoSeguro(
-                    $historicoId,
-                    $ficheiro
-            );
-        } catch (\Exception $e) {
-
-            error_log("Anexo não encontrado: $historicoId/$ficheiro");
-
-            http_response_code(404);
-            echo "Ficheiro não encontrado.";
-            return;
-        }
-
-        // ============================
-        // 3. Enviar ficheiro
-        // ============================
-        header("Content-Type: " . mime_content_type($path));
-        header("Content-Length: " . filesize($path));
-        header("Content-Disposition: inline; filename=\"" . basename($path) . "\"");
-
-        readfile($path);
-        exit;
+        return $this->redirect("/admin/tramitacao/{$id}");
     }
 
     /**
-     * ADICIONAR COMENTÁRIO
+     * COMENTAR
      */
     public function comentar()
     {
         $user = Auth::user();
 
-        // ============================
-        // 1. Validar método e permissões
-        // ============================
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             Sessao::flash('erro', 'Método inválido.');
-            return $this->redirect('/admin/documentos');
+            return $this->redirect('/admin/tramitacao');
         }
 
         if (!$user->hasPermissao('admin.tramitacao.comentar')) {
-            Sessao::flash('erro', 'Não tem permissão para comentar documentos.');
-            return $this->redirect('/admin/documentos');
+            Sessao::flash('erro', 'Sem permissão.');
+            return $this->redirect('/admin/tramitacao');
         }
 
-        // ============================
-        // 2. Validar inputs
-        // ============================
         $documento_id = intval($_POST['documento_id'] ?? 0);
         $comentario = trim($_POST['comentario'] ?? '');
 
         if ($documento_id <= 0 || $comentario === '') {
             Sessao::flash('erro', 'Comentário inválido.');
-            return $this->redirect('/admin/documentos');
+            return $this->redirect('/admin/tramitacao');
         }
 
         $documento = Documento::find($documento_id);
 
         if (!$documento) {
             Sessao::flash('erro', 'Documento não encontrado.');
-            return $this->redirect('/admin/documentos');
+            return $this->redirect('/admin/tramitacao');
         }
 
-        // ============================
-        // 3. Criar registo de histórico
-        // ============================
-        $historico = \App\Models\DocumentoTramitacao::create([
+        // Histórico
+        $mov = DocumentoTramitacao::create([
             'documento_id' => $documento->id,
             'utilizador_id' => $user->id,
             'acao' => 'COMENTARIO',
             'area_id' => $documento->area_atual_id,
             'comentario' => $comentario,
-            'estado' => $documento->estado_atual, // ← CORREÇÃO
+            'estado' => $documento->estado_atual,
             'criado_em' => date('Y-m-d H:i:s')
         ]);
 
-        // ============================
-        // 4. Guardar anexos (se existirem)
-        // ============================
-        if (!empty($_FILES['anexos']['name'][0])) {
+        // Anexos
+        $this->guardarAnexos($mov->id);
 
-            $ficheiros = \App\Services\TramitacaoFileService::guardarAnexos(
-                    $historico->id,
-                    $_FILES['anexos']
-            );
-
-            foreach ($ficheiros as $f) {
-                \App\Models\DocumentoTramitacaoAnexo::create([
-                    'tramitacao_id' => $historico->id,
-                    'ficheiro' => $f['ficheiro'],
-                    'nome_original' => $f['nome_original'],
-                    'mime_type' => $f['mime_type'],
-                    'tamanho' => $f['tamanho']
-                ]);
-            }
-        }
-
-        // ============================
-        // 5. Notificar criador
-        // ============================
-        \App\Models\Notificacao::create([
+        // Notificação
+        Notificacao::create([
             'utilizador_id' => $documento->criado_por,
-            'mensagem' => "O documento '{$documento->titulo}' recebeu um novo comentário.",
+            'mensagem' => "O documento '{$documento->titulo}' recebeu um comentário.",
             'url' => "/admin/tramitacao/{$documento->id}",
             'criado_em' => date('Y-m-d H:i:s')
         ]);
 
-        // ============================
-        // 6. Sucesso
-        // ============================
-        Sessao::flash('sucesso', 'Comentário adicionado com sucesso.');
-        return $this->redirect("/admin/documentos/editar/{$documento->id}#tabTramitacao");
+        Sessao::flash('sucesso', 'Comentário adicionado.');
+        return $this->redirect("/admin/tramitacao/{$documento->id}");
     }
 
+    /**
+     * ALTERAR ESTADO
+     */
     public function estado()
     {
         $user = Auth::user();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             Sessao::flash('erro', 'Método inválido.');
-            return $this->redirect('/admin/documentos');
+            return $this->redirect('/admin/tramitacao');
         }
 
         if (!$user->hasPermissao('admin.tramitacao.estado')) {
-            Sessao::flash('erro', 'Não tem permissão para alterar o estado.');
-            return $this->redirect('/admin/documentos');
+            Sessao::flash('erro', 'Sem permissão.');
+            return $this->redirect('/admin/tramitacao');
         }
 
         $documento_id = intval($_POST['documento_id'] ?? 0);
@@ -346,20 +224,18 @@ WHERE id = ?";
 
         if ($documento_id <= 0 || $estado === '') {
             Sessao::flash('erro', 'Dados inválidos.');
-            return $this->redirect('/admin/documentos');
+            return $this->redirect('/admin/tramitacao');
         }
 
         $documento = Documento::find($documento_id);
 
         if (!$documento) {
             Sessao::flash('erro', 'Documento não encontrado.');
-            return $this->redirect('/admin/documentos');
+            return $this->redirect('/admin/tramitacao');
         }
 
-        // ============================
-        // 3. Histórico
-        // ============================
-        $historico = \App\Models\DocumentoTramitacao::create([
+        // Histórico
+        $mov = DocumentoTramitacao::create([
             'documento_id' => $documento->id,
             'utilizador_id' => $user->id,
             'acao' => 'ESTADO',
@@ -369,39 +245,16 @@ WHERE id = ?";
             'criado_em' => date('Y-m-d H:i:s')
         ]);
 
-        // ============================
-        // 4. Anexos
-        // ============================
-        if (!empty($_FILES['anexos']['name'][0])) {
+        // Anexos
+        $this->guardarAnexos($mov->id);
 
-            $ficheiros = \App\Services\TramitacaoFileService::guardarAnexos(
-                    $historico->id,
-                    $_FILES['anexos']
-            );
-
-            foreach ($ficheiros as $f) {
-                \App\Models\DocumentoTramitacaoAnexo::create([
-                    'tramitacao_id' => $historico->id,
-                    'ficheiro' => $f['ficheiro'],
-                    'nome_original' => $f['nome_original'],
-                    'mime_type' => $f['mime_type'],
-                    'tamanho' => $f['tamanho']
-                ]);
-            }
-        }
-
-        // ============================
-        // 5. Atualizar estado do documento
-        // ============================
+        // Atualizar documento
         $documento->update([
-            'estado_atual' => $estado,
-            'area_atual_id' => $documento->area_atual_id
+            'estado_atual' => $estado
                 ], "id = {$documento->id}");
 
-        // ============================
-        // 6. Notificação
-        // ============================
-        \App\Models\Notificacao::create([
+        // Notificação
+        Notificacao::create([
             'utilizador_id' => $documento->criado_por,
             'documento_id' => $documento->id,
             'tipo' => 'estado',
@@ -410,87 +263,13 @@ WHERE id = ?";
             'criado_em' => date('Y-m-d H:i:s')
         ]);
 
-        Sessao::flash('sucesso', 'Estado alterado com sucesso.');
+        Sessao::flash('sucesso', 'Estado alterado.');
         return $this->redirect("/admin/tramitacao/{$documento->id}");
     }
 
     /**
-     * ALTERAR ESTADO
+     * LISTA DE DOCUMENTOS EM TRAMITAÇÃO
      */
-    public function mudarEstado()
-    {
-        $this->authorize('admin.tramitacao.mudar_estado');
-
-        $doc_id = (int) ($_POST['documento_id'] ?? 0);
-        $estado = $_POST['estado'] ?? null;
-        $comentario = trim($_POST['comentario'] ?? '');
-
-        if (!$doc_id || !$estado) {
-            return $this->redirect('/admin/documentos');
-        }
-
-        $documento = Documento::find($doc_id);
-
-        DocumentoTramitacao::create(
-                $doc_id,
-                $documento->area_atual_id,
-                Auth::id(),
-                'ESTADO',
-                $estado,
-                $comentario
-        );
-
-        $tramitacao_id = DocumentoTramitacao::ultimoId();
-        $this->guardarAnexos($tramitacao_id);
-
-        // AQUI ESTÁ A CORREÇÃO
-        Documento::updateEstado($doc_id, $estado, $documento->area_atual_id);
-
-        $this->notificar(
-                $documento->criado_por,
-                $doc_id,
-                'estado',
-                "O documento #{$doc_id} mudou para o estado: {$estado}."
-        );
-
-        return $this->redirect("/admin/tramitacao/$doc_id");
-    }
-
-    /**
-     * ARQUIVAR DOCUMENTO
-     */
-    public function recuperar($id)
-    {
-        $this->authorize('admin.documentos.recuperar');
-
-        $documento = Documento::find($id);
-
-        if (!$documento) {
-            Sessao::flash('erro', 'Documento não encontrado.');
-            return $this->redirect('/admin/documentos/arquivados');
-        }
-
-        $documento->estado_atual = 'analise';
-        $documento->arquivado_em = null;
-        $documento->arquivado_por_id = null;
-        $documento->save();
-
-        DocumentoTramitacao::create([
-            'documento_id' => $id,
-            'area_id' => $documento->area_atual_id,
-            'utilizador_id' => Auth::id(),
-            'acao' => 'RECUPERADO',
-            'estado' => 'analise',
-            'comentario' => 'Documento recuperado do arquivo.',
-            'criado_em' => date('Y-m-d H:i:s')
-        ]);
-
-        Sessao::flash('sucesso', 'Documento recuperado com sucesso.');
-
-        // 🔥 ROTA CERTA
-        return $this->redirect("/admin/documentos/editar/{$id}");
-    }
-
     public function lista()
     {
         $this->authorize('admin.tramitacao.ver');
@@ -507,54 +286,49 @@ WHERE id = ?";
 
         $sql = "
         SELECT 
-    d.id,
-    d.titulo,
-    d.estado_atual,
-    d.criado_em,
-    d.area_atual_desde,
-    t.nome AS tipo_nome,
-    a.nome AS area_atual_nome,
-    a.prazo_resposta,
-    u.nome AS criador_nome
-FROM documentos d
-LEFT JOIN documento_tipos t ON t.tipo_id = d.tipo_id
-LEFT JOIN documento_areas a ON a.id = d.area_atual_id
-LEFT JOIN utilizadores u ON u.id = d.criado_por
-WHERE d.estado_atual IN ('novo', 'pendente', 'analise', 'em_tramitacao', 'concluido') ";
+            d.id,
+            d.titulo,
+            d.estado_atual,
+            d.criado_em,
+            d.area_atual_desde,
+            t.nome AS tipo_nome,
+            a.nome AS area_atual_nome,
+            a.prazo_resposta,
+            u.nome AS criador_nome
+        FROM documentos d
+        LEFT JOIN documento_tipos t ON t.tipo_id = d.tipo_id
+        LEFT JOIN documento_areas a ON a.id = d.area_atual_id
+        LEFT JOIN utilizadores u ON u.id = d.criado_por
+        WHERE d.estado_atual IN ('novo', 'pendente', 'analise', 'em_analise', 'em_tramitacao', 'concluido')
+    ";
 
         $params = [];
 
-        // FILTRO ESTADO (usa codigo)
         if ($estado !== '') {
             $sql .= " AND d.estado_atual = ? ";
             $params[] = $estado;
         }
 
-        // FILTRO ÁREA
         if ($area !== '') {
             $sql .= " AND a.nome = ? ";
             $params[] = $area;
         }
 
-        // FILTRO CRIADOR
         if ($criador !== '') {
             $sql .= " AND u.nome LIKE ? ";
-            $params[] = "%$criador%";
+            $params[] = "%{$criador}%";
         }
 
-        // FILTRO TIPO (usa tipo_id)
         if ($tipo !== '') {
             $sql .= " AND t.tipo_id = ? ";
             $params[] = $tipo;
         }
 
-        // FILTRO DATA INICIAL
         if ($dataInicio !== '') {
             $sql .= " AND DATE(d.criado_em) >= ? ";
             $params[] = $dataInicio;
         }
 
-        // FILTRO DATA FINAL
         if ($dataFim !== '') {
             $sql .= " AND DATE(d.criado_em) <= ? ";
             $params[] = $dataFim;
@@ -567,14 +341,11 @@ WHERE d.estado_atual IN ('novo', 'pendente', 'analise', 'em_tramitacao', 'conclu
         $documentos = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
         foreach ($documentos as &$doc) {
-
             if (!empty($doc['area_atual_desde']) && !empty($doc['prazo_resposta'])) {
-
-                $inicio = new \DateTime($doc['area_atual_desde']);   // CORRIGIDO
-                $agora = new \DateTime();                           // CORRIGIDO
+                $inicio = new \DateTime($doc['area_atual_desde']);
+                $agora = new \DateTime();
 
                 $dias = $inicio->diff($agora)->days;
-
                 $prazo = (int) $doc['prazo_resposta'];
 
                 if ($dias <= $prazo) {
@@ -603,31 +374,130 @@ WHERE d.estado_atual IN ('novo', 'pendente', 'analise', 'em_tramitacao', 'conclu
                     'areas' => $areas,
                     'estados' => $estados,
                     'tipos' => $tipos,
-                    'utilizadores' => $utilizadores
+                    'utilizadores' => $utilizadores,
         ]);
     }
 
-    public function guardar()
+    /**
+     * ARQUIVAR DOCUMENTO
+     */
+    public function arquivar()
     {
-        $id = $_POST['id'] ?? null;
-        $nome = trim($_POST['nome'] ?? '');
-        $prazo_resposta = (int) ($_POST['prazo_resposta'] ?? 3);
+        $user = Auth::user();
 
-        // validações básicas
-        if ($nome === '') {
-            // trata erro...
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            Sessao::flash('erro', 'Método inválido.');
+            return $this->redirect('/admin/tramitacao');
         }
 
-        if ($id) {
-            $area = DocumentoArea::find($id);
-        } else {
-            $area = new DocumentoArea();
+        if (!$user->hasPermissao('admin.tramitacao.estado')) {
+            Sessao::flash('erro', 'Sem permissão.');
+            return $this->redirect('/admin/tramitacao');
         }
 
-        $area->nome = $nome;
-        $area->prazo_resposta = $prazo_resposta;
-        $area->save();
+        $documento_id = intval($_POST['documento_id'] ?? 0);
 
-        return $this->redirect('/admin/areas?sucesso=1');
+        if ($documento_id <= 0) {
+            Sessao::flash('erro', 'Documento inválido.');
+            return $this->redirect('/admin/tramitacao');
+        }
+
+        $documento = Documento::find($documento_id);
+
+        if (!$documento) {
+            Sessao::flash('erro', 'Documento não encontrado.');
+            return $this->redirect('/admin/tramitacao');
+        }
+
+        // Histórico
+        $mov = DocumentoTramitacao::create([
+            'documento_id' => $documento->id,
+            'utilizador_id' => $user->id,
+            'acao' => 'ESTADO',
+            'area_id' => $documento->area_atual_id,
+            'comentario' => 'Documento arquivado.',
+            'estado' => 'arquivado',
+            'criado_em' => date('Y-m-d H:i:s')
+        ]);
+
+        // Anexos (se existirem)
+        $this->guardarAnexos($mov->id);
+
+        // Atualizar documento
+        $documento->update([
+            'estado_atual' => 'arquivado'
+                ], "id = {$documento->id}");
+
+        // Notificação ao criador
+        Notificacao::create([
+            'utilizador_id' => $documento->criado_por,
+            'documento_id' => $documento->id,
+            'tipo' => 'estado',
+            'mensagem' => "O documento '{$documento->titulo}' foi arquivado.",
+            'url' => "/admin/tramitacao/{$documento->id}",
+            'criado_em' => date('Y-m-d H:i:s')
+        ]);
+
+        Sessao::flash('sucesso', 'Documento arquivado com sucesso.');
+        return $this->redirect("/admin/tramitacao/{$documento->id}");
+    }
+
+    public function dashboard()
+    {
+        $this->authorize('admin.tramitacao.dashboard');
+
+        $db = \App\Core\Conexao::getInstancia();
+
+        // NOVOS
+        $stmt = $db->prepare("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'novo'");
+        $stmt->execute();
+        $novos = $stmt->fetchColumn();
+
+        // PENDENTES
+        $stmt = $db->prepare("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'pendente'");
+        $stmt->execute();
+        $pendentes = $stmt->fetchColumn();
+
+        // EM TRAMITAÇÃO
+        $stmt = $db->prepare("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'em_tramitacao'");
+        $stmt->execute();
+        $em_tramitacao = $stmt->fetchColumn();
+
+        // EM ANÁLISE
+        $stmt = $db->prepare("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'analise'");
+        $stmt->execute();
+        $em_analise = $stmt->fetchColumn();
+
+        // CONCLUÍDOS
+        $stmt = $db->prepare("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'concluido'");
+        $stmt->execute();
+        $concluidos = $stmt->fetchColumn();
+        
+        // DEVOLVIDOS
+        $stmt = $db->prepare("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'devolvido'");
+        $stmt->execute();
+        $devolvidos = $stmt->fetchColumn();
+
+        // ARQUIVADOS
+        $stmt = $db->prepare("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'arquivado'");
+        $stmt->execute();
+        $arquivados = $stmt->fetchColumn();
+      
+        // TOTAL
+        $total = $novos + $pendentes + $em_tramitacao + $em_analise + $concluidos + $arquivados + $devolvidos;
+        if ($total == 0) {
+            $total = 1;
+        }
+
+        return $this->render('@admin/tramitacao/dashboard.twig', [
+                    'novos' => $novos,
+                    'pendentes' => $pendentes,
+                    'em_tramitacao' => $em_tramitacao,
+                    'em_analise' => $em_analise,
+                    'concluidos' => $concluidos,
+                    'devolvidos' => $devolvidos,
+                    'arquivados' => $arquivados,
+                    'total' => $total,
+        ]);
     }
 }

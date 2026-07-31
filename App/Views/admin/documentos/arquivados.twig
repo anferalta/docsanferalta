@@ -48,12 +48,8 @@
                                     Ver
                                 </a>
 
-                                <form action="/admin/documentos/arquivado/{{ doc.id }}/recuperar"
-                                      method="post"
-                                      class="d-inline">
-
-                                    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-
+                                <form action="/admin/documentos/arquivado/{{ doc.id }}/recuperar" method="post" class="d-inline">
+                                    {{ csrf_field() }}
                                     <button class="btn btn-sm btn-warning"
                                             onclick="return confirm('Recuperar este documento para produção?')">
                                         Recuperar

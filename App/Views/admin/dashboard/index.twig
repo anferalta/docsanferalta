@@ -78,12 +78,8 @@
                         <tr>
                             <td>{{ r.area }}</td>
                             <td>{{ r.total }}</td>
-                            <td>
-                                <span class="badge bg-success">{{ r.dentro_prazo }}</span>
-                            </td>
-                            <td>
-                                <span class="badge bg-danger">{{ r.atrasados }}</span>
-                            </td>
+                            <td><span class="badge bg-success">{{ r.dentro_prazo }}</span></td>
+                            <td><span class="badge bg-danger">{{ r.atrasados }}</span></td>
                         </tr>
                     {% else %}
                         <tr>
@@ -131,6 +127,13 @@
                     <h5 class="mb-3"><i class="fa fa-file-alt me-2"></i>Documentos</h5>
 
                     <ul class="list-group">
+
+                        <!-- NOVO CARD: TRAMITAÇÃO (FLUXO ATIVO) -->
+                        <li class="list-group-item d-flex justify-content-between">
+                            Tramitação (Fluxo Ativo)
+                            <span class="fw-bold text-secondary">{{ tramitacaoFluxo }}</span>
+                        </li>
+
                         <li class="list-group-item d-flex justify-content-between">
                             Total <span class="fw-bold">{{ totalDocumentos }}</span>
                         </li>
@@ -196,7 +199,6 @@
 
 {% block scripts %}
 
-<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>

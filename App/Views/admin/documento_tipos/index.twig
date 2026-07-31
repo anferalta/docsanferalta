@@ -6,56 +6,58 @@
 
 {% block content %}
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0">Tipos de Documento</h4>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">Tipos de Documento</h4>
 
-    <a href="/admin/documento-tipos/criar" class="btn btn-primary">
-        <i class="fa fa-plus"></i> Novo Tipo
-    </a>
-</div>
+        <a href="/admin/documento-tipos/criar" class="btn btn-primary">
+            <i class="fa fa-plus"></i> Novo Tipo
+        </a>
+    </div>
 
-<div class="card">
-    <div class="table-responsive">
-        <table class="table table-hover mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th style="width: 80px;">ID</th>
-                    <th>Nome</th>
-                    <th class="text-end" style="width: 180px;">Ações</th>
-                </tr>
-            </thead>
-
-            <tbody>
-                {% if tipos is empty %}
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
                     <tr>
-                        <td colspan="3" class="text-center py-4 text-muted">
-                            Nenhum tipo encontrado.
-                        </td>
+                        <th style="width: 80px;">ID</th>
+                        <th>Nome</th>
+                        <th class="text-end" style="width: 180px;">Ações</th>
                     </tr>
-                {% else %}
-                    {% for tipo in tipos %}
+                </thead>
+
+                <tbody>
+                    {% if tipos is empty %}
                         <tr>
-                            <td>{{ tipo.tipo_id }}</td>
-                            <td>{{ tipo.nome }}</td>
-
-                            <td class="text-end">
-                                <a href="/admin/documento-tipos/editar/{{ tipo.tipo_id }}"
-                                   class="btn btn-sm btn-warning">
-                                    <i class="fa fa-pencil"></i> Editar
-                                </a>
-
-                                <a href="/admin/documento-tipos/apagar/{{ tipo.tipo_id }}"
-                                   class="btn btn-sm btn-danger"
-                                   onclick="return confirm('Apagar tipo?')">
-                                    <i class="fa fa-trash"></i> Apagar
-                                </a>
+                            <td colspan="3" class="text-center py-4 text-muted">
+                                Nenhum tipo encontrado.
                             </td>
                         </tr>
-                    {% endfor %}
-                {% endif %}
-            </tbody>
-        </table>
+                    {% else %}
+                        {% for tipo in tipos %}
+                            <tr>
+                                <td>{{ tipo.tipo_id }}</td>
+                                <td>{{ tipo.nome }}</td>
+
+                                <td class="text-end">
+                                    <a href="/admin/documento-tipos/editar/{{ tipo.tipo_id }}"
+                                       class="btn btn-sm btn-warning">
+                                        <i class="fa fa-pencil"></i> Editar
+                                    </a>
+
+                                    <form method="POST" action="/admin/documento-tipos/apagar/{{ tipo.tipo_id }}" class="d-inline">
+                                        {{ csrf_field() }}
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Apagar tipo?')">
+                                            <i class="fa fa-trash"></i> Apagar
+                                        </button>
+                                    </form>
+
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
     </div>
-</div>
 
 {% endblock %}

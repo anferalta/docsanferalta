@@ -7,16 +7,28 @@ use App\Core\Auth;
 use App\Core\Sessao;
 use App\Core\Helpers;
 use App\Core\Validator;
+use App\Core\CSRF;
 use App\Models\Auditoria;
 use App\Models\Utilizador;
 use App\Services\EmailService;
 
 class AuthController extends BaseController
 {
+
     public function login()
-    {
-        return $this->render('site/login/index.twig');
-    }
+{
+    $csrf = CSRF::token();
+
+    $erro = Sessao::flash('erro');
+    $sucesso = Sessao::flash('sucesso');
+
+    return $this->render('site/login/index.twig', [
+        'csrf'    => $csrf,
+        'erro'    => $erro,
+        'sucesso' => $sucesso,
+    ]);
+}
+
 
     public function loginSubmit()
     {
@@ -45,9 +57,7 @@ class AuthController extends BaseController
         Auth::login($user);
         Auditoria::registar('login', $user->id);
 
-        return $user->isAdmin()
-            ? Helpers::redirect('/admin/dashboard')
-            : Helpers::redirect('/dashboard');
+        return $user->isAdmin() ? Helpers::redirect('/admin/dashboard') : Helpers::redirect('/dashboard');
     }
 
     public function logout()
@@ -107,13 +117,13 @@ class AuthController extends BaseController
         }
 
         EmailService::enviar(
-            $email,
-            'Conta criada — aguarda aprovação',
-            'utilizador_criado.twig',
-            [
-                'nome' => $nome,
-                'link' => 'A sua conta aguarda aprovação do administrador.'
-            ]
+                $email,
+                'Conta criada — aguarda aprovação',
+                'utilizador_criado.twig',
+                [
+                    'nome' => $nome,
+                    'link' => 'A sua conta aguarda aprovação do administrador.'
+                ]
         );
 
         Sessao::flash('sucesso', 'Conta criada com sucesso! Aguarde aprovação.');

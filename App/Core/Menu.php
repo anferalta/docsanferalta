@@ -6,6 +6,7 @@ use App\Core\Conexao;
 
 class Menu
 {
+
     public function getMenu(): array
     {
         $db = Conexao::getInstancia();
@@ -24,13 +25,32 @@ class Menu
         $docsTotal = $db->query("SELECT COUNT(*) FROM documentos")->fetchColumn();
         $docsPendentes = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'pendente'")->fetchColumn();
         $docsAnalise = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'analise'")->fetchColumn();
-        $docsTram = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'em_tramitacao'")->fetchColumn();
+
+// ⭐ CORREÇÃO — contar TODOS os documentos em fluxo ativo
+        $docsTram = $db->query("
+    SELECT COUNT(*) 
+    FROM documentos 
+    WHERE estado_atual IN (
+        'novo',
+        'pendente',
+        'analise',
+        'em_tramitacao',
+        'concluido'
+    )
+")->fetchColumn();
+
         $docsConcl = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'concluido'")->fetchColumn();
         $docsArquiv = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'arquivado'")->fetchColumn();
         $docsDevolvidos = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'devolvido'")->fetchColumn();
 
-        return [
+        // ============================
+        // CONTADORES EXTRA
+        // ============================
+        $docsTipos = $db->query("SELECT COUNT(*) FROM documento_tipos")->fetchColumn();
+        $docsAreas = $db->query("SELECT COUNT(*) FROM documento_areas")->fetchColumn();
+        $docsEstados = $db->query("SELECT COUNT(*) FROM documento_estados")->fetchColumn();
 
+        return [
             // ============================
             // GERAL
             // ============================
@@ -42,7 +62,6 @@ class Menu
                 'permissao' => 'admin.dashboard.ver',
                 'principal' => true
             ],
-
             // ============================
             // UTILIZADORES
             // ============================
@@ -82,7 +101,6 @@ class Menu
                 'url' => '/admin/utilizadores/criar',
                 'permissao' => 'admin.utilizadores.criar'
             ],
-
             // ============================
             // DOCUMENTOS
             // ============================
@@ -96,13 +114,19 @@ class Menu
                 'principal' => true
             ],
             [
+                'titulo' => 'Tipo de Documentos',
+                'icone' => 'bi-diagram-2',
+                'url' => '/admin/documento-tipos',
+                'permissao' => 'admin.documento-tipos.ver',
+                'badge' => $docsTipos
+            ],
+            [
                 'titulo' => 'Arquivados',
                 'icone' => 'bi-archive',
                 'url' => '/admin/documentos/arquivados',
                 'permissao' => 'admin.documentos.arquivados.ver',
                 'badge' => $docsArquiv
             ],
-
             // ============================
             // TRAMITAÇÃO
             // ============================
@@ -125,22 +149,27 @@ class Menu
                 'titulo' => 'Áreas de Tramitação',
                 'icone' => 'bi-diagram-2',
                 'url' => '/admin/documento-areas',
-                'permissao' => 'admin.tramitacao.areas.ver'
+                'permissao' => 'admin.tramitacao.areas.ver',
+                'badge' => $docsAreas
             ],
-
+            // ⭐ NOVO ITEM — DOCUMENTO ESTADOS
+            [
+                'titulo' => 'Estado dos Documentos',
+                'icone' => 'bi-flag',
+                'url' => '/admin/documento-estados',
+                'permissao' => 'admin.tramitacao.estados.ver',
+                'badge' => $docsEstados
+            ],
             // ============================
             // SISTEMA
             // ============================
             ['header' => 'SISTEMA'],
-
-            // NOVO ITEM — RELATÓRIOS SLA
             [
                 'titulo' => 'Relatórios SLA',
                 'icone' => 'bi-file-earmark-bar-graph',
                 'url' => '/admin/relatorios',
                 'permissao' => 'admin.relatorios.ver'
             ],
-
             [
                 'titulo' => 'Perfis',
                 'icone' => 'bi-person-badge',

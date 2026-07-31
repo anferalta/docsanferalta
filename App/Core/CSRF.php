@@ -5,7 +5,7 @@ namespace App\Core;
 class CSRF
 {
     private const SESSION_KEY = '_csrf_token';
-    private const FIELD_NAME  = '_csrf';
+    private const FIELD_NAME  = 'csrf';
 
     /**
      * Garante que a sessão está ativa

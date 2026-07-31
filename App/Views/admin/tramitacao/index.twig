@@ -191,7 +191,7 @@
 
             {% if user.hasPermissao('admin.documentos.arquivar') and documento.estado_atual != 'arquivado' %}
                 <form action="/admin/documentos/{{ documento.id }}/arquivar" method="post" class="d-inline">
-                    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                    {{ csrf_field() }}
                     <button class="btn btn-danger">
                         <i class="fa fa-archive me-1"></i> Arquivar
                     </button>

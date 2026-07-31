@@ -1,0 +1,131 @@
+{% extends "@site/layout.twig" %}
+
+{% block title %}Criar Documento{% endblock %}
+
+{% block content %}
+
+    <h3 class="mb-4">Criar Documento</h3>
+
+    <form id="upload-form"
+          method="post"
+          action="/documentos/criar"
+          enctype="multipart/form-data"
+          class="card p-4 shadow-sm"
+          novalidate>
+
+        {{ csrf_field() }}
+
+        <div class="alert alert-info">
+            <strong>Informações importantes:</strong>
+            <ul class="mb-0">
+                <li>Pode enviar vários ficheiros ao mesmo tempo.</li>
+                <li>Tamanho máximo por ficheiro: <strong>20 MB</strong>.</li>
+                <li>Máximo de <strong>10 ficheiros</strong>.</li>
+                <li>Tipos permitidos: <strong>PDF, DOCX, XLSX, JPG, PNG, TXT, ZIP, RAR, 7Z</strong>.</li>
+            </ul>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label"><strong>Título:</strong></label>
+            <input type="text" name="titulo" id="titulo" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Tipo de Documento</label>
+            <select name="tipo_id" id="tipo_id" class="form-select" required>
+                <option value="">-- Selecione --</option>
+                {% for tipo in tipos %}
+                    <option value="{{ tipo.tipo_id }}">{{ tipo.nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div id="dropZone" class="drop-zone mb-3 border rounded p-4 text-center">
+            <div class="dz-content">
+                <i class="fa fa-cloud-upload-alt dz-icon"></i>
+                <p class="dz-title">Arraste ficheiros aqui</p>
+                <p class="dz-subtitle">ou clique para selecionar</p>
+            </div>
+        </div>
+
+        <div id="fileCounter" class="text-muted small mb-2 d-none"></div>
+        <ul id="fileList" class="file-list list-group mb-3"></ul>
+
+        <div id="fileLimitWarning" class="alert alert-warning d-none">
+            Máximo de 10 ficheiros. Remova alguns para continuar.
+        </div>
+
+        <input type="file" name="ficheiros[]" id="ficheiros" multiple class="d-none">
+
+        <div id="previewContainer" class="mb-3 d-none">
+            <label class="form-label"><strong>Pré‑visualização:</strong></label>
+            <div id="previewArea" class="preview-area"></div>
+        </div>
+
+        <button type="submit" id="btnGuardar" class="btn btn-primary mt-3">
+            <i class="fa fa-check"></i> Guardar
+        </button>
+
+    </form>
+
+{% endblock %}
+
+{% block scripts %}
+    <script src="/assets/js/documentos/upload.js?v={{ random() }}"></script>
+
+    <script>
+        const inputFicheiros = document.getElementById("ficheiros");
+
+        function atualizarPreview() {
+            const previewContainer = document.getElementById('previewContainer');
+            const previewArea = document.getElementById('previewArea');
+
+            previewArea.innerHTML = '';
+
+            if (inputFicheiros.files.length === 0) {
+                previewContainer.classList.add('d-none');
+                return;
+            }
+
+            previewContainer.classList.remove('d-none');
+
+            [...inputFicheiros.files].forEach(file => {
+                const ext = file.name.split('.').pop().toLowerCase();
+
+                if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = "img-fluid mb-2 rounded shadow-sm";
+                        img.style.maxHeight = "250px";
+                        previewArea.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+
+                } else if (ext === 'pdf') {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        previewArea.innerHTML += `
+        <div class="mb-3">
+            <embed src="${e.target.result}"
+                   type="application/pdf"
+                   class="pdf-preview" />
+            <div class="small text-muted mt-1">${file.name}</div>
+        </div>`;
+                    };
+                    reader.readAsDataURL(file);
+
+                } else {
+                    previewArea.innerHTML += `
+                    <div class="mb-2">
+                        <i class="fa fa-file-alt fa-3x text-secondary"></i><br>
+                        ${file.name}
+                    </div>`;
+                }
+            });
+        }
+
+        inputFicheiros.addEventListener('change', atualizarPreview);
+    </script>
+{% endblock %}

@@ -17,8 +17,9 @@ class EmailTemplate
 
         $loader = new FilesystemLoader();
 
-        // REGISTAR O NAMESPACE CORRETO
-        $loader->addPath(__DIR__ . '/../Views/emails', 'emails');
+        // *** CORREÇÃO CRÍTICA ***
+        // Os templates de email estão em: App/Views/site/emails
+        $loader->addPath(__DIR__ . '/../Views/site/emails', 'emails');
 
         self::$twig = new Environment($loader, [
             'cache' => false,
@@ -35,7 +36,6 @@ class EmailTemplate
             $template .= '.twig';
         }
 
-        // *** ESTA LINHA É A CORREÇÃO CRÍTICA ***
         return self::$twig->render("@emails/$template", $dados);
     }
 }

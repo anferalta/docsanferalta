@@ -1,5 +1,7 @@
 <form id="upload-form" action="" method="post" enctype="multipart/form-data">
 
+    {{ csrf_field() }}
+    
     <div class="mb-3">
         <label class="form-label">Selecionar documentos</label>
         <input type="file" name="ficheiros[]" id="ficheiros" class="form-control" multiple required>

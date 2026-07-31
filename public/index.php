@@ -4,7 +4,7 @@ session_set_cookie_params([
     'lifetime' => 0,
     'path' => '/',
     'domain' => 'anferaltadocs.local',
-    'secure' => false,
+    'secure' => true,
     'httponly' => true,
     'samesite' => 'Lax'
 ]);

@@ -77,12 +77,41 @@
                     <label class="form-label fw-semibold">Estado</label>
                     <select name="estado_atual" class="form-select">
                         <option value="">-- Todos --</option>
-                        <option value="pendente"       {{ app.request.get('estado_atual') == 'pendente' ? 'selected' : '' }}>Pendente</option>
-                        <option value="em_tramitacao"  {{ app.request.get('estado_atual') == 'em_tramitacao' ? 'selected' : '' }}>Em Tramitação</option>
-                        <option value="analise"     {{ app.request.get('estado_atual') == 'analise' ? 'selected' : '' }}>Em Análise</option>
-                        <option value="concluido"      {{ app.request.get('estado_atual') == 'concluido' ? 'selected' : '' }}>Concluído</option>
-                        <option value="devolvido"      {{ app.request.get('estado_atual') == 'devolvido' ? 'selected' : '' }}>Devolvido</option>
-                        <option value="arquivado"      {{ app.request.get('estado_atual') == 'arquivado' ? 'selected' : '' }}>Arquivado</option>
+
+                        <option value="novo"
+                                {{ app.request.get('estado_atual') == 'novo' ? 'selected' : '' }}>
+                            Novo
+                        </option>
+
+                        <option value="pendente"
+                                {{ app.request.get('estado_atual') == 'pendente' ? 'selected' : '' }}>
+                            Pendente
+                        </option>
+
+                        <option value="em_tramitacao"
+                                {{ app.request.get('estado_atual') == 'em_tramitacao' ? 'selected' : '' }}>
+                            Em Tramitação
+                        </option>
+
+                        <option value="analise"
+                                {{ app.request.get('estado_atual') == 'analise' ? 'selected' : '' }}>
+                            Em Análise
+                        </option>
+
+                        <option value="concluido"
+                                {{ app.request.get('estado_atual') == 'concluido' ? 'selected' : '' }}>
+                            Concluído
+                        </option>
+
+                        <option value="devolvido"
+                                {{ app.request.get('estado_atual') == 'devolvido' ? 'selected' : '' }}>
+                            Devolvido
+                        </option>
+
+                        <option value="arquivado"
+                                {{ app.request.get('estado_atual') == 'arquivado' ? 'selected' : '' }}>
+                            Arquivado
+                        </option>
                     </select>
                 </div>
 
@@ -215,11 +244,17 @@
                                     <div class="btn-group">
 
                                         {% if isGranted('admin.documentos.apagar') %}
-                                            <a href="/admin/documentos/eliminar/{{ doc.id }}"
-                                               class="btn btn-sm btn-danger"
-                                               onclick="return confirm('Eliminar documento?')">
-                                                <i class="fa fa-trash"></i> Apagar
-                                            </a>
+                                            <form action="/admin/documentos/eliminar/{{ doc.id }}"
+                                                  method="post"
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Eliminar documento?')">
+
+                                                {{ csrf_field() }}
+
+                                                <button class="btn btn-sm btn-danger">
+                                                    <i class="fa fa-trash"></i> Apagar
+                                                </button>
+                                            </form>
                                         {% endif %}
 
                                     </div>
@@ -245,30 +280,30 @@
     <script src="/assets/js/documentos/index.js?v={{ random() }}"></script>
 
     <script>
-                                                   document.addEventListener("DOMContentLoaded", () => {
-                                                       // Remove listeners antigos que bloqueavam a paginação
-                                                       document.querySelectorAll(".pagination a.page-link").forEach(a => {
-                                                           const clone = a.cloneNode(true);
-                                                           a.parentNode.replaceChild(clone, a);
-                                                       });
+                                                      document.addEventListener("DOMContentLoaded", () => {
+                                                          // Remove listeners antigos que bloqueavam a paginação
+                                                          document.querySelectorAll(".pagination a.page-link").forEach(a => {
+                                                              const clone = a.cloneNode(true);
+                                                              a.parentNode.replaceChild(clone, a);
+                                                          });
 
-                                                       // Efeito dragover do dropzone (não altera o upload)
-                                                       const dz = document.getElementById("dropZone");
-                                                       if (dz) {
-                                                           dz.addEventListener("dragover", e => {
-                                                               e.preventDefault();
-                                                               dz.classList.add("dragover");
-                                                           });
+                                                          // Efeito dragover do dropzone (não altera o upload)
+                                                          const dz = document.getElementById("dropZone");
+                                                          if (dz) {
+                                                              dz.addEventListener("dragover", e => {
+                                                                  e.preventDefault();
+                                                                  dz.classList.add("dragover");
+                                                              });
 
-                                                           dz.addEventListener("dragleave", () => {
-                                                               dz.classList.remove("dragover");
-                                                           });
+                                                              dz.addEventListener("dragleave", () => {
+                                                                  dz.classList.remove("dragover");
+                                                              });
 
-                                                           dz.addEventListener("drop", () => {
-                                                               dz.classList.remove("dragover");
-                                                           });
-                                                       }
-                                                   });
+                                                              dz.addEventListener("drop", () => {
+                                                                  dz.classList.remove("dragover");
+                                                              });
+                                                          }
+                                                      });
     </script>
 
     <style>

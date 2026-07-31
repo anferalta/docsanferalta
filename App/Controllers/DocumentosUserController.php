@@ -53,13 +53,11 @@ class DocumentosUserController extends BaseController
             $doc->tipo_nome = $row['tipo_nome'];
             $doc->area_nome = $row['area_nome'];
 
-            // Carregar anexos
-
             $documentos[] = $doc;
         }
 
-        return $this->render('documentos_user/index.twig', [
-                    'documentos' => $documentos
+        return $this->render('@site/documentos/index.twig', [
+            'documentos' => $documentos
         ]);
     }
 
@@ -75,10 +73,10 @@ class DocumentosUserController extends BaseController
 
         $tipos = DocumentoTipo::all();
 
-        return $this->render('documentos_user/criar.twig', [
-                    'tipos' => $tipos,
-                    'erro' => $_GET['erro'] ?? null,
-                    'sucesso' => $_GET['sucesso'] ?? null
+        return $this->render('@site/documentos/criar.twig', [
+            'tipos' => $tipos,
+            'erro' => $_GET['erro'] ?? null,
+            'sucesso' => $_GET['sucesso'] ?? null
         ]);
     }
 
@@ -135,12 +133,12 @@ class DocumentosUserController extends BaseController
                 return $this->redirect('/documentos/criar?erro=tamanho');
             }
 
-            // 2.3 Verificar duplicado (mesmo utilizador + mesmo nome original)
+            // 2.3 Verificar duplicado
             $duplicado = DocumentoFicheiro::query()
-                    ->join('documentos', 'documentos.id', '=', 'documento_ficheiros.documento_id')
-                    ->where('documentos.criado_por', '=', $user->id)
-                    ->where('documento_ficheiros.ficheiro_original', '=', $nomeOriginal)
-                    ->first();
+                ->join('documentos', 'documentos.id', '=', 'documento_ficheiros.documento_id')
+                ->where('documentos.criado_por', '=', $user->id)
+                ->where('documento_ficheiros.ficheiro_original', '=', $nomeOriginal)
+                ->first();
 
             if ($duplicado) {
                 return $this->redirect('/documentos/criar?erro=ficheiro_duplicado');
@@ -148,7 +146,7 @@ class DocumentosUserController extends BaseController
         }
 
         // ============================================================
-        // 3. Criar documento (só agora!)
+        // 3. Criar documento
         // ============================================================
         $documentoId = Documento::create([
             'titulo' => $titulo,
@@ -156,7 +154,7 @@ class DocumentosUserController extends BaseController
             'criado_por' => $user->id,
             'estado_atual' => 'novo',
             'area_atual_id' => null,
-            'area_atual_desde' => date('Y-m-d H:i:s')   // NOVO
+            'area_atual_desde' => date('Y-m-d H:i:s')
         ]);
 
         // ============================================================
@@ -171,7 +169,7 @@ class DocumentosUserController extends BaseController
         }
 
         // ============================================================
-        // 5. Processar upload (agora já é seguro)
+        // 5. Processar upload
         // ============================================================
         foreach ($_FILES['ficheiros']['name'] as $i => $nomeOriginal) {
 
@@ -200,13 +198,11 @@ class DocumentosUserController extends BaseController
      */
     public function abrir($idAnexo)
     {
-        // 1. Verificar login
         $user = Auth::user();
         if (!$user) {
             return $this->redirect('/login');
         }
 
-        // 2. Buscar o anexo
         $anexo = DocumentoFicheiro::find($idAnexo);
 
         if (!$anexo) {
@@ -214,7 +210,6 @@ class DocumentosUserController extends BaseController
             exit("Anexo não encontrado.");
         }
 
-        // 3. Construir caminho absoluto
         $root = realpath(__DIR__ . '/../../');
         $path = $root . '/storage/documentos/' . $anexo->ficheiro;
 
@@ -223,15 +218,12 @@ class DocumentosUserController extends BaseController
             exit("Ficheiro não encontrado.");
         }
 
-        // 4. Determinar MIME
         $mime = mime_content_type($path);
         $nome = basename($anexo->ficheiro);
 
-        // 5. Tipos que podem abrir inline
         $inline = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'txt', 'webp'];
         $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
 
-        // 6. Se for inline → abrir no browser
         if (in_array($ext, $inline)) {
             header("Content-Type: {$mime}");
             header("Content-Disposition: inline; filename=\"{$nome}\"");
@@ -240,7 +232,6 @@ class DocumentosUserController extends BaseController
             exit;
         }
 
-        // 7. Fallback → download
         header("Content-Type: application/octet-stream");
         header("Content-Disposition: attachment; filename=\"{$nome}\"");
         header("Content-Length: " . filesize($path));
@@ -257,7 +248,7 @@ class DocumentosUserController extends BaseController
             exit("Anexo não encontrado.");
         }
 
-        $root = realpath(__DIR__ . '/../../'); // utilizador sobe 2 níveis
+        $root = realpath(__DIR__ . '/../../');
         $path = $root . '/storage/documentos/' . $anexo->ficheiro;
 
         if (!file_exists($path)) {

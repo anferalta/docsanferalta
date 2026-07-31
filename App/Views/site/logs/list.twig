@@ -3,30 +3,37 @@
 {% block title %}Logs de Auditoria{% endblock %}
 
 {% block content %}
-<h1 class="mb-3">Logs de Auditoria</h1>
 
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Usuário</th>
-            <th>Ação</th>
-            <th>Detalhes</th>
-            <th>IP</th>
-            <th>Data</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for log in logs %}
-        <tr>
-            <td>{{ log.id }}</td>
-            <td>{{ log.usuario_nome ?? 'Sistema' }}</td>
-            <td>{{ log.acao }}</td>
-            <td>{{ log.detalhes }}</td>
-            <td>{{ log.ip }}</td>
-            <td>{{ log.criado_em }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<h1 class="mb-4">Logs de Auditoria</h1>
+
+<div class="card shadow-sm border-0 p-4">
+
+    <table class="table table-striped mb-0">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Usuário</th>
+                <th>Ação</th>
+                <th>Detalhes</th>
+                <th>IP</th>
+                <th>Data</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for log in logs %}
+                <tr>
+                    <td>{{ log.id }}</td>
+                    <td>{{ log.usuario_nome ?? 'Sistema' }}</td>
+                    <td>{{ log.acao }}</td>
+                    <td>{{ log.detalhes }}</td>
+                    <td>{{ log.ip }}</td>
+                    <td>{{ log.criado_em }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+
 {% endblock %}

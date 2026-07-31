@@ -150,6 +150,7 @@ if (!function_exists('csrf_token')) {
 if (!function_exists('csrf_field')) {
     function csrf_field(): string
     {
-        return '<input type="hidden" name="_csrf" value="' . \App\Core\CSRF::token() . '">';
+        return '<input type="hidden" name="csrf" value="' . \App\Core\CSRF::token() . '">';
     }
 }
+

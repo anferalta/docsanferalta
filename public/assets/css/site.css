@@ -1,0 +1,17 @@
+.preview-area {
+    width: 100%;
+    max-width: none !important;
+    padding: 0;
+    margin: 0;
+}
+
+.preview-area embed {
+    width: 100% !important;
+    min-height: 700px !important;
+    display: block;
+}
+.pdf-preview {
+    width: 100% !important;
+    min-height: 700px !important;
+    display: block;
+}

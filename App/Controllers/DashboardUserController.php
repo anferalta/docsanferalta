@@ -14,7 +14,7 @@ class DashboardUserController extends BaseController
 
         // Se for admin → redireciona para o dashboard admin
         if ($user->isAdmin()) {
-            return $this->redirect('/admin/dashboard');
+            return $this->redirect('@site/admin/dashboard');
         }
 
         // Buscar documentos do utilizador
@@ -28,32 +28,65 @@ class DashboardUserController extends BaseController
         $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
         // Contadores
-        $total = 0;
-        $pendentes = 0;
-        $analise = 0;
-        $concluidos = 0;
-        $arquivados = 0;
-        $devolvidos = 0;
+        $total        = 0;
+        $novo         = 0;
+        $pendentes    = 0;
+        $analise      = 0;
+        $emTramitacao = 0;
+        $concluidos   = 0;
+        $arquivados   = 0;
+        $devolvidos   = 0;
 
         foreach ($rows as $r) {
-            $total += (int) $r['total'];
 
-            switch ($r['estado_atual']) {
-                case 'pendente':   $pendentes = $r['total']; break;
-                case 'analise':    $analise = $r['total']; break;
-                case 'concluido':  $concluidos = $r['total']; break;
-                case 'arquivado':  $arquivados = $r['total']; break;
-                case 'devolvido':  $devolvidos = $r['total']; break;
+            $estado = $r['estado_atual'];   // valores reais da BD
+            $qtd    = (int) $r['total'];
+
+            // Conta sempre para o total
+            $total += $qtd;
+
+            // Conta estado por estado (EXATAMENTE como vem da BD)
+            switch ($estado) {
+
+                case 'novo':
+                    $novo = $qtd;
+                    break;
+
+                case 'pendente':
+                    $pendentes = $qtd;
+                    break;
+
+                case 'analise':
+                    $analise = $qtd;
+                    break;
+
+                case 'em_tramitacao':
+                    $emTramitacao = $qtd;
+                    break;
+
+                case 'concluido':
+                    $concluidos = $qtd;
+                    break;
+
+                case 'arquivado':
+                    $arquivados = $qtd;
+                    break;
+
+                case 'devolvido':
+                    $devolvidos = $qtd;
+                    break;
             }
         }
 
-        return $this->render('dashboard/index.twig', [
-            'total' => $total,
-            'pendentes' => $pendentes,
-            'analise' => $analise,
-            'concluidos' => $concluidos,
-            'arquivados' => $arquivados,
-            'devolvidos' => $devolvidos,
+        return $this->render('@site/dashboard/index.twig', [
+            'total'         => $total,
+            'novo'          => $novo,
+            'pendentes'     => $pendentes,
+            'analise'       => $analise,
+            'emTramitacao'  => $emTramitacao,
+            'concluidos'    => $concluidos,
+            'arquivados'    => $arquivados,
+            'devolvidos'    => $devolvidos,
         ]);
     }
 }

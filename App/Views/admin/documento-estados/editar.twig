@@ -1,0 +1,32 @@
+{% extends "@admin/layout.twig" %}
+
+{% block page_title %}
+    <i class="fa fa-pencil"></i> Editar Estado
+{% endblock %}
+
+{% block content %}
+
+<div class="card p-4">
+
+    <h4 class="mb-3">Editar Estado</h4>
+
+    <form method="POST" action="/admin/documento-estados/editar/{{ estado.id }}">
+        {{ csrf_field() }}
+
+        <div class="mb-3">
+            <label class="form-label">Nome</label>
+            <input type="text" name="nome" class="form-control" value="{{ estado.nome }}" required>
+        </div>
+
+        <button class="btn btn-primary">
+            <i class="fa fa-save"></i> Guardar
+        </button>
+
+        <a href="/admin/documento-estados" class="btn btn-secondary">
+            Cancelar
+        </a>
+    </form>
+
+</div>
+
+{% endblock %}

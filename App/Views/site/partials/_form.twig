@@ -1,0 +1,35 @@
+<div class="card shadow-sm border-0 p-4 mx-auto" style="max-width:600px;">
+
+    <h2 class="mb-4">{{ titulo_form }}</h2>
+
+    <form method="post" action="{{ action }}">
+
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+
+        {% for field in fields %}
+            <div class="mb-3">
+                <label class="form-label">{{ field.label }}</label>
+
+                {% if field.type == 'textarea' %}
+                    <textarea name="{{ field.name }}" class="form-control" rows="4">{{ field.value }}</textarea>
+
+                {% elseif field.type == 'select' %}
+                    <select name="{{ field.name }}" class="form-select">
+                        {% for key, val in field.options %}
+                            <option value="{{ key }}" {% if key == field.value %}selected{% endif %}>
+                                {{ val }}
+                            </option>
+                        {% endfor %}
+                    </select>
+
+                {% else %}
+                    <input type="{{ field.type }}" name="{{ field.name }}" value="{{ field.value }}" class="form-control">
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary w-100">Guardar</button>
+
+    </form>
+
+</div>

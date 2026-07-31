@@ -1,5 +1,15 @@
 <div class="list-group">
-  <a href="/painel" class="list-group-item list-group-item-action">Início</a>
-  <a href="/relatorios" class="list-group-item list-group-item-action">Relatórios</a>
-  <a href="/configuracoes" class="list-group-item list-group-item-action">Configurações</a>
+
+    <a href="{{ url('/painel') }}" class="list-group-item list-group-item-action">
+        <i class="bi bi-speedometer2 me-2"></i> Início
+    </a>
+
+    <a href="{{ url('/relatorios') }}" class="list-group-item list-group-item-action">
+        <i class="bi bi-file-earmark-bar-graph me-2"></i> Relatórios
+    </a>
+
+    <a href="{{ url('/configuracoes') }}" class="list-group-item list-group-item-action">
+        <i class="bi bi-gear me-2"></i> Configurações
+    </a>
+
 </div>

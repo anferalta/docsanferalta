@@ -1,4 +1,5 @@
 {% extends "@admin/layout.twig" %}
+
 {% block title %}Backups{% endblock %}
 {% block page_title %}Gestão de Backups{% endblock %}
 
@@ -7,6 +8,7 @@
     {% if flash.success %}
         <div class="alert alert-success">{{ flash.success }}</div>
     {% endif %}
+
     {% if flash.error %}
         <div class="alert alert-danger">{{ flash.error }}</div>
     {% endif %}
@@ -15,18 +17,15 @@
         <li class="nav-item">
             <a class="nav-link active" data-bs-toggle="tab" href="#bd">Base de Dados</a>
         </li>
-
         <li class="nav-item">
             <a class="nav-link" data-bs-toggle="tab" href="#files">Ficheiros</a>
         </li>
-
         <li class="nav-item">
             <a class="nav-link" data-bs-toggle="tab" href="#dashboard">Dashboard</a>
         </li>
-
         <li class="nav-item">
             <a class="nav-link" data-bs-toggle="tab" href="#logs">Logs</a>
-        </li>        
+        </li>
     </ul>
 
     <div class="tab-content">
@@ -48,39 +47,57 @@
                                 <th class="text-end">Ações</th>
                             </tr>
                         </thead>
+
                         <tbody>
-                            {% for b in backupsDB %}
-                                <tr>
-                                    <td>{{ b.nome }}</td>
-                                    <td>{{ b.tamanho }}</td>
-                                    <td>{{ b.data }}</td>
-                                    <td class="text-end">
+                        {% for b in backupsDB %}
+                            <tr>
+                                <td>{{ b.nome }}</td>
+                                <td>{{ b.tamanho }}</td>
+                                <td>{{ b.data }}</td>
 
-                                        {# DOWNLOAD BD #}
-                                        <a href="/admin/backups/bd/download/{{ b.path|replace({'/':'---'}) }}"
-                                           class="btn btn-sm btn-primary">Download</a>
+                                <td class="text-end">
 
-                                        {# RESTAURAR BD #}
-                                        <a href="/admin/backups/bd/restaurar/{{ b.path|replace({'/':'---'}) }}"
-                                           class="btn btn-sm btn-warning">Restaurar</a>
+                                    {# DOWNLOAD BD (GET permitido) #}
+                                    <a href="/admin/backups/bd/download/{{ b.path|replace({'/':'---'}) }}"
+                                       class="btn btn-sm btn-primary">Download</a>
 
-                                        {# RESTAURAR + REINICIAR SERVIÇO #}
-                                        <a href="/admin/backups/bd/restaurar-reiniciar/{{ b.path|replace({'/':'---'}) }}"
-                                           class="btn btn-sm btn-danger"
-                                           onclick="return confirm('Tem a certeza? Isto vai restaurar a BD e reiniciar o servidor?');">
+                                    {# RESTAURAR BD — POST #}
+                                    <form method="POST"
+                                          action="/admin/backups/bd/restaurar/{{ b.path|replace({'/':'---'}) }}"
+                                          class="d-inline">
+                                        {{ csrf_field() }}
+                                        <button class="btn btn-sm btn-warning">Restaurar</button>
+                                    </form>
+
+                                    {# RESTAURAR + REINICIAR — POST #}
+                                    <form method="POST"
+                                          action="/admin/backups/bd/restaurar-reiniciar/{{ b.path|replace({'/':'---'}) }}"
+                                          class="d-inline">
+                                        {{ csrf_field() }}
+                                        <button class="btn btn-sm btn-danger"
+                                                onclick="return confirm('Tem a certeza? Isto vai restaurar a BD e reiniciar o servidor?');">
                                             Restaurar + Reiniciar
-                                        </a><a href="/admin/backups/bd/restaurar-reiniciar/{{ b.path|replace({'/':'---'}) }}"
+                                        </button>
+                                    </form>
 
-                                        {# ELIMINAR BD #}
-                                        <a href="/admin/backups/bd/delete/{{ b.path|replace({'/':'---'}) }}"
-                                           class="btn btn-sm btn-danger"
-                                           onclick="return confirm('Eliminar este backup?');">Eliminar</a>
+                                    {# ELIMINAR BD — POST #}
+                                    <form method="POST"
+                                          action="/admin/backups/bd/delete/{{ b.path|replace({'/':'---'}) }}"
+                                          class="d-inline">
+                                        {{ csrf_field() }}
+                                        <button class="btn btn-sm btn-danger"
+                                                onclick="return confirm('Eliminar este backup?');">
+                                            Eliminar
+                                        </button>
+                                    </form>
 
-                                    </td>
-                                </tr>
-                            {% else %}
-                                <tr><td colspan="4" class="text-center text-muted">Nenhum backup.</td></tr>
-                            {% endfor %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">Nenhum backup.</td>
+                            </tr>
+                        {% endfor %}
                         </tbody>
                     </table>
 
@@ -104,32 +121,46 @@
                                 <th class="text-end">Ações</th>
                             </tr>
                         </thead>
+
                         <tbody>
-                            {% for b in backupsFiles %}
-                                <tr>
-                                    <td>{{ b.nome }}</td>
-                                    <td>{{ b.tamanho }}</td>
-                                    <td>{{ b.data }}</td>
-                                    <td class="text-end">
+                        {% for b in backupsFiles %}
+                            <tr>
+                                <td>{{ b.nome }}</td>
+                                <td>{{ b.tamanho }}</td>
+                                <td>{{ b.data }}</td>
 
-                                        {# DOWNLOAD FICHEIROS #}
-                                        <a href="/admin/backups/files/download/{{ b.path|replace({'/':'---'}) }}"
-                                           class="btn btn-sm btn-primary">Download</a>
+                                <td class="text-end">
 
-                                        {# RESTAURAR FICHEIROS #}
-                                        <a href="/admin/backups/files/restaurar/{{ b.path|replace({'/':'---'}) }}"
-                                           class="btn btn-sm btn-warning">Restaurar</a>
+                                    {# DOWNLOAD FICHEIROS — GET permitido #}
+                                    <a href="/admin/backups/files/download/{{ b.path|replace({'/':'---'}) }}"
+                                       class="btn btn-sm btn-primary">Download</a>
 
-                                        {# ELIMINAR FICHEIROS #}
-                                        <a href="/admin/backups/files/delete/{{ b.path|replace({'/':'---'}) }}"
-                                           class="btn btn-sm btn-danger"
-                                           onclick="return confirm('Eliminar este backup?');">Eliminar</a>
+                                    {# RESTAURAR FICHEIROS — POST #}
+                                    <form method="POST"
+                                          action="/admin/backups/files/restaurar/{{ b.path|replace({'/':'---'}) }}"
+                                          class="d-inline">
+                                        {{ csrf_field() }}
+                                        <button class="btn btn-sm btn-warning">Restaurar</button>
+                                    </form>
 
-                                    </td>
-                                </tr>
-                            {% else %}
-                                <tr><td colspan="4" class="text-center text-muted">Nenhum backup.</td></tr>
-                            {% endfor %}
+                                    {# ELIMINAR FICHEIROS — POST #}
+                                    <form method="POST"
+                                          action="/admin/backups/files/delete/{{ b.path|replace({'/':'---'}) }}"
+                                          class="d-inline">
+                                        {{ csrf_field() }}
+                                        <button class="btn btn-sm btn-danger"
+                                                onclick="return confirm('Eliminar este backup?');">
+                                            Eliminar
+                                        </button>
+                                    </form>
+
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">Nenhum backup.</td>
+                            </tr>
+                        {% endfor %}
                         </tbody>
                     </table>
 

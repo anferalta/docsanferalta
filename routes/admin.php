@@ -8,7 +8,8 @@ $router->get('/', 'Site\HomeController@index')->name('site.home');
 
 // Login
 $router->get('/login', 'AuthController@login')->name('auth.login');
-$router->post('/login', 'AuthController@loginSubmit');
+//$router->post('/login', 'AuthController@loginSubmit');
+$router->post('/login', 'AuthController@loginSubmit', ['csrf']);
 
 // Registo
 $router->get('/registar', 'AuthController@registar')->name('auth.register');
@@ -135,12 +136,52 @@ $router->group([
             $router->post('/documento-tipos/editar/{id}', 'Admin\DocumentoTiposAdminController@editarSubmit');
             $router->get('/documento-tipos/apagar/{id}', 'Admin\DocumentoTiposAdminController@apagar');
 
+            // Documento Estados
+            $router->get('/documento-estados', 'Admin\DocumentoEstadosAdminController@index');
+            $router->get('/documento-estados/criar', 'Admin\DocumentoEstadosAdminController@criar');
+            $router->post('/documento-estados/criar', 'Admin\DocumentoEstadosAdminController@criarPost');
+            $router->get('/documento-estados/editar/{id}', 'Admin\DocumentoEstadosAdminController@editar');
+            $router->post('/documento-estados/editar/{id}', 'Admin\DocumentoEstadosAdminController@editarPost');
+            $router->post('/documento-estados/apagar/{id}', 'Admin\DocumentoEstadosAdminController@apagar');
+            $router->get('/documento-estados/apagar/{id}', 'Admin\DocumentoEstadosAdminController@confirmarApagar');
+            $router->post('/documento-estados/apagar/{id}', 'Admin\DocumentoEstadosAdminController@apagar');
+
             // ============================================================
             // TRAMITAÇÃO
             // ============================================================
-            $router->get('/tramitacao/dashboard', 'Admin\TramitacaoAdminController@dashboard')->name('admin.tramitacao.dashboard');
-            $router->get('/tramitacao', 'Admin\TramitacaoAdminController@lista')->name('admin.tramitacao.lista');
+            // Dashboard
+            $router->get('/tramitacao/dashboard', 'Admin\TramitacaoAdminController@dashboard')
+                    ->name('admin.tramitacao.dashboard');
 
+            // Listagem de documentos em tramitação
+            $router->get('/tramitacao', 'Admin\TramitacaoAdminController@lista')
+                    ->name('admin.tramitacao.lista');
+
+            // Página principal de tramitação do documento
+            $router->get('/tramitacao/{id}', 'Admin\TramitacaoAdminController@documento')
+                    ->name('admin.tramitacao.documento');
+
+            // Ações de tramitação
+            $router->post('/tramitacao/encaminhar', 'Admin\TramitacaoAdminController@encaminhar')
+                    ->name('admin.tramitacao.encaminhar');
+
+            $router->post('/tramitacao/comentar', 'Admin\TramitacaoAdminController@comentar')
+                    ->name('admin.tramitacao.comentar');
+
+            $router->post('/tramitacao/estado', 'Admin\TramitacaoAdminController@estado')
+                    ->name('admin.tramitacao.estado');
+
+            // Ver anexos da tramitação
+            $router->get('/tramitacao/anexo/{historicoId}/{ficheiro}', 'Admin\TramitacaoAdminController@verAnexo')
+                    ->name('admin.tramitacao.ver_anexo');
+
+            // ⭐ ARQUIVAR DOCUMENTO (CORRETO)
+            $router->post('/tramitacao/arquivar', 'Admin\TramitacaoAdminController@arquivar')
+                    ->name('admin.tramitacao.arquivar');
+
+            // ============================================================
+            // ÁREAS DE DOCUMENTOS (mantém igual)
+            // ============================================================
             $router->get('/documento-areas', 'Admin\DocumentoAreasAdminController@index')->name('admin.documento_areas.index');
             $router->get('/documento-areas/criar', 'Admin\DocumentoAreasAdminController@criar')->name('admin.documento_areas.criar');
             $router->post('/documento-areas', 'Admin\DocumentoAreasAdminController@store')->name('admin.documento_areas.store');
@@ -148,13 +189,11 @@ $router->group([
             $router->post('/documento-areas/{id}', 'Admin\DocumentoAreasAdminController@update')->name('admin.documento_areas.update');
             $router->post('/documento-areas/apagar/{id}', 'Admin\DocumentoAreasAdminController@apagar')->name('admin.documento_areas.apagar');
 
-            $router->get('/tramitacao/{documento_id}', 'Admin\TramitacaoAdminController@index')->name('admin.tramitacao.index');
-            $router->post('/tramitacao/encaminhar', 'Admin\TramitacaoAdminController@encaminhar')->name('admin.tramitacao.encaminhar');
-            $router->post('/tramitacao/comentar', 'Admin\TramitacaoAdminController@comentar')->name('admin.tramitacao.comentar');
-            $router->post('/tramitacao/estado', 'Admin\TramitacaoAdminController@estado')->name('admin.tramitacao.estado');
-
-            $router->post('/documentos/{id}/arquivar', 'Admin\DocumentosAdminController@arquivar')->name('admin.documentos.arquivar');
-            $router->get('/tramitacao/anexo/{historicoId}/{ficheiro}', 'Admin\TramitacaoAdminController@verAnexo')->name('admin.tramitacao.ver_anexo');
+            // ============================================================
+            // ARQUIVAR DOCUMENTOS (mantém igual)
+            // ============================================================
+            $router->post('/documentos/{id}/arquivar', 'Admin\DocumentosAdminController@arquivar')
+                    ->name('admin.documentos.arquivar');
 
             // ============================================================
             // PERMISSÕES

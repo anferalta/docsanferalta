@@ -20,7 +20,7 @@
         {% endif %}
 
         <form id="formCriarTipo" method="post" action="/admin/documento-tipos/criar">
-            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+            {{ csrf_field() }}
 
             <div class="mb-3">
                 <label class="form-label">Nome do Tipo</label>
@@ -31,7 +31,6 @@
                 <button type="submit" class="btn btn-success">
                     <i class="bi bi-check-lg"></i> Guardar
                 </button>
-
                 <a href="/admin/documento-tipos" class="btn btn-secondary">
                     <i class="bi bi-arrow-left"></i> Cancelar
                 </a>

@@ -17,7 +17,6 @@ class BaseController
 
     public function __construct()
     {
-
         // ============================
         // TWIG LOADER
         // ============================
@@ -36,56 +35,20 @@ class BaseController
 
         $this->twig->addExtension(new DebugExtension());
 
-        $this->anexosGuard = new AnexosGuardService();
-        $this->anexosGuard->garantirEstrutura();
+        // ============================
+        // FLASH MESSAGES — FUNÇÕES SEGURAS
+        // ============================
+        $this->twig->addFunction(new TwigFunction('flash_peek', fn($key) => Sessao::peek($key)));
+        $this->twig->addFunction(new TwigFunction('flash_clear', fn($key) => Sessao::flash($key)));
 
         // ============================
         // ACL
         // ============================
         $acl = new Acl();
         $this->twig->addGlobal('acl', $acl);
-        $this->twig->addGlobal('sessao', new \App\Core\Sessao());
 
         // ============================
-        // FUNÇÕES TWIG
-        // ============================
-        $this->twig->addFunction(new TwigFunction('url', fn($p = '') => '/' . ltrim($p, '/')));
-        $this->twig->addFunction(new TwigFunction('asset', fn($p) => '/assets/' . ltrim($p, '/')));
-        $this->twig->addFunction(new TwigFunction('isGranted', fn($p) => $acl->has($p)));
-
-        $this->twig->addFunction(new TwigFunction('route', function ($name, $params = []) {
-                            return \App\Core\Router::route($name, $params);
-                        }));
-
-        // ============================
-// CSRF — CORRIGIDO
-// ============================
-// NÃO regenerar token sempre que o Twig chama csrf_token()
-        $this->twig->addFunction(new TwigFunction('csrf_token', function () {
-                            return $_SESSION['_csrf_token'] ?? CSRF::token();
-                        }));
-
-// Campo hidden com token estável
-        $this->twig->addFunction(
-                new TwigFunction(
-                        'csrf_field',
-                        function () {
-                            $token = $_SESSION['_csrf_token'] ?? CSRF::token();
-                            return '<input type="hidden" name="' . CSRF::fieldName() . '" value="' . $token . '">';
-                        },
-                        ['is_safe' => ['html']]
-                )
-        );
-
-// ============================
-// FLASH MESSAGES — FUNÇÃO TWIG
-// ============================
-        $this->twig->addFunction(new TwigFunction('sessao', function ($key) {
-                            return \App\Core\Sessao::flash($key);
-                        }));
-
-        // ============================
-        // UTILIZADOR
+        // UTILIZADOR AUTENTICADO
         // ============================
         $this->injectUser();
 
@@ -93,9 +56,7 @@ class BaseController
         // MENU ADMIN
         // ============================
         $menuObj = new Menu();
-        $menu = $menuObj->getMenu();
-        $menu = $menuObj->filtrarMenu($menu);
-
+        $menu = $menuObj->filtrarMenu($menuObj->getMenu());
         $this->twig->addGlobal('menuAdmin', $menu);
 
         // ============================
@@ -121,6 +82,30 @@ class BaseController
             $this->twig->addGlobal('notificacoes', $notificacoes);
             $this->twig->addGlobal('notificacoes_nao_lidas', $nao_lidas);
         }
+
+        // ============================
+        // FUNÇÕES TWIG ADICIONAIS
+        // ============================
+        $this->twig->addFunction(new TwigFunction('url', fn($p = '') => '/' . ltrim($p, '/')));
+        $this->twig->addFunction(new TwigFunction('asset', fn($p) => '/assets/' . ltrim($p, '/')));
+        $this->twig->addFunction(new TwigFunction('isGranted', fn($p) => $acl->has($p)));
+
+        $this->twig->addFunction(new TwigFunction('route', function ($name, $params = []) {
+                            return Router::route($name, $params);
+                        }));
+
+        // ============================
+        // CSRF FIELD
+        // ============================
+        $this->twig->addFunction(
+                new TwigFunction(
+                        'csrf_field',
+                        function () {
+                            return '<input type="hidden" name="' . CSRF::fieldName() . '" value="' . CSRF::token() . '">';
+                        },
+                        ['is_safe' => ['html']]
+                )
+        );
     }
 
     // ============================
@@ -128,9 +113,13 @@ class BaseController
     // ============================
     protected function injectUser(): void
     {
+        $user = Auth::user();
+
         $this->twig->addGlobal('auth', (object) [
-                    'user' => Auth::user()
+                    'user' => $user
         ]);
+
+        $this->twig->addGlobal('user', $user);
     }
 
     // ============================
@@ -139,6 +128,15 @@ class BaseController
     protected function render(string $template, array $data = []): void
     {
         $this->injectUser();
+
+        if (
+                str_starts_with($template, 'admin/') ||
+                str_starts_with($template, '@admin/')
+        ) {
+            $menu = (new \App\Core\Menu())->filtrarMenu((new \App\Core\Menu())->getMenu());
+            $data['menuAdmin'] = $menu;   // ← ESTE É O NOME CERTO
+        }
+
         echo $this->twig->render($template, $data);
         exit;
     }
@@ -191,5 +189,13 @@ class BaseController
     {
         http_response_code(403);
         return $this->render('@admin/errors/403.twig');
+    }
+
+    // ============================
+    // FLASH MESSAGE (CONTROLLER)
+    // ============================
+    protected function flash($tipo, $mensagem)
+    {
+        Sessao::flash($tipo, $mensagem);
     }
 }

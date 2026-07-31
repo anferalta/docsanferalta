@@ -1,0 +1,37 @@
+{% extends "@admin/layout.twig" %}
+
+{% block page_title %}
+    <i class="fa fa-flag"></i> Novo Estado
+{% endblock %}
+
+{% block content %}
+
+<div class="card p-4">
+
+    <h4 class="mb-3">Criar Novo Estado</h4>
+
+    {% if flash.erro %}
+        <div class="alert alert-danger">{{ flash.erro }}</div>
+    {% endif %}
+
+    <form method="post" action="/admin/documento-estados/criar">
+        {{ csrf_field() }}
+
+        <div class="mb-3">
+            <label class="form-label">Nome do Estado</label>
+            <input type="text" name="nome" class="form-control" required>
+        </div>
+
+        <button type="submit" class="btn btn-success">
+            <i class="fa fa-check"></i> Guardar
+        </button>
+
+        <a href="/admin/documento-estados" class="btn btn-secondary">
+            <i class="fa fa-arrow-left"></i> Cancelar
+        </a>
+    </form>
+
+</div>
+
+{% endblock %}
+

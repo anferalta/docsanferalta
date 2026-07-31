@@ -11,7 +11,7 @@
       class="card p-4 shadow-sm"
       novalidate>
 
-    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    {{ csrf_field() }}
 
     <div class="alert alert-info">
         <strong>Informações importantes:</strong>
@@ -41,9 +41,6 @@
         </div>
     </div>
 
-    {# ============================
-       DROPZONE PREMIUM
-    ============================ #}
     <div id="dropZone" class="drop-zone mb-3">
         <div class="dz-content">
             <i class="fa fa-cloud-upload-alt dz-icon"></i>
@@ -53,20 +50,14 @@
     </div>
 
     <div id="fileCounter" class="text-muted small mb-2 d-none"></div>
-
     <ul id="fileList" class="file-list list-group mb-3"></ul>
 
     <div id="fileLimitWarning" class="alert alert-warning d-none">
         Máximo de 10 ficheiros. Remova alguns para continuar.
     </div>
 
-    <input type="file"
-           name="ficheiros[]"
-           id="ficheiros"
-           multiple
-           class="d-none">
+    <input type="file" name="ficheiros[]" id="ficheiros" multiple class="d-none">
 
-    {# --- PRÉ‑VISUALIZAÇÃO --- #}
     <div id="previewContainer" class="mb-3 d-none">
         <label class="form-label"><strong>Pré‑visualização:</strong></label>
         <div id="previewArea" class="border rounded p-3 text-center"></div>
@@ -81,153 +72,74 @@
 {% endblock content %}
 
 {% block scripts %}
-    <script src="/assets/js/documentos/upload.js?v={{ random() }}"></script>
-    <script src="/assets/js/documentos/tipos.js?v={{ random() }}"></script>
+<script src="/assets/js/documentos/upload.js?v={{ random() }}"></script>
+<script src="/assets/js/documentos/tipos.js?v={{ random() }}"></script>
 
-    <script>
-        function atualizarPreview() {
-            const input = document.getElementById('ficheiros');
-            const previewContainer = document.getElementById('previewContainer');
-            const previewArea = document.getElementById('previewArea');
+<script>
+    function atualizarPreview() {
+        const input = document.getElementById('ficheiros');
+        const previewContainer = document.getElementById('previewContainer');
+        const previewArea = document.getElementById('previewArea');
 
-            previewArea.innerHTML = '';
+        previewArea.innerHTML = '';
 
-            if (input.files.length === 0) {
-                previewContainer.classList.add('d-none');
-                return;
-            }
+        if (input.files.length === 0) {
+            previewContainer.classList.add('d-none');
+            return;
+        }
 
-            previewContainer.classList.remove('d-none');
+        previewContainer.classList.remove('d-none');
 
-            [...input.files].forEach(file => {
-                const ext = file.name.split('.').pop().toLowerCase();
+        [...input.files].forEach(file => {
+            const ext = file.name.split('.').pop().toLowerCase();
 
-                if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
-                    const reader = new FileReader();
-                    reader.onload = e => {
-                        const img = document.createElement('img');
-                        img.src = e.target.result;
-                        img.className = "img-fluid mb-2";
-                        img.style.maxHeight = "250px";
-                        previewArea.appendChild(img);
-                    };
-                    reader.readAsDataURL(file);
-                }
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = "img-fluid mb-2";
+                    img.style.maxHeight = "250px";
+                    previewArea.appendChild(img);
+                };
+                reader.readAsDataURL(file);
 
-                else if (ext === 'pdf') {
-                    const reader = new FileReader();
-                    reader.onload = e => {
-                        previewArea.innerHTML += `
-                            <div class="mb-3">
-                                <embed src="${e.target.result}" type="application/pdf" width="100%" height="400px" />
-                                <div class="small text-muted mt-1">${file.name}</div>
-                            </div>`;
-                    };
-                    reader.readAsDataURL(file);
-                }
-
-                else {
+            } else if (ext === 'pdf') {
+                const reader = new FileReader();
+                reader.onload = e => {
                     previewArea.innerHTML += `
-                        <div class="mb-2">
-                            <i class="fa fa-file-alt fa-3x text-secondary"></i><br>
-                            ${file.name}
+                        <div class="mb-3">
+                            <embed src="${e.target.result}"
+                                   type="application/pdf"
+                                   width="100%"
+                                   height="400px" />
+                            <div class="small text-muted mt-1">${file.name}</div>
                         </div>`;
-                }
-            });
-        }
+                };
+                reader.readAsDataURL(file);
 
-        document.getElementById('ficheiros').addEventListener('change', atualizarPreview);
-        document.addEventListener('ficheirosAtualizados', atualizarPreview);
+            } else {
+                previewArea.innerHTML += `
+                    <div class="mb-2">
+                        <i class="fa fa-file-alt fa-3x text-secondary"></i><br>
+                        ${file.name}
+                    </div>`;
+            }
+        });
+    }
 
-        // Efeito dragover do dropzone
-        const dz = document.getElementById("dropZone");
-        if (dz) {
-            dz.addEventListener("dragover", e => {
-                e.preventDefault();
-                dz.classList.add("dragover");
-            });
+    document.getElementById('ficheiros').addEventListener('change', atualizarPreview);
+    document.addEventListener('ficheirosAtualizados', atualizarPreview);
 
-            dz.addEventListener("dragleave", () => {
-                dz.classList.remove("dragover");
-            });
+    const dz = document.getElementById("dropZone");
+    if (dz) {
+        dz.addEventListener("dragover", e => {
+            e.preventDefault();
+            dz.classList.add("dragover");
+        });
+        dz.addEventListener("dragleave", () => dz.classList.remove("dragover"));
+        dz.addEventListener("drop", () => dz.classList.remove("dragover"));
+    }
+</script>
 
-            dz.addEventListener("drop", () => {
-                dz.classList.remove("dragover");
-            });
-        }
-    </script>
-
-    <style>
-
-        /* ============================
-           DROPZONE PREMIUM
-        ============================ */
-        .drop-zone {
-            border: 2px dashed #b8b8ff;
-            border-radius: 14px;
-            padding: 45px 25px;
-            background: linear-gradient(135deg, #fafaff 0%, #ffffff 100%);
-            text-align: center;
-            cursor: pointer;
-            transition: all .25s ease;
-            color: #4b44e0;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .drop-zone:hover {
-            border-color: #6c63ff;
-            background: #f3f2ff;
-            transform: scale(1.01);
-        }
-
-        .drop-zone.dragover {
-            border-color: #3a33d1;
-            background: #eceaff;
-            box-shadow: 0 0 18px rgba(108, 99, 255, 0.25);
-            transform: scale(1.02);
-        }
-
-        .dz-icon {
-            font-size: 48px;
-            color: #6c63ff;
-            margin-bottom: 10px;
-        }
-
-        .dz-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin: 0;
-        }
-
-        .dz-subtitle {
-            font-size: 14px;
-            color: #777;
-            margin: 0;
-        }
-
-        .drop-zone::after {
-            content: "";
-            position: absolute;
-            top: -100%;
-            left: 0;
-            width: 100%;
-            height: 200%;
-            background: linear-gradient(
-                120deg,
-                transparent 0%,
-                rgba(255,255,255,0.4) 50%,
-                transparent 100%
-            );
-            transform: rotate(25deg);
-            transition: 0.6s;
-            opacity: 0;
-        }
-
-        .drop-zone:hover::after {
-            top: -30%;
-            opacity: 1;
-        }
-
-    </style>
 {% endblock scripts %}

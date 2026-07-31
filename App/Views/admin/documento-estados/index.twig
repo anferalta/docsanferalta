@@ -1,0 +1,60 @@
+{% extends "@admin/layout.twig" %}
+
+{% block page_title %}
+    <i class="fa fa-flag"></i> Estados de Documento
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0">Estados de Documento</h4>
+    <a href="/admin/documento-estados/criar" class="btn btn-primary">
+        <i class="fa fa-plus"></i> Novo Estado
+    </a>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 80px;">ID</th>
+                    <th>Nome</th>
+                    <th class="text-end" style="width: 180px;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            {% if estados is empty %}
+                <tr>
+                    <td colspan="3" class="text-center py-4 text-muted">
+                        Nenhum estado encontrado.
+                    </td>
+                </tr>
+            {% else %}
+                {% for estado in estados %}
+                    <tr>
+                        <td>{{ estado.id }}</td>
+                        <td>{{ estado.nome }}</td>
+
+                        <td class="text-end">
+
+                            <a href="/admin/documento-estados/editar/{{ estado.id }}" class="btn btn-sm btn-warning">
+                                <i class="fa fa-pencil"></i> Editar
+                            </a>
+
+                            <a href="/admin/documento-estados/apagar/{{ estado.id }}" class="btn btn-sm btn-danger">
+                                <i class="bi bi-trash"></i> Apagar
+                            </a>
+
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% endif %}
+
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

@@ -2,99 +2,105 @@
 
 namespace App\Core;
 
-class Sessao {
-
-    /**
-     * Garante que a sessão está iniciada
-     */
-    private static function start(): void {
+class Sessao
+{
+    private static function start(): void
+    {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
     }
 
+    // ============================================================
+    // CSRF TOKEN
+    // ============================================================
+
     /**
-     * Gera ou obtém o token CSRF
+     * Gera ou devolve o token CSRF atual.
      */
-    public static function csrfToken(): string {
+    public static function csrfToken(): string
+    {
         self::start();
 
-        if (!isset($_SESSION['_csrf'])) {
-            $_SESSION['_csrf'] = bin2hex(random_bytes(32));
+        if (!isset($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
 
-        return $_SESSION['_csrf'];
+        return $_SESSION['csrf_token'];
     }
 
     /**
-     * Valida o token CSRF recebido no POST
+     * Valida o token CSRF enviado num POST.
      */
-    public static function validarCsrf(string $token): bool {
+    public static function validarCsrf(string $token): bool
+    {
         self::start();
 
-        return isset($_SESSION['_csrf']) && hash_equals($_SESSION['_csrf'], $token);
+        if (!isset($_SESSION['csrf_token'])) {
+            return false;
+        }
+
+        return hash_equals($_SESSION['csrf_token'], $token);
     }
 
-    /**
-     * Define ou obtém uma flash message
-     */
-    public static function flash($key, $value = null) {
+    // ============================================================
+    // FLASH MESSAGES
+    // ============================================================
+
+    public static function flash($key, $value = null)
+    {
         self::start();
 
-        if ($value !== null) {
+        // Gravar
+        if (func_num_args() === 2) {
             $_SESSION['flash'][$key] = $value;
             return;
         }
 
-        if (isset($_SESSION['flash'][$key])) {
-            $msg = $_SESSION['flash'][$key];
-            unset($_SESSION['flash'][$key]);
-            return $msg;
-        }
-
-        return null;
+        // Apagar
+        $msg = $_SESSION['flash'][$key] ?? null;
+        unset($_SESSION['flash'][$key]);
+        return $msg;
     }
 
-    /**
-     * Obtém e limpa todas as flash messages
-     */
-    public static function getFlash(): array {
+    // Ler sem apagar
+    public static function peek($key)
+    {
         self::start();
-
-        $flash = $_SESSION['flash'] ?? [];
-        unset($_SESSION['flash']);
-
-        return $flash;
+        return $_SESSION['flash'][$key] ?? null;
     }
 
-    /**
-     * Define um valor de sessão normal
-     */
-    public static function set(string $key, mixed $value): void {
+    // Ler tudo sem apagar
+    public static function all()
+    {
+        self::start();
+        return $_SESSION['flash'] ?? [];
+    }
+
+    // ============================================================
+    // SESSÃO NORMAL
+    // ============================================================
+
+    public static function set(string $key, mixed $value): void
+    {
         self::start();
         $_SESSION[$key] = $value;
     }
 
-    /**
-     * Obtém um valor de sessão
-     */
-    public static function get(string $key): mixed {
+    public static function get(string $key): mixed
+    {
         self::start();
         return $_SESSION[$key] ?? null;
     }
 
-    /**
-     * Remove um valor específico
-     */
-    public static function remove(string $key): void {
+    public static function remove(string $key): void
+    {
         self::start();
         unset($_SESSION[$key]);
     }
 
-    /**
-     * Destrói toda a sessão
-     */
-    public static function destruir(): void {
+    public static function destruir(): void
+    {
         self::start();
         session_destroy();
     }
