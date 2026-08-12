@@ -292,7 +292,7 @@ WHERE 1=1
         $documento->area_nome = $area ? $area->nome : null;
 
         // Ficheiros do documento
-        $ficheiros = DocumentoFicheiro::anexosDoDocumento($id);
+        $ficheiros = DocumentoFicheiro::anexosDoDocumento($documento->id);
 
         // Histórico completo
         $historico = DocumentoTramitacao::porDocumento($id);

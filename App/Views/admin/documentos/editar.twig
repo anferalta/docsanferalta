@@ -81,6 +81,74 @@
         </div>
     </div>
 
+    <!-- LISTA DE FICHEIROS -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fa fa-paperclip me-2"></i> Ficheiros Anexados</h5>
+        </div>
+
+        <div class="card-body">
+
+            {% if ficheiros|length > 0 %}
+                <ul class="list-group">
+
+                    {% for f in ficheiros %}
+                        {% set ext = f.ficheiro_original|lower|split('.')|last %}
+
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+
+                            <div class="d-flex align-items-center">
+
+                                {% if ext == 'pdf' %}
+                                    <i class="fa fa-file-pdf text-danger fa-lg me-2"></i>
+                                {% elseif ext in ['jpg','jpeg','png','gif','webp'] %}
+                                    <i class="fa fa-file-image text-primary fa-lg me-2"></i>
+                                {% elseif ext in ['doc','docx'] %}
+                                    <i class="fa fa-file-word text-info fa-lg me-2"></i>
+                                {% elseif ext in ['xls','xlsx'] %}
+                                    <i class="fa fa-file-excel text-success fa-lg me-2"></i>
+                                {% elseif ext == 'txt' %}
+                                    <i class="fa fa-file-alt text-muted fa-lg me-2"></i>
+                                {% elseif ext in ['zip','rar'] %}
+                                    <i class="fa fa-file-archive text-warning fa-lg me-2"></i>
+                                {% else %}
+                                    <i class="fa fa-file fa-lg me-2"></i>
+                                {% endif %}
+
+                                <span>{{ f.ficheiro_original }}</span>
+                            </div>
+
+                            <div class="d-flex gap-2">
+
+                                <!-- PREVIEW INLINE -->
+                                <button class="btn btn-sm btn-outline-secondary"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#previewModal"
+                                        data-url="/admin/documentos/anexo/abrir/{{ f.id }}"
+                                        data-ext="{{ ext }}">
+                                    <i class="fa fa-eye me-1"></i> Preview
+                                </button>
+
+                                <!-- ABRIR NORMAL -->
+                                <a href="/admin/documentos/anexo/abrir/{{ f.id }}"
+                                   target="_blank"
+                                   class="btn btn-sm btn-primary">
+                                    <i class="fa fa-download me-1"></i> Abrir
+                                </a>
+
+                            </div>
+
+                        </li>
+                    {% endfor %}
+
+                </ul>
+            {% else %}
+                <p class="text-muted">Este documento não tem ficheiros anexados.</p>
+            {% endif %}
+
+        </div>
+    </div>
+
     <!-- HISTÓRICO -->
     <div class="card mb-4">
         <div class="card-header">
@@ -191,28 +259,71 @@
 
 {% block modals %}
     {% include "@admin/tramitacao/modais.twig" %}
+
+    <!-- MODAL DE PREVIEW INLINE -->
+    <div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Preview do Ficheiro</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body p-0" id="previewContainer"
+                     style="min-height: 70vh; display: flex; align-items: center; justify-content: center;">
+                    <p class="text-muted">A carregar preview...</p>
+                </div>
+
+            </div>
+        </div>
+    </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    const form = document.getElementById('formEncaminhar');
-    const btn = document.getElementById('btnTramitar');
-    const modalEl = document.getElementById('modalTramitar');
+    const previewModal = document.getElementById('previewModal');
+    const previewContainer = document.getElementById('previewContainer');
 
-    if (!form || !btn || !modalEl) return;
+    previewModal.addEventListener('show.bs.modal', function (event) {
 
-    form.addEventListener('submit', function () {
+        const button = event.relatedTarget;
+        const fileUrl = button.getAttribute('data-url');
+        const ext = button.getAttribute('data-ext').toLowerCase();
 
-        try {
-            const modal = bootstrap.Modal.getInstance(modalEl);
-            if (modal) modal.hide();
-        } catch (e) {}
+        previewContainer.innerHTML = '<p class="text-muted">A carregar preview...</p>';
 
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> A enviar...';
+        // PDF, TXT, Imagens → abrir diretamente
+        if (['pdf','txt','jpg','jpeg','png','gif','webp'].includes(ext)) {
+
+            if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
+                previewContainer.innerHTML =
+                    `<img src="${fileUrl}" class="img-fluid" style="max-height: 70vh;">`;
+            } else {
+                previewContainer.innerHTML =
+                    `<iframe src="${fileUrl}" style="width:100%; height:70vh;" frameborder="0"></iframe>`;
+            }
+
+        }
+
+        // Word / Excel → Office Viewer
+        else if (['doc','docx','xls','xlsx'].includes(ext)) {
+
+            const encoded = encodeURIComponent(window.location.origin + fileUrl);
+
+            previewContainer.innerHTML =
+                `<iframe src="https://view.officeapps.live.com/op/view.aspx?src=${encoded}"
+                         style="width:100%; height:70vh;" frameborder="0"></iframe>`;
+        }
+
+        else {
+            previewContainer.innerHTML =
+                `<p class="text-danger">Preview não disponível para este tipo de ficheiro.</p>`;
+        }
     });
+
 });
 </script>
 {% endblock %}
