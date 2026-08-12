@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use PDO;
 use App\Core\Conexao;
 
 class DocumentoEstado
 {
+
     public $id;
     public $codigo;
     public $nome;
@@ -41,12 +43,12 @@ class DocumentoEstado
                 WHERE id = ?
             ");
             return $stmt->execute([
-                $this->codigo,
-                $this->nome,
-                $this->ordem,
-                $this->final,
-                $this->ativo,
-                $this->id
+                        $this->codigo,
+                        $this->nome,
+                        $this->ordem,
+                        $this->final,
+                        $this->ativo,
+                        $this->id
             ]);
         }
 
@@ -77,20 +79,29 @@ class DocumentoEstado
         $stmt = $db->prepare("DELETE FROM documento_estados WHERE id = ?");
         return $stmt->execute([$this->id]);
     }
-    
-    public static function semArquivado()
-{
-    $db = Conexao::getInstancia();
 
-    // Estados que não são finais (ex.: arquivado)
-    $stmt = $db->query("
+    public static function semArquivado()
+    {
+        $db = Conexao::getInstancia();
+
+        // Estados que não são finais (ex.: arquivado)
+        $stmt = $db->query("
         SELECT * 
         FROM documento_estados
         WHERE final = 0 AND ativo = 1
         ORDER BY ordem ASC, nome ASC
     ");
 
-    return $stmt->fetchAll(\PDO::FETCH_CLASS, self::class);
-}
+        return $stmt->fetchAll(\PDO::FETCH_CLASS, self::class);
+    }
 
+    public static function findByCodigo($codigo)
+    {
+        $db = Conexao::getInstancia();
+
+        $stmt = $db->prepare("SELECT * FROM documento_estados WHERE codigo = ? LIMIT 1");
+        $stmt->execute([$codigo]);
+
+        return $stmt->fetch(PDO::FETCH_OBJ);
+    }
 }

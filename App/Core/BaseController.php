@@ -141,6 +141,11 @@ class BaseController
         exit;
     }
 
+    protected function view(string $template, array $data = []): void
+    {
+        $this->render($template, $data);
+    }
+
     // ============================
     // REDIRECIONAMENTO
     // ============================
@@ -197,5 +202,21 @@ class BaseController
     protected function flash($tipo, $mensagem)
     {
         Sessao::flash($tipo, $mensagem);
+    }
+
+    public function error($codigo, $mensagem = null, $extra = [])
+    {
+        $template = "@admin/errors/{$codigo}.twig";
+
+        // Se o template não existir, usar fallback
+        if (!$this->twig->getLoader()->exists($template)) {
+            $template = "@admin/errors/fallback.twig";
+            $extra['codigo'] = $codigo;
+            $extra['mensagem'] = $mensagem;
+        }
+
+        return $this->render($template, array_merge([
+                    'mensagem' => $mensagem
+                                ], $extra));
     }
 }

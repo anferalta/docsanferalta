@@ -241,7 +241,7 @@ class Documento extends Model
 
     public function anexos()
     {
-        $m = new \App\Models\DocumentoFicheiro();
+        $m = new DocumentoFicheiro();
         return $m->where('documento_id', '=', $this->id)->get();
     }
 }

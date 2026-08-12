@@ -1,0 +1,23 @@
+{% extends "@admin/layout.twig" %}
+
+{% block content %}
+<div class="card border-danger shadow-sm">
+    <div class="card-header bg-danger text-white">
+        <strong>404 — Ficheiro não encontrado</strong>
+    </div>
+
+    <div class="card-body">
+        <p class="mb-3">
+            O anexo solicitado não existe, foi removido ou já não está disponível.
+        </p>
+
+        <p class="text-muted small">
+            Se acha que isto é um erro, contacte o administrador ou verifique o histórico de tramitação.
+        </p>
+
+        <a href="{{ back_url ?? '/admin/tramitacao' }}" class="btn btn-danger">
+            Voltar 
+        </a>
+    </div>
+</div>
+{% endblock %}

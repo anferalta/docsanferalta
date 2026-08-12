@@ -5,36 +5,71 @@
 {% block content %}
 
     <div class="row justify-content-center">
-        <div class="col-md-5">
+        <div class="col-md-5 col-lg-4">
 
             <div class="card shadow-sm border-0 p-4">
+                <h1 class="h2 mb-4 text-center">Entrar</h1>
 
-                <h2 class="mb-4 text-center">Entrar</h2>
+                {% if errors is defined and errors %}
+                    <div class="alert alert-danger" role="alert">
+                        Não foi possível iniciar sessão. Verifique os dados introduzidos.
+                    </div>
+                {% endif %}
 
                 <form method="POST" action="/login">
                     {{ csrf_field() }}
 
                     <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        <input type="email" name="email" class="form-control" required autofocus>
+                        <label for="email" class="form-label">Email</label>
+                        <input
+                            id="email"
+                            type="email"
+                            name="email"
+                            class="form-control{% if errors.email is defined %} is-invalid{% endif %}"
+                            value="{{ email ?? '' }}"
+                            autocomplete="email"
+                            required
+                            autofocus
+                        >
+
+                        {% if errors.email is defined %}
+                            <div class="invalid-feedback">
+                                {{ errors.email }}
+                            </div>
+                        {% endif %}
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Palavra-passe</label>
-                        <input type="password" name="password" class="form-control" required>
+                        <label for="password" class="form-label">Palavra-passe</label>
+                        <input
+                            id="password"
+                            type="password"
+                            name="password"
+                            class="form-control{% if errors.password is defined %} is-invalid{% endif %}"
+                            autocomplete="current-password"
+                            required
+                        >
+
+                        {% if errors.password is defined %}
+                            <div class="invalid-feedback">
+                                {{ errors.password }}
+                            </div>
+                        {% endif %}
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <a href="/recuperar">Esqueci-me da palavra-passe</a>
+                    <div class="d-flex justify-content-end mb-3">
+                        <a href="/recuperar">Esqueci a palavra-passe</a>
                     </div>
 
-                    <button class="btn btn-primary w-100">Entrar</button>
+                    <button type="submit" class="btn btn-primary w-100">
+                        Entrar
+                    </button>
 
-                    <div class="text-center mt-3">
+                    <p class="text-center mt-3 mb-0">
+                        Ainda não tem conta?
                         <a href="/registar">Criar conta</a>
-                    </div>
+                    </p>
                 </form>
-
             </div>
 
         </div>

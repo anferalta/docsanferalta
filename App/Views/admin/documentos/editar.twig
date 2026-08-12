@@ -7,7 +7,7 @@
 {% block content %}
 <div class="container-fluid">
 
-    <!-- BREADCRUMB (opcional mas recomendado) -->
+    <!-- BREADCRUMB -->
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/admin/tramitacao">Tramitação</a></li>
@@ -32,7 +32,14 @@
 
             <div class="row">
                 <div class="col-md-6">
-                    <p><strong>Tipo:</strong> {{ documento.tipo.nome }}</p>
+
+                    <p><strong>Tipo:</strong>
+                        {% if documento.tipo_nome %}
+                            {{ documento.tipo_nome }}
+                        {% else %}
+                            <span class="text-muted">Não definido</span>
+                        {% endif %}
+                    </p>
 
                     <p>
                         <strong>Estado atual:</strong>
@@ -43,14 +50,28 @@
                 </div>
 
                 <div class="col-md-6">
-                    <p><strong>Área atual:</strong> {{ documento.area_atual_nome }}</p>
-                    <p><strong>Criado por:</strong> {{ documento.criador.nome }}</p>
+
+                    <p><strong>Área atual:</strong>
+                        {% if documento.area_nome %}
+                            {{ documento.area_nome }}
+                        {% else %}
+                            <span class="text-muted">Sem área definida</span>
+                        {% endif %}
+                    </p>
+
+                    <p><strong>Criado por:</strong>
+                        {% if documento.criador_nome %}
+                            {{ documento.criador_nome }}
+                        {% else %}
+                            <span class="text-muted">Desconhecido</span>
+                        {% endif %}
+                    </p>
+
                 </div>
             </div>
 
-            {% set anexos = documento.anexos() %}
-            {% if anexos|length > 0 %}
-                <a href="/admin/documentos/anexo/abrir/{{ anexos[0].id }}"
+            {% if ficheiros|length > 0 %}
+                <a href="/admin/documentos/anexo/abrir/{{ ficheiros[0].id }}"
                    target="_blank"
                    class="btn btn-outline-primary mt-2">
                     <i class="fa fa-file me-1"></i> Ver Documento
@@ -103,8 +124,8 @@
                                         Comentário adicionado.
                                     {% elseif h.acao == 'ESTADO' %}
                                         Estado alterado para
-                                        <span class="badge-estado badge-{{ h.estado }}">
-                                            {{ h.estado|replace({'_':' '})|upper }}
+                                        <span class="badge-estado badge-{{ h.estado_codigo }}">
+                                            {{ h.estado_nome|upper }}
                                         </span>.
                                     {% endif %}
                                 </p>

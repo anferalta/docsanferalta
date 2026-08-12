@@ -2,45 +2,33 @@
 
 namespace App\Models;
 
-use App\Core\Conexao;
+use App\Core\Model;
 
-class DocumentoTramitacaoAnexo
+class DocumentoTramitacaoAnexo extends Model
 {
-    public static function create(array $data)
+    protected string $table = 'documento_tramitacao_anexos';
+    protected string $primaryKey = 'id';
+
+    public ?int $id = null;
+    public ?int $tramitacao_id = null;
+    public ?string $ficheiro = null;
+    public ?string $ficheiro_original = null;
+    public ?string $caminho = null;
+    public ?int $tamanho = null;
+    public ?string $mime_type = null;
+    public ?string $criado_em = null;
+
+    public function caminhoAbsoluto()
     {
-        $db = Conexao::getInstancia();
-
-        $sql = "INSERT INTO documento_tramitacao_anexos 
-                (tramitacao_id, ficheiro, nome_original, criado_em)
-                VALUES (?, ?, ?, NOW())";
-
-        $stmt = $db->prepare($sql);
-        return $stmt->execute([
-            $data['tramitacao_id'],
-            $data['ficheiro'],
-            $data['nome_original']
-        ]);
+        $root = realpath(__DIR__ . '/../../');
+        return $root . '/storage/tramitacao/' . $this->caminho . $this->ficheiro;
     }
 
-    public static function where($campo, $valor)
+    public static function anexosPorHistorico($id)
     {
-        $db = Conexao::getInstancia();
-
-        $sql = "SELECT * FROM documento_tramitacao_anexos 
-                WHERE $campo = ?
-                ORDER BY criado_em ASC";
-
-        $stmt = $db->prepare($sql);
-        $stmt->execute([$valor]);
-        return $stmt->fetchAll();
-    }
-
-    public static function find($id)
-    {
-        $db = Conexao::getInstancia();
-
-        $stmt = $db->prepare("SELECT * FROM documento_tramitacao_anexos WHERE id = ?");
-        $stmt->execute([$id]);
-        return $stmt->fetch();
+        return self::query(
+            "SELECT * FROM documento_tramitacao_anexos WHERE tramitacao_id = :id ORDER BY criado_em ASC",
+            ['id' => $id]
+        );
     }
 }

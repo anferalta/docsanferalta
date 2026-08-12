@@ -1,0 +1,14 @@
+{% if ext == 'pdf' %}
+    <i class="fa fa-file-pdf text-danger fa-lg me-2"></i>
+{% elseif ext in ['jpg','jpeg','png','gif','webp'] %}
+    <i class="fa fa-file-image text-primary fa-lg me-2"></i>
+{% elseif ext in ['doc','docx'] %}
+    <i class="fa fa-file-word text-info fa-lg me-2"></i>
+{% elseif ext in ['xls','xlsx'] %}
+    <i class="fa fa-file-excel text-success fa-lg me-2"></i>
+{% elseif ext in ['zip','rar'] %}
+    <i class="fa fa-file-archive text-warning fa-lg me-2"></i>
+{% else %}
+    <i class="fa fa-file fa-lg me-2"></i>
+{% endif %}
+

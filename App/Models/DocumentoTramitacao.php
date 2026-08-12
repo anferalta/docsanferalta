@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use PDO;
 use App\Core\Conexao;
 
 class DocumentoTramitacao
 {
+
     public static function filtrar($documento_id, $filtros)
     {
         $db = Conexao::getInstancia();
@@ -129,15 +131,23 @@ class DocumentoTramitacao
     {
         $db = Conexao::getInstancia();
 
-        $sql = "SELECT t.*, u.nome AS utilizador_nome, a.nome AS area_nome
-                FROM documento_tramitacao t
-                LEFT JOIN utilizadores u ON u.id = t.utilizador_id
-                LEFT JOIN documento_areas a ON a.id = t.area_id
-                WHERE t.documento_id = ?
-                ORDER BY t.id ASC";
+        $stmt = $db->prepare("
+        SELECT 
+            t.*,
+            u.nome AS utilizador_nome,
+            a.nome AS area_nome,
+            e.nome AS estado_nome,
+            e.codigo AS estado_codigo
+        FROM documento_tramitacao t
+        LEFT JOIN utilizadores u ON u.id = t.utilizador_id
+        LEFT JOIN documento_areas a ON a.id = t.area_id
+        LEFT JOIN documento_estados e 
+            ON e.codigo COLLATE utf8mb4_unicode_ci = t.estado COLLATE utf8mb4_unicode_ci
+        WHERE t.documento_id = ?
+        ORDER BY t.criado_em DESC
+    ");
 
-        $stmt = $db->prepare($sql);
         $stmt->execute([$id]);
-        return $stmt->fetchAll();
+        return $stmt->fetchAll(PDO::FETCH_OBJ);
     }
 }

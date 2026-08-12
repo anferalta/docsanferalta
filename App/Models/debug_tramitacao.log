@@ -3018,3 +3018,513 @@ Array
     [estado] => arquivado
     [criado_em] => 2026-07-31 21:38:41
 )
+Array
+(
+    [documento_id] => 456
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => muito urgente.
+    [estado] => novo
+    [criado_em] => 2026-07-31 21:43:16
+)
+Array
+(
+    [documento_id] => 456
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 
+    [comentario] => verificar documentos
+    [estado] => em_tramitacao
+    [criado_em] => 2026-07-31 21:43:41
+)
+Array
+(
+    [documento_id] => 450
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 4
+    [comentario] => 
+    [estado_atual] => em_tramitacao
+    [criado_em] => 2026-08-04 16:41:58
+)
+Array
+(
+    [documento_id] => 459
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => muito urgente
+    [estado_atual] => novo
+    [criado_em] => 2026-08-04 16:56:38
+)
+Array
+(
+    [documento_id] => 459
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 
+    [comentario] => verificar documentos.
+    [estado_atual] => em_tramitacao
+    [criado_em] => 2026-08-04 17:51:18
+)
+Array
+(
+    [documento_id] => 459
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 
+    [comentario] => aguarda parecer.
+    [estado_atual] => analise
+    [criado_em] => 2026-08-04 17:52:43
+)
+Array
+(
+    [documento_id] => 459
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 
+    [comentario] => 
+    [estado_atual] => analise
+    [criado_em] => 2026-08-04 18:32:16
+)
+Array
+(
+    [documento_id] => 459
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 
+    [comentario] => 
+    [estado_atual] => concluido
+    [criado_em] => 2026-08-04 19:36:54
+)
+Array
+(
+    [documento_id] => 459
+    [area_id] => 3
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado_atual] => em_tramitacao
+    [comentario] => 
+    [criado_em] => 2026-08-04 19:49:41
+)
+Array
+(
+    [documento_id] => 459
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 3
+    [comentario] => aguarda parecer.
+    [estado_atual] => analise
+    [criado_em] => 2026-08-04 19:52:53
+)
+Array
+(
+    [documento_id] => 459
+    [area_id] => 8
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado_atual] => em_tramitacao
+    [comentario] => 
+    [criado_em] => 2026-08-04 19:56:40
+)
+Array
+(
+    [documento_id] => 459
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 8
+    [comentario] => Arquivar
+    [estado_atual] => em_tramitacao
+    [criado_em] => 2026-08-04 20:22:28
+)
+Array
+(
+    [documento_id] => 459
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 8
+    [comentario] => 
+    [estado_atual] => concluido
+    [criado_em] => 2026-08-05 09:50:09
+)
+Array
+(
+    [documento_id] => 459
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 8
+    [comentario] => 
+    [estado_atual] => concluido
+    [criado_em] => 2026-08-05 10:21:35
+)
+Array
+(
+    [documento_id] => 459
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 8
+    [comentario] => Arquivar
+    [estado_atual] => concluido
+    [criado_em] => 2026-08-05 11:28:15
+)
+Array
+(
+    [documento_id] => 460
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => muito urgente.
+    [estado_atual] => novo
+    [criado_em] => 2026-08-05 12:03:00
+)
+Array
+(
+    [documento_id] => 460
+    [area_id] => 3
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado_atual] => em_tramitacao
+    [comentario] => verificar pagamento.
+    [criado_em] => 2026-08-05 12:03:34
+)
+Array
+(
+    [documento_id] => 460
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 3
+    [comentario] => aguarda parecer
+    [estado_atual] => analise
+    [criado_em] => 2026-08-05 12:05:16
+)
+Array
+(
+    [documento_id] => 460
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 3
+    [comentario] => verificar estatuto.
+    [estado_atual] => analise
+    [criado_em] => 2026-08-05 12:49:57
+)
+Array
+(
+    [documento_id] => 460
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 3
+    [comentario] => Arquivar
+    [estado] => concluido
+    [criado_em] => 2026-08-05 14:39:27
+)
+Array
+(
+    [documento_id] => 460
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 3
+    [comentario] => 
+    [estado] => em_tramitacao
+    [criado_em] => 2026-08-05 14:40:29
+)
+Array
+(
+    [documento_id] => 460
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 3
+    [comentario] => Documento arquivado.
+    [estado_atual] => arquivado
+    [criado_em] => 2026-08-05 16:16:10
+)
+Array
+(
+    [documento_id] => 441
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 2
+    [comentario] => Arquivar
+    [estado] => concluido
+    [criado_em] => 2026-08-05 16:18:52
+)
+Array
+(
+    [documento_id] => 441
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 2
+    [comentario] => Documento arquivado.
+    [estado_atual] => arquivado
+    [criado_em] => 2026-08-05 16:19:11
+)
+Array
+(
+    [documento_id] => 439
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 8
+    [comentario] => Arquivar.
+    [estado] => concluido
+    [criado_em] => 2026-08-05 16:19:45
+)
+Array
+(
+    [documento_id] => 439
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 8
+    [comentario] => Documento arquivado.
+    [estado_atual] => arquivado
+    [criado_em] => 2026-08-05 16:19:54
+)
+Array
+(
+    [documento_id] => 445
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 2
+    [comentario] => Arquivar.
+    [estado] => concluido
+    [criado_em] => 2026-08-05 16:20:40
+)
+Array
+(
+    [documento_id] => 445
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 2
+    [comentario] => Documento arquivado.
+    [estado_atual] => arquivado
+    [criado_em] => 2026-08-05 16:20:46
+)
+Array
+(
+    [documento_id] => 436
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 1
+    [comentario] => Arquivar.
+    [estado] => concluido
+    [criado_em] => 2026-08-05 16:35:33
+)
+Array
+(
+    [documento_id] => 461
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => Tratamento Urgente.
+    [estado] => novo
+    [criado_em] => 2026-08-05 17:22:13
+)
+Array
+(
+    [documento_id] => 461
+    [area_id] => 3
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => Verificar documentos.
+    [criado_em] => 2026-08-05 17:23:11
+)
+Array
+(
+    [documento_id] => 461
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 3
+    [comentario] => Verificar pagamento.
+    [estado] => em_tramitacao
+    [criado_em] => 2026-08-05 17:25:47
+)
+Array
+(
+    [documento_id] => 461
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 3
+    [comentario] => aguarda despacho.
+    [estado] => analise
+    [criado_em] => 2026-08-05 17:28:46
+)
+Array
+(
+    [documento_id] => 461
+    [area_id] => 8
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => Parecer técnico.
+    [criado_em] => 2026-08-05 17:29:45
+)
+Array
+(
+    [documento_id] => 461
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 8
+    [comentario] => parecer técnico.
+    [estado] => analise
+    [criado_em] => 2026-08-05 17:31:55
+)
+Array
+(
+    [documento_id] => 462
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => Analise detalhada.
+    [estado] => novo
+    [criado_em] => 2026-08-08 18:34:51
+)
+Array
+(
+    [documento_id] => 462
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => teste
+    [estado] => novo
+    [criado_em] => 2026-08-12 11:33:43
+)
+Array
+(
+    [documento_id] => 462
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 
+    [comentario] => verificar documentos
+    [estado] => analise
+    [criado_em] => 2026-08-12 11:34:10
+)
+Array
+(
+    [documento_id] => 461
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 8
+    [comentario] => atualizar contrato.
+    [estado] => analise
+    [criado_em] => 2026-08-12 11:40:00
+)
+Array
+(
+    [documento_id] => 462
+    [area_id] => 3
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => verificar pagamento.
+    [criado_em] => 2026-08-12 11:45:30
+)
+Array
+(
+    [documento_id] => 462
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 3
+    [comentario] => area financeira
+    [estado] => em_tramitacao
+    [criado_em] => 2026-08-12 11:47:19
+)
+Array
+(
+    [documento_id] => 461
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 8
+    [comentario] => arquivar.
+    [estado] => em_tramitacao
+    [criado_em] => 2026-08-12 11:48:49
+)
+Array
+(
+    [documento_id] => 462
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 3
+    [comentario] => aguarda despacho.
+    [estado] => analise
+    [criado_em] => 2026-08-12 11:49:45
+)
+Array
+(
+    [documento_id] => 462
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 3
+    [comentario] => arquivar
+    [estado] => analise
+    [criado_em] => 2026-08-12 11:50:48
+)
+Array
+(
+    [documento_id] => 462
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 3
+    [comentario] => Documento arquivado.
+    [estado] => arquivado
+    [criado_em] => 2026-08-12 11:50:53
+)
+Array
+(
+    [documento_id] => 459
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 8
+    [comentario] => arquivar documento.
+    [estado] => concluido
+    [criado_em] => 2026-08-12 11:54:34
+)
+Array
+(
+    [documento_id] => 459
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 8
+    [comentario] => Documento arquivado.
+    [estado] => arquivado
+    [criado_em] => 2026-08-12 11:54:39
+)
+Array
+(
+    [documento_id] => 463
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => muito urgente
+    [estado] => novo
+    [criado_em] => 2026-08-12 12:49:00
+)
+Array
+(
+    [documento_id] => 463
+    [area_id] => 3
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => verificar pagamento.
+    [criado_em] => 2026-08-12 12:49:41
+)
+Array
+(
+    [documento_id] => 463
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 3
+    [comentario] => finanças a verificar pagamento.
+    [estado] => em_tramitacao
+    [criado_em] => 2026-08-12 12:50:38
+)
+Array
+(
+    [documento_id] => 463
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 3
+    [comentario] => verificar o valor
+    [estado] => em_tramitacao
+    [criado_em] => 2026-08-12 13:03:11
+)

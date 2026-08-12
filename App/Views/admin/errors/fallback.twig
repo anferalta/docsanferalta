@@ -1,0 +1,26 @@
+{% extends "@admin/layout.twig" %}
+
+{% block content %}
+<div class="card border-dark shadow-sm">
+    <div class="card-header bg-dark text-white">
+        <strong>Ocorreu um erro</strong>
+    </div>
+
+    <div class="card-body">
+        <p class="mb-3">
+            Não foi possível concluir a operação.
+        </p>
+
+        {% if codigo is defined %}
+            <p class="text-muted small">Código do erro: {{ codigo }}</p>
+        {% endif %}
+
+        {% if mensagem is defined %}
+            <p class="text-muted small">Detalhes: {{ mensagem }}</p>
+        {% endif %}
+
+        <a href="/admin" class="btn btn-dark">Voltar ao painel</a>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,24 @@
+{% extends "@admin/layout.twig" %}
+
+{% block content %}
+<div class="card border-secondary shadow-sm">
+    <div class="card-header bg-secondary text-white">
+        <strong>410 — Anexo removido</strong>
+    </div>
+
+    <div class="card-body">
+        <p class="mb-3">
+            O anexo que tentou abrir já não está disponível.
+        </p>
+
+        <p class="text-muted small">
+            Pode ter sido eliminado ou substituído durante a tramitação.
+        </p>
+
+        <a href="{{ back_url ?? '/admin/tramitacao' }}" class="btn btn-secondary">
+            Voltar à tramitação
+        </a>
+    </div>
+</div>
+{% endblock %}
+

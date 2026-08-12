@@ -3,15 +3,18 @@
 namespace App\Controllers\Admin;
 
 use App\Core\BaseController;
-use App\Models\DocumentoTipo;
-use App\Models\Documento;
 use App\Core\Auth;
 use App\Core\Sessao;
 use App\Core\Conexao;
-use App\Models\Utilizador;
-use App\Models\DocumentoTramitacao;
+use App\Models\Documento;
+use App\Models\DocumentoArea;
 use App\Models\DocumentoEstado;
-use App\Models\DocumentoFicheiro;
+use App\Models\DocumentoTipo;
+use App\Models\DocumentoTramitacao;
+use App\Models\DocumentoTramitacaoAnexo;
+use App\Models\DocumentoFicheiro;   // <-- ESTA LINHA RESOLVE O ERRO
+use App\Models\Utilizador;
+use PDO;
 
 class DocumentosAdminController extends BaseController
 {
@@ -214,9 +217,7 @@ WHERE 1=1
     {
         $user = Auth::user();
 
-        // ============================
         // 1. Validação
-        // ============================
         $erro = \App\Services\DocumentoValidator::validarCriacao($_POST, $_FILES);
 
         if ($erro) {
@@ -224,60 +225,140 @@ WHERE 1=1
             return $this->redirect('/admin/documentos/criar');
         }
 
-        // ============================
         // 2. Upload + gravação
-        // ============================
         try {
-            \App\Services\DocumentoUploader::processarUpload($_POST, $_FILES, $user);
+            $documento = \App\Services\DocumentoUploader::processarUpload($_POST, $_FILES, $user);
         } catch (\Exception $e) {
             Sessao::flash('erro', $e->getMessage());
             return $this->redirect('/admin/documentos/criar');
         }
 
-        // ============================
-        // 3. Sucesso
-        // ============================
+        // 3. DEFINIR ÁREA INICIAL OBRIGATÓRIA
+        // Escolhe a área inicial (ex.: 1 = Secretaria, ou outra área que exista)
+        $areaInicial = 1;
+
+        $documento->update([
+            'area_atual_id' => $areaInicial,
+            'area_atual_desde' => date('Y-m-d H:i:s'),
+            'estado_atual' => 'novo'
+                ], "id = {$documento->id}");
+
+        // 4. Sucesso
         Sessao::flash('sucesso', 'Documentos carregados com sucesso.');
         return $this->redirect('/admin/documentos');
     }
 
     public function editar($id)
     {
-        $documento = Documento::find($id);
-        $estados = DocumentoEstado::semArquivado();
+        $db = Conexao::getInstancia();
+
+        // Documento completo
+        $stmt = $db->prepare("
+        SELECT 
+            d.*,
+            t.nome AS tipo_nome,
+            a.nome AS area_nome,
+            u.nome AS criador_nome
+        FROM documentos d
+        LEFT JOIN documento_tipos t ON t.tipo_id = d.tipo_id
+        LEFT JOIN documento_areas a ON a.id = d.area_atual_id
+        LEFT JOIN utilizadores u ON u.id = d.criado_por
+        WHERE d.id = ?
+        LIMIT 1
+    ");
+
+        $stmt->execute([$id]);
+        $documento = $stmt->fetch(PDO::FETCH_OBJ);
 
         if (!$documento) {
             Sessao::flash('erro', 'Documento não encontrado.');
             return $this->redirect('/admin/documentos');
         }
 
-        $tipos = DocumentoTipo::all();
+        $tab = $_GET['tab'] ?? 'dados';
 
-        // HISTÓRICO (correto)
-        $historico = \App\Models\DocumentoTramitacao::porDocumento($id);
+        // Área atual
+        $area = DocumentoArea::find($documento->area_atual_id);
 
-        // ÁREAS
-        $areas = \App\Models\DocumentoArea::all();
+        // Tipo
+        $tipo = DocumentoTipo::find($documento->tipo_id);
 
-        // ESTADOS
-        $estados = \App\Models\DocumentoEstado::all();
+        // Criador
+        $criador = Utilizador::find($documento->criado_por);
 
-        // USER
-        $user = Auth::user();
+        // Preencher propriedades usadas no Twig
+        $documento->tipo_nome = $tipo ? $tipo->nome : null;
+        $documento->criador_nome = $criador ? $criador->nome : null;
+        $documento->area_nome = $area ? $area->nome : null;
 
-        return $this->render('@admin/documentos/editar.twig', [
+        // Ficheiros do documento
+        $ficheiros = DocumentoFicheiro::anexosDoDocumento($id);
+
+        // Histórico completo
+        $historico = DocumentoTramitacao::porDocumento($id);
+
+        foreach ($historico as $h) {
+
+            // Anexos da ação
+            $h->anexos = DocumentoTramitacaoAnexo::anexosPorHistorico($h->id);
+
+            // Estado da ação (nome + código)
+            if (!empty($h->estado)) {
+
+                // Buscar estado pelo código guardado na coluna "estado"
+                $estado = DocumentoEstado::findByCodigo($h->estado);
+
+                if ($estado) {
+                    $h->estado_nome = $estado->nome;
+                    $h->estado_codigo = $estado->codigo;
+                } else {
+                    // fallback: usar o valor literal guardado na coluna
+                    $h->estado_nome = strtoupper(str_replace('_', ' ', $h->estado));
+                    $h->estado_codigo = $h->estado;
+                }
+            } else {
+                // Sem estado definido
+                $h->estado_nome = null;
+                $h->estado_codigo = null;
+            }
+        }
+
+        // Áreas e estados
+        $areas = DocumentoArea::ativas();
+        $estados = DocumentoEstado::all();
+
+        return $this->view('@admin/documentos/editar.twig', [
                     'documento' => $documento,
-                    'tipos' => $tipos,
+                    'area' => $area,
+                    'tipo' => $tipo,
+                    'criador' => $criador,
+                    'ficheiros' => $ficheiros,
                     'historico' => $historico,
                     'areas' => $areas,
                     'estados' => $estados,
-                    'user' => $user
+                    'tab' => $tab
         ]);
     }
 
     public function editarSubmit($id)
     {
-        $documento = Documento::find($id);
+        $db = Conexao::getInstancia();
+
+        $stmt = $db->prepare("
+    SELECT 
+        d.*,
+        t.nome AS tipo_nome,
+        a.nome AS area_nome,
+        u.nome AS criador_nome
+    FROM documentos d
+    LEFT JOIN documento_tipos t ON t.tipo_id = d.tipo_id
+    LEFT JOIN documento_areas a ON a.id = d.area_atual_id
+    LEFT JOIN utilizadores u ON u.id = d.criado_por
+    WHERE d.id = ?
+    LIMIT 1
+");
+        $stmt->execute([$id]);
+        $documento = $stmt->fetch(PDO::FETCH_OBJ);
 
         if (!$documento) {
             Sessao::flash('erro', 'Documento não encontrado.');
@@ -439,6 +520,43 @@ WHERE 1=1
         header('Content-Type: application/json');
         echo json_encode($nomes);
         exit;
+    }
+
+    public function apagar($id)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            http_response_code(403);
+            exit("Não autorizado.");
+        }
+
+        $ficheiro = DocumentoFicheiro::find($id);
+
+        if (!$ficheiro) {
+            http_response_code(404);
+            exit("Ficheiro não encontrado.");
+        }
+
+        // Segurança: garantir que pertence ao documento
+        if (!is_numeric($ficheiro->documento_id)) {
+            http_response_code(400);
+            exit("Ficheiro inválido.");
+        }
+
+        // Caminho físico
+        $root = realpath(__DIR__ . '/../../../');
+        $path = $root . '/storage/documentos/' . $ficheiro->caminho . $ficheiro->ficheiro;
+
+        // Apagar ficheiro físico
+        if (file_exists($path)) {
+            unlink($path);
+        }
+
+        // Apagar da BD
+        DocumentoFicheiro::delete($id);
+
+        Sessao::flash('sucesso', 'Ficheiro apagado com sucesso.');
+        return $this->redirect('/admin/documentos/editar/' . $ficheiro->documento_id);
     }
 
     public function testar()
@@ -607,28 +725,27 @@ WHERE 1=1
         ]);
     }
 
-    public function verAnexo($id)
+    public function verAnexo($historicoId, $ficheiro)
     {
-        $anexo = DocumentoFicheiro::find($id);
+        $anexo = DocumentoTramitacaoAnexo::query(
+                        "SELECT * FROM documento_tramitacao_anexos WHERE tramitacao_id = :hid AND ficheiro = :fic LIMIT 1",
+                        ['hid' => $historicoId, 'fic' => $ficheiro]
+                )[0] ?? null;
 
         if (!$anexo) {
             http_response_code(404);
-            exit("Anexo não encontrado.");
+            return $this->render('@admin/errors/404.twig');
         }
 
-        $caminho = dirname(__DIR__, 3) . '/storage/documentos/' . $anexo->ficheiro;
+        $caminho = $anexo->caminhoAbsoluto();
 
         if (!file_exists($caminho)) {
             http_response_code(404);
-            exit("Ficheiro não encontrado.");
+            return $this->render('@admin/errors/404.twig');
         }
 
-        $nomeDownload = $anexo->nome_original ?: basename($anexo->ficheiro);
-
-        header("Content-Type: " . mime_content_type($caminho));
-        header("Content-Disposition: inline; filename=\"$nomeDownload\"");
-        header("Content-Length: " . filesize($caminho));
-
+        header('Content-Type: ' . $anexo->mime_type);
+        header('Content-Length: ' . filesize($caminho));
         readfile($caminho);
         exit;
     }
@@ -661,38 +778,49 @@ WHERE 1=1
 
     public function abrir($idAnexo)
     {
-        // 1. Verificar login
         $user = Auth::user();
         if (!$user) {
             return $this->redirect('/login');
         }
 
-        // 2. Buscar o anexo
-        $anexo = DocumentoFicheiro::find($idAnexo);
+        // 1) Tentar anexo da tramitação
+        $anexo = DocumentoTramitacaoAnexo::find($idAnexo);
+        $tipo = null;
+
+        if ($anexo) {
+            $tipo = 'tramitacao';
+        } else {
+            // 2) Tentar anexo do documento
+            $anexo = DocumentoFicheiro::find($idAnexo);
+            if ($anexo) {
+                $tipo = 'documento';
+            }
+        }
 
         if (!$anexo) {
             http_response_code(404);
             exit("Anexo não encontrado.");
         }
 
-        // 3. Construir caminho absoluto
         $root = realpath(__DIR__ . '/../../../');
-        $path = $root . '/storage/documentos/' . $anexo->ficheiro;
+
+        if ($tipo === 'tramitacao') {
+            $path = $root . '/public/uploads/tramitacao/' . $anexo->tramitacao_id . '/' . $anexo->ficheiro;
+        } else {
+            $path = $root . '/storage/documentos/' . $anexo->caminho . $anexo->ficheiro;
+        }
 
         if (!file_exists($path)) {
             http_response_code(404);
             exit("Ficheiro não encontrado.");
         }
 
-        // 4. Determinar MIME
         $mime = mime_content_type($path);
         $nome = basename($anexo->ficheiro);
 
-        // 5. Tipos que podem abrir inline
         $inline = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'txt', 'webp'];
         $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
 
-        // 6. Se for inline → abrir no browser
         if (in_array($ext, $inline)) {
             header("Content-Type: {$mime}");
             header("Content-Disposition: inline; filename=\"{$nome}\"");
@@ -701,11 +829,42 @@ WHERE 1=1
             exit;
         }
 
-        // 7. Fallback → download
         header("Content-Type: application/octet-stream");
         header("Content-Disposition: attachment; filename=\"{$nome}\"");
         header("Content-Length: " . filesize($path));
         readfile($path);
+        exit;
+    }
+
+    public function abrirAnexo($id)
+    {
+        // ID obrigatório
+        if (!$id || !is_numeric($id)) {
+            http_response_code(404);
+            return $this->render('@admin/errors/404.twig');
+        }
+
+        // Buscar o anexo
+        $anexo = DocumentoFicheiro::find($id);
+
+        if (!$anexo) {
+            http_response_code(404);
+            return $this->render('@admin/errors/404.twig');
+        }
+
+        // Caminho físico correto
+        $caminho = $anexo->caminhoAbsoluto();
+
+        if (!file_exists($caminho)) {
+            http_response_code(404);
+            return $this->render('@admin/errors/404.twig');
+        }
+
+        // MIME
+        header('Content-Type: ' . $anexo->mime_type);
+        header('Content-Length: ' . filesize($caminho));
+
+        readfile($caminho);
         exit;
     }
 
@@ -714,6 +873,20 @@ WHERE 1=1
         $this->autorizar('admin.documentos.arquivados.recuperar');
 
         $documento = Documento::find($id);
+
+        // Tipo do documento
+        $tipo = null;
+        if ($documento->tipo_id) {
+            $tipo = DocumentoTipo::find($documento->tipo_id);
+            $documento->tipo_nome = $tipo ? $tipo->nome : null;
+        }
+
+        // Criador do documento
+        $criador = null;
+        if ($documento->utilizador_id) {
+            $criador = Utilizador::find($documento->utilizador_id);
+            $documento->criador_nome = $criador ? $criador->nome : null;
+        }
 
         if (!$documento || $documento->estado_atual !== 'arquivado') {
             http_response_code(404);
@@ -788,6 +961,67 @@ WHERE 1=1
 
         Sessao::flash('sucesso', 'Documento arquivado com sucesso.');
         return $this->redirect('/admin/documentos/arquivados');
+    }
+
+    public function upload($id)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            http_response_code(403);
+            exit("Não autorizado.");
+        }
+
+        if (empty($_FILES['ficheiros'])) {
+            http_response_code(400);
+            exit("Nenhum ficheiro enviado.");
+        }
+
+        $root = realpath(__DIR__ . '/../../../');
+        $base = $root . '/storage/documentos/';
+
+        $ano = date('Y');
+        $mes = date('m');
+        $dia = date('d');
+
+        $subpasta = "$ano/$mes/$dia/";
+        $destinoFinal = $base . $subpasta;
+
+        if (!is_dir($destinoFinal)) {
+            mkdir($destinoFinal, 0777, true);
+        }
+
+        foreach ($_FILES['ficheiros']['tmp_name'] as $i => $tmp) {
+
+            $nomeOriginal = $_FILES['ficheiros']['name'][$i];
+            $tamanho = $_FILES['ficheiros']['size'][$i];
+            $erro = $_FILES['ficheiros']['error'][$i];
+
+            if ($erro !== UPLOAD_ERR_OK) {
+                continue;
+            }
+
+            $nomeSeguro = preg_replace('/[^A-Za-z0-9_\.-]/', '_', $nomeOriginal);
+            $nomeGuardado = uniqid() . '_' . $nomeSeguro;
+
+            $destino = $destinoFinal . $nomeGuardado;
+
+            move_uploaded_file($tmp, $destino);
+
+            // Registar na BD
+            DocumentoFicheiro::create([
+                'documento_id' => $id,
+                'ficheiro' => $nomeGuardado,
+                'ficheiro_original' => $nomeOriginal,
+                'caminho' => $subpasta,
+                'tamanho' => $tamanho,
+                'mime_type' => mime_content_type($destino),
+                'hash' => hash_file('sha256', $destino),
+                'criado_em' => date('Y-m-d H:i:s')
+            ]);
+        }
+
+        echo "OK";
+        exit;
     }
 
     private function paginacao($total, $porPagina, $paginaAtual)

@@ -7,57 +7,47 @@ use App\Core\Model;
 class DocumentoFicheiro extends Model
 {
 
-    /**
-     * Nome da tabela
-     */
     protected string $table = 'documento_ficheiros';
     protected string $primaryKey = 'id';
     public ?int $id = null;
     public ?int $documento_id = null;
     public ?string $ficheiro = null;
-    public ?int $tamanho = null;
-    public ?string $mime = null;
-    public ?string $criado_em = null;
     public ?string $ficheiro_original = null;
-
-    /**
-     * Campos permitidos para mass assignment
-     */
+    public ?string $caminho = null;
+    public ?int $tamanho = null;
+    public ?string $mime_type = null;
+    public ?string $hash = null;
+    public ?string $criado_em = null;
+    public ?string $mime = null;
     protected array $fillable = [
-        'id',
         'documento_id',
         'ficheiro',
-        'tamanho',
-        'mime',
-        'criado_em',
         'ficheiro_original',
+        'caminho',
+        'tamanho',
+        'mime_type',
+        'hash',
+        'criado_em'
     ];
 
     /**
-     * Relacionamento: este anexo pertence a um documento
+     * Documento ao qual pertence
      */
     public function documento()
     {
-        $m = new Documento();
-        return $m->find($this->documento_id);
+        return (new Documento())->find($this->documento_id);
     }
 
     /**
-     * Devolve apenas o nome do ficheiro (sem diretórios)
+     * Nome do ficheiro
      */
     public function nome()
     {
-        // Se existir nome original, usa-o
-        if (!empty($this->ficheiro_original)) {
-            return $this->ficheiro_original;
-        }
-
-        // Caso contrário, usa o nome renomeado
-        return basename($this->ficheiro);
+        return $this->ficheiro_original ?: basename($this->ficheiro);
     }
 
     /**
-     * Extensão do ficheiro
+     * Extensão
      */
     public function ext()
     {
@@ -65,15 +55,16 @@ class DocumentoFicheiro extends Model
     }
 
     /**
-     * Caminho absoluto no servidor
+     * Caminho absoluto correto
      */
     public function caminhoAbsoluto()
     {
-        return realpath(__DIR__ . '/../../') . '/storage/documentos/' . $this->ficheiro;
+        $root = realpath(__DIR__ . '/../../');
+        return $root . '/storage/documentos/' . $this->caminho . $this->ficheiro;
     }
 
     /**
-     * URL pública para abrir inline
+     * URL para abrir inline
      */
     public function urlVer()
     {
@@ -81,16 +72,23 @@ class DocumentoFicheiro extends Model
     }
 
     /**
-     * URL pública para download
+     * URL para download
      */
     public function urlDownload()
     {
         return "/admin/documentos/anexo/download/{$this->id}";
     }
 
+    /**
+     * Buscar anexos do documento (sem where())
+     */
     public static function anexosDoDocumento($id)
     {
-        $m = new self();
-        return $m->where('documento_id', '=', $id)->get();
+        $db = \App\Core\Conexao::getInstancia();
+
+        $stmt = $db->prepare("SELECT * FROM documento_ficheiros WHERE documento_id = :id ORDER BY criado_em DESC");
+        $stmt->execute(['id' => $id]);
+
+        return $stmt->fetchAll(\PDO::FETCH_CLASS, self::class);
     }
 }
