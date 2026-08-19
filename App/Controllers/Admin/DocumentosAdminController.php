@@ -6,6 +6,7 @@ use App\Core\BaseController;
 use App\Core\Auth;
 use App\Core\Sessao;
 use App\Core\Conexao;
+use App\Core\Acl;
 use App\Models\Documento;
 use App\Models\DocumentoArea;
 use App\Models\DocumentoEstado;
@@ -52,14 +53,15 @@ class DocumentosAdminController extends BaseController
     {
         $db = Conexao::getInstancia();
         $user = Auth::user();
-        $acl = new \App\Core\Acl();
-
+        $acl = new \App\Core\Acl();   // <-- ADICIONADO
+        //$auth = Auth::user();         // <-- ADICIONADO
         // PERFIL DO UTILIZADOR
         $perfil = strtolower($user->perfil->nome ?? '');
 
         // PERFIS QUE PODEM VER TODOS OS DOCUMENTOS
         $podeVerTodos = (
-                in_array($perfil, ['admin', 'gestor', 'supervisor']) || $acl->has('admin.documentos.ver_todos')
+                in_array($perfil, ['admin', 'gestor', 'supervisor']) ||
+                $acl->has('admin.documentos.ver_todos')
         );
 
         // ============================
@@ -183,12 +185,12 @@ WHERE 1=1
         $tipos = DocumentoTipo::all();
         $utilizadores = (new Utilizador())->orderBy('nome')->get();
         $areas = $db->query("
-    SELECT id, nome 
-    FROM documento_areas 
-    WHERE ativo = 1 
-      AND nome != 'Arquivo'
-    ORDER BY nome ASC
-")->fetchAll();
+        SELECT id, nome 
+        FROM documento_areas 
+        WHERE ativo = 1 
+          AND nome != 'Arquivo'
+        ORDER BY nome ASC
+    ")->fetchAll();
 
         // ============================
         // 9. Renderizar
@@ -200,7 +202,8 @@ WHERE 1=1
                     'utilizadores' => $utilizadores,
                     'estado_atual' => $estado_atual,
                     'area_atual_id' => $area_atual_id,
-                    'paginacao' => $paginacao
+                    'paginacao' => $paginacao,
+                    'acl' => $acl, // <-- ADICIONADO
         ]);
     }
 

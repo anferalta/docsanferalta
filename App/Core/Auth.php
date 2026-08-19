@@ -99,22 +99,16 @@ class Auth
             return null;
         }
 
-        $db = Conexao::getInstancia();
-        $stmt = $db->prepare("SELECT * FROM utilizadores WHERE id = :id LIMIT 1");
-        $stmt->execute(['id' => $_SESSION['user_id']]);
+        // Carrega o utilizador COMPLETO
+        $u = Utilizador::find($_SESSION['user_id']);
 
-        $data = $stmt->fetch(\PDO::FETCH_ASSOC);
-
-        if (!$data) {
+        if (!$u) {
             return null;
         }
 
-        $u = new Utilizador();
-
-        foreach ($data as $key => $value) {
-            if (property_exists($u, $key)) {
-                $u->$key = $value;
-            }
+        // Carrega o perfil associado (se existir)
+        if (method_exists($u, 'perfil')) {
+            $u->perfil = $u->perfil();
         }
 
         return $u;

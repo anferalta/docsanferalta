@@ -1,25 +1,18 @@
 <div class="flash-container">
 
+    {% set erro = sessao.flash('erro') %}
     {% if erro %}
-        <div class="alert alert-danger">
-
-            {% if erro == 'titulo' %}O título é obrigatório.
-            {% elseif erro == 'tipo' %}Selecione o tipo de documento.
-            {% elseif erro == 'ficheiros' %}Selecione pelo menos um ficheiro.
-            {% elseif erro == 'extensao' %}Extensão de ficheiro inválida.
-            {% elseif erro == 'tamanho' %}Ficheiro demasiado grande.
-            {% elseif erro == 'ficheiro_duplicado' %}Já existe um ficheiro com esse nome.
-
-            {% else %}
-                {{ erro }}
-            {% endif %}
-
+        <div class="alert alert-danger alert-dismissible fade show mb-3">
+            {{ erro }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     {% endif %}
 
+    {% set sucesso = sessao.flash('sucesso') %}
     {% if sucesso %}
-        <div class="alert alert-success">
+        <div class="alert alert-success alert-dismissible fade show mb-3">
             {{ sucesso }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     {% endif %}
 

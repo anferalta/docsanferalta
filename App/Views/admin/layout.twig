@@ -2,7 +2,7 @@
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
-    
+
     <title>{% block title %}Admin{% endblock %}</title>
 
     <!-- Bootstrap -->
@@ -39,10 +39,9 @@
 
                     {% else %}
 
-                        {# PERMISSÕES #}
-                        {% if auth.user.isAdmin() or auth.user.hasPermissao(item.permissao) %}
+                        {# PERMISSÕES — ADMIN VÊ TUDO #}
+                        {% if auth.user.isAdmin() or item.permissao is not defined or auth.user.hasPermissao(item.permissao) %}
 
-                            {# ACTIVE #}
                             {% set active = (app.request.path starts with item.url) ? 'active' : '' %}
 
                             <li class="menu-item {{ active }}">
@@ -103,7 +102,7 @@
        ============================================================ #}
     <main class="content-area flex-grow-1">
 
-        {# TOPBAR PREMIUM #}
+        {# TOPBAR CORRIGIDO #}
         <header class="topbar d-flex align-items-center justify-content-between px-4">
 
             <button class="btn-toggle-sidebar me-3">
@@ -114,18 +113,21 @@
                 {% block page_title %}{% endblock %}
             </div>
 
-            <div class="user-info d-flex align-items-center gap-2 dropdown"
-                 data-bs-toggle="dropdown" style="cursor:pointer;">
-                <span class="user-name">{{ auth.user.nome }}</span>
-                <img src="/assets/img/avatar.png" class="avatar rounded-circle">
-            </div>
+            {# DROPDOWN CORRIGIDO #}
+            <div class="dropdown">
+                <a class="user-info d-flex align-items-center gap-2 dropdown-toggle"
+                   href="#" data-bs-toggle="dropdown" aria-expanded="false" style="cursor:pointer;">
+                    <span class="user-name">{{ auth.user.nome }}</span>
+                    <img src="/assets/img/avatar.png" class="avatar rounded-circle">
+                </a>
 
-            <ul class="dropdown-menu dropdown-menu-end">
-                <li><a class="dropdown-item" href="/admin/perfil"><i class="bi bi-person"></i> Perfil</a></li>
-                <li><a class="dropdown-item" href="/admin/definicoes"><i class="bi bi-gear"></i> Definições</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item text-danger" href="/logout"><i class="bi bi-box-arrow-right"></i> Sair</a></li>
-            </ul>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="/admin/perfil"><i class="bi bi-person"></i> Perfil</a></li>
+                    <li><a class="dropdown-item" href="/admin/definicoes"><i class="bi bi-gear"></i> Definições</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="/logout"><i class="bi bi-box-arrow-right"></i> Sair</a></li>
+                </ul>
+            </div>
 
         </header>
 
@@ -134,7 +136,7 @@
             {% include "@admin/flash.twig" %}
             {% block content %}{% endblock %}
         </section>
-        
+
     </main>
 
 </div>
@@ -150,12 +152,9 @@
     const toggleBtn = document.querySelector('.btn-toggle-sidebar');
 
     toggleBtn.addEventListener('click', function () {
-        // Mobile
         if (window.innerWidth <= 992) {
             document.body.classList.toggle('sidebar-open');
-        }
-        // Desktop
-        else {
+        } else {
             document.body.classList.toggle('sidebar-collapsed');
         }
     });
@@ -170,7 +169,8 @@
         const link = item.querySelector('.menu-link');
         const submenu = item.querySelector('.submenu-list');
 
-        if (!submenu) return;
+        if (!submenu)
+            return;
 
         link.addEventListener('click', function (e) {
             e.preventDefault();

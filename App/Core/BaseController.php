@@ -40,6 +40,8 @@ class BaseController
         // ============================
         $this->twig->addFunction(new TwigFunction('flash_peek', fn($key) => Sessao::peek($key)));
         $this->twig->addFunction(new TwigFunction('flash_clear', fn($key) => Sessao::flash($key)));
+        
+        $this->twig->addGlobal('sessao', new Sessao());
 
         // ============================
         // ACL

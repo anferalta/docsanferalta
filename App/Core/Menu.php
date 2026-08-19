@@ -104,7 +104,7 @@ class Menu
             // ============================
             // DOCUMENTOS
             // ============================
-            ['header' => 'DOCUMENTOS'],
+            ['header' => 'GESTÃO DE DOCUMENTOS'],
             [
                 'titulo' => 'Documentos',
                 'icone' => 'bi-folder',

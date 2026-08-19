@@ -1,19 +1,15 @@
-{% set sucesso = flash_peek('sucesso') %}
-{% if sucesso %}
+{% set sucesso = sessao.flash('sucesso') %}
+{% if sucesso is not empty %}
 <div class="alert alert-success alert-dismissible fade show mb-3">
     {{ sucesso }}
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 </div>
 {% endif %}
 
-{% set erro = flash_peek('erro') %}
-{% if erro %}
+{% set erro = sessao.flash('erro') %}
+{% if erro is not empty %}
 <div class="alert alert-danger alert-dismissible fade show mb-3">
     {{ erro }}
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 </div>
 {% endif %}
-
-{# limpar depois de mostrar #}
-{% do flash_clear('sucesso') %}
-{% do flash_clear('erro') %}

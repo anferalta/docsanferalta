@@ -3528,3 +3528,223 @@ Array
     [estado] => em_tramitacao
     [criado_em] => 2026-08-12 13:03:11
 )
+Array
+(
+    [documento_id] => 465
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => Ver documentos.
+    [estado] => novo
+    [criado_em] => 2026-08-18 12:15:42
+)
+Array
+(
+    [documento_id] => 465
+    [area_id] => 4
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => Verificar documentos.
+    [criado_em] => 2026-08-18 12:16:43
+)
+Array
+(
+    [documento_id] => 465
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 4
+    [comentario] => Verificar pagamento.
+    [estado] => em_tramitacao
+    [criado_em] => 2026-08-18 12:21:27
+)
+Array
+(
+    [documento_id] => 465
+    [area_id] => 3
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => Pagamento verificado. Ok
+    [criado_em] => 2026-08-18 12:22:17
+)
+Array
+(
+    [documento_id] => 465
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 3
+    [comentario] => Encaminhar para decisão.
+    [estado] => em_tramitacao
+    [criado_em] => 2026-08-18 12:24:09
+)
+Array
+(
+    [documento_id] => 465
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 3
+    [comentario] => Aguarda decisão.
+    [estado] => analise
+    [criado_em] => 2026-08-18 12:24:41
+)
+Array
+(
+    [documento_id] => 465
+    [area_id] => 2
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => Aguarda decisão.
+    [criado_em] => 2026-08-18 12:25:58
+)
+Array
+(
+    [documento_id] => 465
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 2
+    [comentario] => Processo em conformidade. Informar utente.
+    [estado] => em_tramitacao
+    [criado_em] => 2026-08-18 12:27:23
+)
+Array
+(
+    [documento_id] => 465
+    [area_id] => 1
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => Informar utente.
+    [criado_em] => 2026-08-18 12:28:01
+)
+Array
+(
+    [documento_id] => 465
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 1
+    [comentario] => Informar utente.
+    [estado] => concluido
+    [criado_em] => 2026-08-18 12:28:44
+)
+Array
+(
+    [documento_id] => 440
+    [area_id] => 1
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => Documentos atualizados.
+    [criado_em] => 2026-08-18 12:38:23
+)
+Array
+(
+    [documento_id] => 440
+    [area_id] => 2
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => Despacho.
+    [criado_em] => 2026-08-18 12:38:48
+)
+Array
+(
+    [documento_id] => 440
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 2
+    [comentario] => Não reúne requisitos.
+    [estado] => devolvido
+    [criado_em] => 2026-08-18 12:39:36
+)
+Array
+(
+    [documento_id] => 466
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => Não reúne requisitos.
+    [estado] => novo
+    [criado_em] => 2026-08-19 11:18:09
+)
+Array
+(
+    [documento_id] => 466
+    [area_id] => 1
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => Informar utente.
+    [criado_em] => 2026-08-19 11:18:47
+)
+Array
+(
+    [documento_id] => 466
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 1
+    [comentario] => Não reúne requisitos
+    [estado] => devolvido
+    [criado_em] => 2026-08-19 11:19:34
+)
+Array
+(
+    [documento_id] => 467
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => Faltam documentos.
+    [estado] => novo
+    [criado_em] => 2026-08-19 11:21:43
+)
+Array
+(
+    [documento_id] => 467
+    [area_id] => 1
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => Informar utente.
+    [criado_em] => 2026-08-19 11:22:24
+)
+Array
+(
+    [documento_id] => 467
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 1
+    [comentario] => Faltam documentos
+    [estado] => pendente
+    [criado_em] => 2026-08-19 11:22:53
+)
+Array
+(
+    [documento_id] => 468
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => Cumprir prazos.
+    [estado] => novo
+    [criado_em] => 2026-08-19 11:26:37
+)
+Array
+(
+    [documento_id] => 468
+    [area_id] => 4
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => Verificar documentos.
+    [criado_em] => 2026-08-19 11:27:05
+)
+Array
+(
+    [documento_id] => 468
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 4
+    [comentario] => Verificação de documentos.
+    [estado] => analise
+    [criado_em] => 2026-08-19 11:27:44
+)

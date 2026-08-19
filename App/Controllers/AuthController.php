@@ -19,8 +19,9 @@ class AuthController extends BaseController
     {
         $csrf = CSRF::token();
 
-        $erro = Sessao::flash('erro');
-        $sucesso = Sessao::flash('sucesso');
+        // LER SEM APAGAR → porque o layout já consome o flash
+        $erro = Sessao::peek('erro');
+        $sucesso = Sessao::peek('sucesso');
 
         return $this->render('site/login/index.twig', [
             'csrf'    => $csrf,
@@ -131,7 +132,7 @@ class AuthController extends BaseController
 
             EmailService::enviar(
                 $email,
-                'Conta criada — aguarda aprovação',
+                'Conta criado — aguarda aprovação',
                 'utilizador_criado.twig',
                 [
                     'nome' => $nome,

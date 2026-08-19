@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\BaseController;
 use App\Core\Auth;
+use App\Core\Sessao;
 use App\Models\Documento;
 use App\Models\DocumentoTipo;
 use App\Models\DocumentoFicheiro;
@@ -74,9 +75,7 @@ class DocumentosUserController extends BaseController
         $tipos = DocumentoTipo::all();
 
         return $this->render('@site/documentos/criar.twig', [
-            'tipos' => $tipos,
-            'erro' => $_GET['erro'] ?? null,
-            'sucesso' => $_GET['sucesso'] ?? null
+            'tipos' => $tipos
         ]);
     }
 
@@ -101,15 +100,18 @@ class DocumentosUserController extends BaseController
         $tipo_id = intval($_POST['tipo_id'] ?? 0);
 
         if ($titulo === '') {
-            return $this->redirect('/documentos/criar?erro=titulo');
+            Sessao::flash('erro', 'O título é obrigatório.');
+            return $this->redirect('/documentos/criar');
         }
 
         if ($tipo_id <= 0) {
-            return $this->redirect('/documentos/criar?erro=tipo');
+            Sessao::flash('erro', 'Selecione o tipo de documento.');
+            return $this->redirect('/documentos/criar');
         }
 
         if (empty($_FILES['ficheiros']['name'][0])) {
-            return $this->redirect('/documentos/criar?erro=ficheiros');
+            Sessao::flash('erro', 'Selecione pelo menos um ficheiro.');
+            return $this->redirect('/documentos/criar');
         }
 
         // ============================================================
@@ -125,12 +127,14 @@ class DocumentosUserController extends BaseController
             // 2.1 Validar extensão
             $ext = strtolower(pathinfo($nomeOriginal, PATHINFO_EXTENSION));
             if (!in_array($ext, $permitidos)) {
-                return $this->redirect('/documentos/criar?erro=extensao');
+                Sessao::flash('erro', 'Extensão inválida: ' . $ext);
+                return $this->redirect('/documentos/criar');
             }
 
             // 2.2 Validar tamanho
             if ($tamanho > 20 * 1024 * 1024) {
-                return $this->redirect('/documentos/criar?erro=tamanho');
+                Sessao::flash('erro', 'Um ficheiro excede o limite de 20 MB.');
+                return $this->redirect('/documentos/criar');
             }
 
             // 2.3 Verificar duplicado
@@ -141,7 +145,8 @@ class DocumentosUserController extends BaseController
                 ->first();
 
             if ($duplicado) {
-                return $this->redirect('/documentos/criar?erro=ficheiro_duplicado');
+                Sessao::flash('erro', 'Já existe um ficheiro com esse nome.');
+                return $this->redirect('/documentos/criar');
             }
         }
 
@@ -190,7 +195,11 @@ class DocumentosUserController extends BaseController
             ]);
         }
 
-        return $this->redirect('/documentos/criar?sucesso=1');
+        // ============================================================
+        // 6. Sucesso
+        // ============================================================
+        Sessao::flash('sucesso', 'Documentos carregados com sucesso.');
+        return $this->redirect('/documentos/criar');
     }
 
     /**

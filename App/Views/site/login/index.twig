@@ -9,13 +9,7 @@
 
             <div class="card shadow-sm border-0 p-4">
                 <h1 class="h2 mb-4 text-center">Entrar</h1>
-
-                {% if errors is defined and errors %}
-                    <div class="alert alert-danger" role="alert">
-                        Não foi possível iniciar sessão. Verifique os dados introduzidos.
-                    </div>
-                {% endif %}
-
+                
                 <form method="POST" action="/login">
                     {{ csrf_field() }}
 
@@ -25,18 +19,12 @@
                             id="email"
                             type="email"
                             name="email"
-                            class="form-control{% if errors.email is defined %} is-invalid{% endif %}"
+                            class="form-control"
                             value="{{ email ?? '' }}"
                             autocomplete="email"
                             required
                             autofocus
                         >
-
-                        {% if errors.email is defined %}
-                            <div class="invalid-feedback">
-                                {{ errors.email }}
-                            </div>
-                        {% endif %}
                     </div>
 
                     <div class="mb-3">
@@ -45,16 +33,10 @@
                             id="password"
                             type="password"
                             name="password"
-                            class="form-control{% if errors.password is defined %} is-invalid{% endif %}"
+                            class="form-control"
                             autocomplete="current-password"
                             required
                         >
-
-                        {% if errors.password is defined %}
-                            <div class="invalid-feedback">
-                                {{ errors.password }}
-                            </div>
-                        {% endif %}
                     </div>
 
                     <div class="d-flex justify-content-end mb-3">

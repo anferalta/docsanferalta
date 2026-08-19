@@ -155,8 +155,8 @@ $router->get(
         ->name('admin.documentos.arquivado.recuperar');
 
     // ELIMINAR
-    $router->get('/documentos/eliminar/{id:\d+}', 'Admin\DocumentosAdminController@eliminar')
-        ->name('admin.documentos.apagar');
+    $router->post('/documentos/eliminar/{id:\d+}', 'Admin\DocumentosAdminController@eliminar')
+    ->name('admin.documentos.apagar');
 
     // DOWNLOAD MÚLTIPLO
     $router->post('/documentos/download-multiple', 'Admin\DocumentosAdminController@downloadMultiple')

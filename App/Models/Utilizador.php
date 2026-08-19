@@ -13,6 +13,7 @@ class Utilizador extends Model
     /* ============================================================
      *  PROPRIEDADES (EXATAMENTE COMO NA TABELA)
      * ============================================================ */
+    public $perfil = null;
     public ?int $id = null;
     public ?string $nome = null;
     public ?string $email = null;

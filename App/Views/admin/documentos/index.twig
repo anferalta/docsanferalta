@@ -1,7 +1,9 @@
 {% extends "@admin/layout.twig" %}
 
+{% block title %}Gestão de Documentos · Painel Admin{% endblock %}
+
 {% block page_title %}
-    <i class="fa fa-folder-open"></i> Gestão de Documentos
+    <i class="fa fa-folder-open me-2"></i> Gestão de Documentos
 {% endblock %}
 
 {% block content %}
@@ -9,14 +11,17 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h4 class="mb-0">Documentos</h4>
 
-        <a href="/admin/documentos/criar" class="btn btn-primary">
-            <i class="fa fa-upload"></i> Novo Documento
-        </a>
+        <div class="d-flex gap-2">
+            <a href="/admin/documentos/exportar-csv?{{ app.request.queryString }}" class="btn btn-outline-secondary">
+                <i class="fa fa-file-csv"></i> Exportar CSV
+            </a>
+
+            <a href="/admin/documentos/criar" class="btn btn-primary">
+                <i class="fa fa-upload"></i> Novo Documento
+            </a>
+        </div>
     </div>
 
-    {# ============================
-       FILTROS
-    ============================ #}
     <div class="card mb-4 shadow-sm">
         <div class="card-body">
 
@@ -35,14 +40,14 @@
                     </select>
                 </div>
 
-                {% if acl.has('admin.documentos.ver_todos') %}
+                {% if acl is defined and acl.has('admin.documentos.ver_todos') %}
                     <div class="col-md-3">
                         <label class="form-label fw-semibold">Criado por</label>
                         <select name="utilizador" class="form-select">
                             <option value="">-- Todos --</option>
                             {% for u in utilizadores %}
                                 <option value="{{ u.id }}"
-                                        {{ app.request.get('utilizador') == u.id ? 'selected' : '' }}>
+                                        {{ app.request.get('utilizador') == u.id ? 'selected' }}>
                                     {{ u.nome }}
                                 </option>
                             {% endfor %}
@@ -69,49 +74,18 @@
                            value="{{ app.request.get('q') }}">
                 </div>
 
-                {# ============================
-                   NOVOS FILTROS — ESTADO + ÁREA
-                ============================ #}
-
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Estado</label>
                     <select name="estado_atual" class="form-select">
                         <option value="">-- Todos --</option>
 
-                        <option value="novo"
-                                {{ app.request.get('estado_atual') == 'novo' ? 'selected' : '' }}>
-                            Novo
-                        </option>
-
-                        <option value="pendente"
-                                {{ app.request.get('estado_atual') == 'pendente' ? 'selected' : '' }}>
-                            Pendente
-                        </option>
-
-                        <option value="em_tramitacao"
-                                {{ app.request.get('estado_atual') == 'em_tramitacao' ? 'selected' : '' }}>
-                            Em Tramitação
-                        </option>
-
-                        <option value="analise"
-                                {{ app.request.get('estado_atual') == 'analise' ? 'selected' : '' }}>
-                            Em Análise
-                        </option>
-
-                        <option value="concluido"
-                                {{ app.request.get('estado_atual') == 'concluido' ? 'selected' : '' }}>
-                            Concluído
-                        </option>
-
-                        <option value="devolvido"
-                                {{ app.request.get('estado_atual') == 'devolvido' ? 'selected' : '' }}>
-                            Devolvido
-                        </option>
-
-                        <option value="arquivado"
-                                {{ app.request.get('estado_atual') == 'arquivado' ? 'selected' : '' }}>
-                            Arquivado
-                        </option>
+                        <option value="novo" {{ app.request.get('estado_atual') == 'novo' ? 'selected' }}>Novo</option>
+                        <option value="pendente" {{ app.request.get('estado_atual') == 'pendente' ? 'selected' }}>Pendente</option>
+                        <option value="em_tramitacao" {{ app.request.get('estado_atual') == 'em_tramitacao' ? 'selected' }}>Em Tramitação</option>
+                        <option value="analise" {{ app.request.get('estado_atual') == 'analise' ? 'selected' }}>Em Análise</option>
+                        <option value="concluido" {{ app.request.get('estado_atual') == 'concluido' ? 'selected' }}>Concluído</option>
+                        <option value="devolvido" {{ app.request.get('estado_atual') == 'devolvido' ? 'selected' }}>Devolvido</option>
+                        <option value="arquivado" {{ app.request.get('estado_atual') == 'arquivado' ? 'selected' }}>Arquivado</option>
                     </select>
                 </div>
 
@@ -121,7 +95,7 @@
                         <option value="">-- Todas --</option>
                         {% for area in areas %}
                             <option value="{{ area.id }}"
-                                    {{ app.request.get('area_atual_id') == area.id ? 'selected' : '' }}>
+                                    {{ app.request.get('area_atual_id') == area.id ? 'selected' }}>
                                 {{ area.nome }}
                             </option>
                         {% endfor %}
@@ -138,24 +112,43 @@
 
         </div>
     </div>
+
+    {% macro sortLink(label, field) %}
+        {% set qs = app.request.query.all ?? {} %}
+        {% set qs = qs|merge({
+        'sort': field,
+        'dir': app.request.get('sort') == field
+            ? (app.request.get('dir') == 'asc' ? 'desc' : 'asc')
+            : 'asc'
+    }) %}
+        <a href="?{{ qs|url_encode }}" class="text-decoration-none text-dark">
+            {{ label }}
+            {% if app.request.get('sort') == field %}
+                <i class="fa fa-sort-{{ app.request.get('dir') == 'asc' ? 'up' : 'down' }}"></i>
+            {% else %}
+                <i class="fa fa-sort text-muted"></i>
+            {% endif %}
+        </a>
+    {% endmacro %}
     {# ============================
-           LISTA DE DOCUMENTOS
-        ============================ #}
+       LISTA DE DOCUMENTOS
+    ============================ #}
+
     <div class="card shadow-sm">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0" id="tabelaDocs">
 
                 <thead class="table-light">
                     <tr>
-                        <th style="width: 25%">Título</th>
+                        <th style="width: 25%">{{ _self.sortLink('Título', 'titulo') }}</th>
                         <th>Anexos</th>
-                        <th>Tipo</th>
-                        <th>Estado</th>
-                        <th>Área Atual</th>
-                        <th>Criado em</th>
+                        <th>{{ _self.sortLink('Tipo', 'tipo') }}</th>
+                        <th>{{ _self.sortLink('Estado', 'estado') }}</th>
+                        <th>{{ _self.sortLink('Área Atual', 'area') }}</th>
+                        <th>{{ _self.sortLink('Criado em', 'data') }}</th>
 
-                        {% if auth.user.perfil != 'utilizador' %}
-                            <th>Criado por</th>
+                        {% if auth is defined and auth.user.perfil != 'utilizador' %}
+                            <th>{{ _self.sortLink('Criado por', 'criador') }}</th>
                             {% endif %}
 
                         <th class="text-end">Ações</th>
@@ -163,38 +156,62 @@
                 </thead>
 
                 <tbody>
+
                     {% if documentos is empty %}
                         <tr>
                             <td colspan="8" class="text-center py-4 text-muted">
-                                <i class="fa fa-info-circle me-2"></i>
-                                Nenhum documento encontrado.
+                                <i class="fa fa-info-circle me-2"></i> Nenhum documento encontrado.
                             </td>
                         </tr>
                     {% else %}
+
                         {% for doc in documentos %}
                             {% set anexos = doc.anexos() %}
 
                             <tr>
 
                                 {# TÍTULO #}
-                                <td class="fw-semibold">
-                                    {{ doc.titulo }}
-                                </td>
+                                <td class="fw-semibold">{{ doc.titulo }}</td>
 
-                                {# ANEXOS #}
+                                {# ANEXOS + PREVIEW INLINE #}
                                 <td>
                                     <span class="badge bg-primary">{{ anexos|length }} ficheiro(s)</span>
 
                                     {% if anexos %}
                                         <ul class="mt-2" style="padding-left: 1rem;">
                                             {% for a in anexos %}
-                                                <li>
-                                                    <i class="fa fa-file me-1"></i>
+                                                {% set nome = a.nome()|split('/')|last %}
+                                                {% set ext = nome|split('.')|last|lower %}
+
+                                                <li class="mb-1">
+
+                                                    {% if ext == 'pdf' %}
+                                                        <i class="fa fa-file-pdf text-danger fa-lg me-2"></i>
+                                                    {% elseif ext in ['jpg','jpeg','png','gif','webp'] %}
+                                                        <i class="fa fa-file-image text-primary fa-lg me-2"></i>
+                                                    {% elseif ext in ['doc','docx'] %}
+                                                        <i class="fa fa-file-word text-info fa-lg me-2"></i>
+                                                    {% elseif ext in ['xls','xlsx','csv'] %}
+                                                        <i class="fa fa-file-excel text-success fa-lg me-2"></i>
+                                                    {% elseif ext in ['zip','rar'] %}
+                                                        <i class="fa fa-file-archive text-warning fa-lg me-2"></i>
+                                                    {% elseif ext == 'txt' %}
+                                                        <i class="fa fa-file-alt text-secondary fa-lg me-2"></i>
+                                                    {% else %}
+                                                        <i class="fa fa-file fa-lg me-2"></i>
+                                                    {% endif %}
+
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-outline-primary me-1 btn-preview-inline"
+                                                            data-anexo-id="{{ a.id }}"
+                                                            data-nome="{{ nome }}">
+                                                        <i class="fa fa-eye"></i> Preview
+                                                    </button>
 
                                                     <a href="/admin/documentos/anexo/abrir/{{ a.id }}" 
-                                                       class="btn btn-sm btn-outline-primary" 
+                                                       class="btn btn-sm btn-outline-primary me-1" 
                                                        target="_blank">
-                                                        <i class="fa fa-eye"></i> Ver
+                                                        <i class="fa fa-external-link-alt"></i> Ver
                                                     </a>
 
                                                     <a href="/admin/documentos/anexo/download/{{ a.id }}" 
@@ -202,11 +219,12 @@
                                                         <i class="fa fa-download"></i> Download
                                                     </a>
 
-                                                    <span class="ms-2">{{ a.nome() }}</span>
+                                                    <span class="ms-2">{{ nome }}</span>
 
                                                     <small class="text-muted">
                                                         ({{ (a.tamanho / 1024)|number_format(1) }} KB)
                                                     </small>
+
                                                 </li>
                                             {% endfor %}
                                         </ul>
@@ -230,7 +248,7 @@
                                 <td>{{ doc.criado_em_formatado() }}</td>
 
                                 {# CRIADO POR #}
-                                {% if auth.user.perfil != 'utilizador' %}
+                                {% if auth is defined and auth.user.perfil != 'utilizador' %}
                                     <td>
                                         <img src="{{ doc.criador_avatar() }}"
                                              width="32" height="32"
@@ -243,71 +261,218 @@
                                 <td class="text-end">
                                     <div class="btn-group">
 
-                                        {% if isGranted('admin.documentos.apagar') %}
-                                            <form action="/admin/documentos/eliminar/{{ doc.id }}"
-                                                  method="post"
-                                                  class="d-inline"
-                                                  onsubmit="return confirm('Eliminar documento?')">
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-info me-1 btn-ver-detalhes"
+                                                data-doc-id="{{ doc.id }}"
+                                                data-titulo="{{ doc.titulo }}"
+                                                data-tipo="{{ doc.tipo_nome }}"
+                                                data-estado="{{ doc.estado_atual|replace({'_':' '})|title }}"
+                                                data-area="{{ doc.area_nome ?? '-' }}"
+                                                data-criado="{{ doc.criado_em_formatado() }}"
+                                                data-criador="{% if auth is defined and auth.user.perfil != 'utilizador' %}{{ doc.criador_nome() }}{% else %}-{% endif %}">
+                                            <i class="fa fa-info-circle"></i> Detalhes
+                                        </button>
 
-                                                {{ csrf_field() }}
+                                        {% set podeApagar = false %}
 
-                                                <button class="btn btn-sm btn-danger">
-                                                    <i class="fa fa-trash"></i> Apagar
-                                                </button>
-                                            </form>
-                                        {% endif %}
+{# 1. Admin pode apagar tudo #}
+{% if auth.user and auth.user.isAdmin() %}
+    {% set podeApagar = true %}
+{% endif %}
+
+{# 2. ACL permite apagar #}
+{% if isGranted is defined and isGranted('admin.documentos.apagar') %}
+    {% set podeApagar = true %}
+{% endif %}
+
+{# 3. Dono do documento pode apagar #}
+{% if auth.user and auth.user.id == doc.criado_por %}
+    {% set podeApagar = true %}
+{% endif %}
+
+{% if podeApagar %}
+    <form action="/admin/documentos/eliminar/{{ doc.id }}"
+          method="post"
+          class="d-inline"
+          onsubmit="return confirm('Eliminar documento?')">
+
+        {{ csrf_field() }}
+
+        <button class="btn btn-sm btn-danger">
+            <i class="fa fa-trash"></i> Apagar
+        </button>
+    </form>
+{% endif %}
+
 
                                     </div>
                                 </td>
 
                             </tr>
+
                         {% endfor %}
+
                     {% endif %}
+
                 </tbody>
 
             </table>
-
         </div>
 
         <div class="p-3">
             {{ paginacao|raw }}
         </div>
+
+    </div>
+    {# ============================
+       MODAL PREVIEW INLINE
+    ============================ #}
+
+    <div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fa fa-eye me-2"></i> Preview do Anexo
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body" style="min-height: 400px;">
+                    <div id="previewContainer"
+                         class="w-100 h-100 d-flex justify-content-center align-items-center">
+                        <span class="text-muted">A carregar preview...</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    {# ============================
+       MODAL DETALHES DO DOCUMENTO
+    ============================ #}
+
+    <div class="modal fade" id="detalhesModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fa fa-file-alt me-2"></i> Detalhes do Documento
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <dl class="row mb-0">
+
+                        <dt class="col-sm-3">Título</dt>
+                        <dd class="col-sm-9" id="detDocTitulo"></dd>
+
+                        <dt class="col-sm-3">Tipo</dt>
+                        <dd class="col-sm-9" id="detDocTipo"></dd>
+
+                        <dt class="col-sm-3">Estado</dt>
+                        <dd class="col-sm-9" id="detDocEstado"></dd>
+
+                        <dt class="col-sm-3">Área Atual</dt>
+                        <dd class="col-sm-9" id="detDocArea"></dd>
+
+                        <dt class="col-sm-3">Criado em</dt>
+                        <dd class="col-sm-9" id="detDocCriado"></dd>
+
+                        <dt class="col-sm-3">Criado por</dt>
+                        <dd class="col-sm-9" id="detDocCriador"></dd>
+
+                    </dl>
+
+                </div>
+
+            </div>
+        </div>
     </div>
 
 {% endblock %}
-
 {% block scripts %}
     <script src="/assets/js/documentos/index.js?v={{ random() }}"></script>
 
     <script>
-                                                      document.addEventListener("DOMContentLoaded", () => {
-                                                          // Remove listeners antigos que bloqueavam a paginação
-                                                          document.querySelectorAll(".pagination a.page-link").forEach(a => {
-                                                              const clone = a.cloneNode(true);
-                                                              a.parentNode.replaceChild(clone, a);
+                                                          document.addEventListener("DOMContentLoaded", () => {
+
+                                                              // Remove listeners antigos que bloqueavam a paginação
+                                                              document.querySelectorAll(".pagination a.page-link").forEach(a => {
+                                                                  const clone = a.cloneNode(true);
+                                                                  a.parentNode.replaceChild(clone, a);
+                                                              });
+
+                                                              // ============================
+                                                              // PREVIEW INLINE
+                                                              // ============================
+                                                              const previewModalEl = document.getElementById('previewModal');
+                                                              const previewModal = previewModalEl ? new bootstrap.Modal(previewModalEl) : null;
+                                                              const previewContainer = document.getElementById('previewContainer');
+
+                                                              document.querySelectorAll('.btn-preview-inline').forEach(btn => {
+                                                                  btn.addEventListener('click', () => {
+                                                                      if (!previewModal || !previewContainer)
+                                                                          return;
+
+                                                                      const anexoId = btn.getAttribute('data-anexo-id');
+                                                                      const nome = btn.getAttribute('data-nome') || '';
+                                                                      const ext = nome.split('.').pop().toLowerCase();
+                                                                      const url = '/admin/documentos/anexo/abrir/' + anexoId;
+
+                                                                      previewContainer.innerHTML = '<span class="text-muted">A carregar preview...</span>';
+
+                                                                      let html = '';
+
+                                                                      if (ext === 'pdf') {
+                                                                          html = '<iframe src="' + url + '" class="w-100" style="height: 600px; border: none;"></iframe>';
+                                                                      } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+                                                                          html = '<img src="' + url + '" class="img-fluid" alt="Preview">';
+                                                                      } else if (ext === 'txt') {
+                                                                          html = '<iframe src="' + url + '" class="w-100" style="height: 400px; border: none;"></iframe>';
+                                                                      } else {
+                                                                          html = '<div class="text-center text-muted">Preview não disponível para este tipo de ficheiro.</div>';
+                                                                      }
+
+                                                                      previewContainer.innerHTML = html;
+                                                                      previewModal.show();
+                                                                  });
+                                                              });
+
+                                                              // ============================
+                                                              // MODAL DETALHES
+                                                              // ============================
+                                                              const detalhesModalEl = document.getElementById('detalhesModal');
+                                                              const detalhesModal = detalhesModalEl ? new bootstrap.Modal(detalhesModalEl) : null;
+
+                                                              document.querySelectorAll('.btn-ver-detalhes').forEach(btn => {
+                                                                  btn.addEventListener('click', () => {
+                                                                      if (!detalhesModal)
+                                                                          return;
+
+                                                                      document.getElementById('detDocTitulo').textContent = btn.getAttribute('data-titulo') || '';
+                                                                      document.getElementById('detDocTipo').textContent = btn.getAttribute('data-tipo') || '';
+                                                                      document.getElementById('detDocEstado').textContent = btn.getAttribute('data-estado') || '';
+                                                                      document.getElementById('detDocArea').textContent = btn.getAttribute('data-area') || '';
+                                                                      document.getElementById('detDocCriado').textContent = btn.getAttribute('data-criado') || '';
+                                                                      document.getElementById('detDocCriador').textContent = btn.getAttribute('data-criador') || '';
+
+                                                                      detalhesModal.show();
+                                                                  });
+                                                              });
+
                                                           });
-
-                                                          // Efeito dragover do dropzone (não altera o upload)
-                                                          const dz = document.getElementById("dropZone");
-                                                          if (dz) {
-                                                              dz.addEventListener("dragover", e => {
-                                                                  e.preventDefault();
-                                                                  dz.classList.add("dragover");
-                                                              });
-
-                                                              dz.addEventListener("dragleave", () => {
-                                                                  dz.classList.remove("dragover");
-                                                              });
-
-                                                              dz.addEventListener("drop", () => {
-                                                                  dz.classList.remove("dragover");
-                                                              });
-                                                          }
-                                                      });
     </script>
 
     <style>
-
         /* ============================
            DROPZONE PREMIUM
         ============================ */
@@ -378,7 +543,6 @@
             opacity: 1;
         }
 
-
         /* ============================
            BADGES DE ESTADO
         ============================ */
@@ -390,31 +554,41 @@
             text-transform: capitalize;
         }
 
+        .badge-novo {
+            background: #d0e7ff;
+            color: #004a99;
+        }
+
         .badge-pendente {
-            background: #ffc107 !important; /* AMARELO */
+            background: #ffc107 !important;
             color: #000 !important;
         }
+
         .badge-em_tramitacao {
             background: #fd7e14;
             color: #fff !important;
         }
+
+        .badge-analise,
         .badge-em_analise {
             background: #17a2b8;
             color: #fff !important;
         }
-        .badge-concluido      {
+
+        .badge-concluido {
             background: #c8f7c5;
             color: #1b6e1b;
         }
-        .badge-devolvido      {
+
+        .badge-devolvido {
             background: #ffd6d6;
             color: #a10000;
         }
-        .badge-arquivado      {
+
+        .badge-arquivado {
             background: #d3d3d3;
             color: #333;
         }
-
 
         /* ============================
            TABELA
@@ -431,7 +605,6 @@
             border: 2px solid #fff;
             box-shadow: 0 2px 4px rgba(0,0,0,0.15);
         }
-
     </style>
 
 {% endblock %}
