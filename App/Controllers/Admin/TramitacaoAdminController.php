@@ -469,7 +469,14 @@ class TramitacaoAdminController extends BaseController
         LEFT JOIN documento_tipos t ON t.tipo_id = d.tipo_id
         LEFT JOIN documento_areas a ON a.id = d.area_atual_id
         LEFT JOIN utilizadores u ON u.id = d.criado_por
-        WHERE d.estado_atual IN ('novo', 'pendente', 'analise', 'em_analise', 'em_tramitacao', 'concluido')
+        WHERE LOWER(TRIM(d.estado_atual)) IN (
+    'novo',
+    'pendente',
+    'analise',
+    'em_analise',
+    'em_tramitacao',
+    'concluido'
+)
         ";
 
         $params = [];
