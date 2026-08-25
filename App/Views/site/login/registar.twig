@@ -10,7 +10,7 @@
             <h2 class="mb-4 text-center">Criar Conta</h2>
 
             <form method="POST" action="/registar">
-                {{ csrf_field() }}
+                <input type="hidden" name="_csrf" value="{{ _csrf }}">
 
                 <div class="mb-3">
                     <label class="form-label">Nome</label>

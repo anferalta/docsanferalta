@@ -214,20 +214,24 @@ class Menu
 
         foreach ($menu as $item) {
 
+            // Headers aparecem sempre
             if (isset($item['header'])) {
                 $resultado[] = $item;
                 continue;
             }
 
+            // Admin vê tudo
             if ($user && $user->isAdmin()) {
                 $resultado[] = $item;
                 continue;
             }
 
+            // Se não tiver permissão definida → não mostrar
             if (!isset($item['permissao']))
                 continue;
 
-            if (!\App\Core\Permission::tem($item['permissao']))
+            // 🔥 CORREÇÃO CRÍTICA — usar permissões do perfil
+            if (!$user->hasPermissao($item['permissao']))
                 continue;
 
             $resultado[] = $item;

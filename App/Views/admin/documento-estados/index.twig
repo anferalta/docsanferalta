@@ -20,7 +20,7 @@
                 <tr>
                     <th style="width: 80px;">ID</th>
                     <th>Nome</th>
-                    <th class="text-end" style="width: 180px;">Ações</th>
+                    <th class="text-end" style="width: 200px;">Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -39,13 +39,23 @@
 
                         <td class="text-end">
 
-                            <a href="/admin/documento-estados/editar/{{ estado.id }}" class="btn btn-sm btn-warning">
+                            <a href="/admin/documento-estados/editar/{{ estado.id }}"
+                               class="btn btn-sm btn-warning">
                                 <i class="fa fa-pencil"></i> Editar
                             </a>
 
-                            <a href="/admin/documento-estados/apagar/{{ estado.id }}" class="btn btn-sm btn-danger">
-                                <i class="bi bi-trash"></i> Apagar
-                            </a>
+                            <form method="POST"
+                                  action="/admin/documento-estados/apagar/{{ estado.id }}"
+                                  class="d-inline">
+
+                                <input type="hidden" name="_csrf" value="{{ _csrf }}">
+
+                                <button type="submit"
+                                        class="btn btn-sm btn-danger"
+                                        onclick="return confirm('Eliminar este estado?')">
+                                    <i class="bi bi-trash"></i> Apagar
+                                </button>
+                            </form>
 
                         </td>
                     </tr>

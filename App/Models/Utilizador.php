@@ -10,9 +10,6 @@ class Utilizador extends Model
     protected string $table = 'utilizadores';
     protected string $primaryKey = 'id';
 
-    /* ============================================================
-     *  PROPRIEDADES (EXATAMENTE COMO NA TABELA)
-     * ============================================================ */
     public $perfil = null;
     public ?int $id = null;
     public ?string $nome = null;
@@ -26,9 +23,6 @@ class Utilizador extends Model
     public ?string $aprovado_em = null;
     public ?string $criado_em = null;
 
-    /* ============================================================
-     *  CAMPOS PERMITIDOS
-     * ============================================================ */
     protected array $permitidos = [
         'nome',
         'email',
@@ -41,9 +35,6 @@ class Utilizador extends Model
         'aprovado_em',
     ];
 
-    /* ============================================================
-     *  CRIAÇÃO
-     * ============================================================ */
     public static function create(array $dados): int
     {
         if (!empty($dados['password'])) {
@@ -53,15 +44,11 @@ class Utilizador extends Model
         return parent::create($dados);
     }
 
-    /* ============================================================
-     *  FINDERS
-     * ============================================================ */
     public static function findByEmail(string $email): ?Utilizador
     {
-        // Normalização completa do email
         $email = strtolower(trim($email));
-        $email = preg_replace('/\s+/u', '', $email);   // remove espaços invisíveis
-        $email = str_replace("\u{FEFF}", "", $email);  // remove BOM UTF‑8
+        $email = preg_replace('/\s+/u', '', $email);
+        $email = str_replace("\u{FEFF}", "", $email);
 
         $db = Conexao::getInstancia();
 
@@ -92,9 +79,6 @@ class Utilizador extends Model
         return $u;
     }
 
-    /* ============================================================
-     *  UPDATE
-     * ============================================================ */
     public function updateUser(int $id, array $dados): bool
     {
         $dados = array_intersect_key($dados, array_flip($this->permitidos));
@@ -108,17 +92,11 @@ class Utilizador extends Model
         return $this->update($dados, "id = :id", ['id' => $id]);
     }
 
-    /* ============================================================
-     *  DELETE
-     * ============================================================ */
     public function deleteUser(int $id): bool
     {
         return $this->delete($id);
     }
 
-    /* ============================================================
-     *  PERFIL
-     * ============================================================ */
     public function perfil(): ?Perfil
     {
         if (!$this->perfil_id) {
@@ -134,9 +112,6 @@ class Utilizador extends Model
         return $cache[$this->perfil_id];
     }
 
-    /* ============================================================
-     *  PERMISSÕES
-     * ============================================================ */
     public function permissoes(): array
     {
         if (!$this->perfil_id) {
@@ -154,9 +129,6 @@ class Utilizador extends Model
         return array_column($stmt->fetchAll(\PDO::FETCH_ASSOC), 'codigo');
     }
 
-    /* ============================================================
-     *  ADMIN
-     * ============================================================ */
     public function isAdmin(): bool
     {
         return $this->perfil_id == 1;
@@ -171,9 +143,6 @@ class Utilizador extends Model
         return in_array($permissao, $this->permissoes());
     }
 
-    /* ============================================================
-     *  ESTADO
-     * ============================================================ */
     public function estadoBadge(): string
     {
         return $this->ativo == 1
@@ -181,9 +150,6 @@ class Utilizador extends Model
             : '<span class="badge bg-secondary">Inativo</span>';
     }
 
-    /* ============================================================
-     *  LOGIN
-     * ============================================================ */
     public function registarLogin(): void
     {
         $sql = "UPDATE utilizadores 

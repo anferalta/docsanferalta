@@ -14,8 +14,12 @@
         <div class="alert alert-danger">{{ flash.erro }}</div>
     {% endif %}
 
+    {% if flash.sucesso %}
+        <div class="alert alert-success">{{ flash.sucesso }}</div>
+    {% endif %}
+
     <form method="post" action="/admin/documento-estados/criar">
-        {{ csrf_field() }}
+        <input type="hidden" name="_csrf" value="{{ _csrf }}">
 
         <div class="mb-3">
             <label class="form-label">Nome do Estado</label>
@@ -34,4 +38,3 @@
 </div>
 
 {% endblock %}
-

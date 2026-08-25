@@ -25,6 +25,11 @@ class BaseController
         $loader->addPath(__DIR__ . '/../Views/admin', 'admin');
         $loader->addPath(__DIR__ . '/../Views', '__main__');
 
+        $this->twig = new Environment($loader, [
+            'cache' => false,
+            'debug' => true
+        ]);
+
         // ============================
         // TWIG ENGINE
         // ============================
@@ -36,11 +41,10 @@ class BaseController
         $this->twig->addExtension(new DebugExtension());
 
         // ============================
-        // FLASH MESSAGES — FUNÇÕES SEGURAS
+        // FLASH MESSAGES
         // ============================
         $this->twig->addFunction(new TwigFunction('flash_peek', fn($key) => Sessao::peek($key)));
         $this->twig->addFunction(new TwigFunction('flash_clear', fn($key) => Sessao::flash($key)));
-        
         $this->twig->addGlobal('sessao', new Sessao());
 
         // ============================
@@ -55,34 +59,16 @@ class BaseController
         $this->injectUser();
 
         // ============================
-        // MENU ADMIN
+        // MENU ADMIN (carregado uma vez)
         // ============================
         $menuObj = new Menu();
-        $menu = $menuObj->filtrarMenu($menuObj->getMenu());
-        $this->twig->addGlobal('menuAdmin', $menu);
+        $this->twig->addGlobal('menuAdmin', $menuObj->filtrarMenu($menuObj->getMenu()));
 
         // ============================
-        // NOTIFICAÇÕES
+        // NOTIFICAÇÕES (carregadas apenas se autenticado)
         // ============================
         if (Auth::check()) {
-
-            $db = Conexao::getInstancia();
-            $uid = Auth::id();
-
-            $notificacoes = $db->query("
-                SELECT * FROM notificacoes
-                WHERE utilizador_id = {$uid}
-                ORDER BY id DESC
-                LIMIT 5
-            ")->fetchAll();
-
-            $nao_lidas = $db->query("
-                SELECT COUNT(*) FROM notificacoes
-                WHERE utilizador_id = {$uid} AND lida = 0
-            ")->fetchColumn();
-
-            $this->twig->addGlobal('notificacoes', $notificacoes);
-            $this->twig->addGlobal('notificacoes_nao_lidas', $nao_lidas);
+            $this->injectNotifications();
         }
 
         // ============================
@@ -92,9 +78,9 @@ class BaseController
         $this->twig->addFunction(new TwigFunction('asset', fn($p) => '/assets/' . ltrim($p, '/')));
         $this->twig->addFunction(new TwigFunction('isGranted', fn($p) => $acl->has($p)));
 
-        $this->twig->addFunction(new TwigFunction('route', function ($name, $params = []) {
-                            return Router::route($name, $params);
-                        }));
+        $this->twig->addFunction(new TwigFunction('route', fn($name, $params = []) =>
+                        Router::route($name, $params)
+        ));
 
         // ============================
         // CSRF FIELD
@@ -102,9 +88,7 @@ class BaseController
         $this->twig->addFunction(
                 new TwigFunction(
                         'csrf_field',
-                        function () {
-                            return '<input type="hidden" name="' . CSRF::fieldName() . '" value="' . CSRF::token() . '">';
-                        },
+                        fn() => '<input type="hidden" name="' . CSRF::fieldName() . '" value="' . CSRF::token() . '">',
                         ['is_safe' => ['html']]
                 )
         );
@@ -117,11 +101,32 @@ class BaseController
     {
         $user = Auth::user();
 
-        $this->twig->addGlobal('auth', (object) [
-                    'user' => $user
-        ]);
-
+        $this->twig->addGlobal('auth', (object) ['user' => $user]);
         $this->twig->addGlobal('user', $user);
+    }
+
+    // ============================
+    // INJETAR NOTIFICAÇÕES
+    // ============================
+    protected function injectNotifications(): void
+    {
+        $db = Conexao::getInstancia();
+        $uid = Auth::id();
+
+        $notificacoes = $db->query("
+            SELECT * FROM notificacoes
+            WHERE utilizador_id = {$uid}
+            ORDER BY id DESC
+            LIMIT 5
+        ")->fetchAll();
+
+        $nao_lidas = $db->query("
+            SELECT COUNT(*) FROM notificacoes
+            WHERE utilizador_id = {$uid} AND lida = 0
+        ")->fetchColumn();
+
+        $this->twig->addGlobal('notificacoes', $notificacoes);
+        $this->twig->addGlobal('notificacoes_nao_lidas', $nao_lidas);
     }
 
     // ============================
@@ -130,14 +135,6 @@ class BaseController
     protected function render(string $template, array $data = []): void
     {
         $this->injectUser();
-
-        if (
-                str_starts_with($template, 'admin/') ||
-                str_starts_with($template, '@admin/')
-        ) {
-            $menu = (new \App\Core\Menu())->filtrarMenu((new \App\Core\Menu())->getMenu());
-            $data['menuAdmin'] = $menu;   // ← ESTE É O NOME CERTO
-        }
 
         echo $this->twig->render($template, $data);
         exit;
@@ -164,14 +161,16 @@ class BaseController
     {
         $user = Auth::user();
 
-        if ($user && $user->isAdmin()) {
+        if (!$user) {
+            return $this->acessoNegado();
+        }
+
+        if ($user->isAdmin()) {
             return;
         }
 
-        $acl = new Acl();
-
-        if (!$acl->has($permission)) {
-            return $this->acessoNegado();
+        if (!$user->hasPermissao($permission)) {
+            return $this->acessoNegado($permission);
         }
     }
 
@@ -192,14 +191,17 @@ class BaseController
         return $this->acessoNegado();
     }
 
-    protected function acessoNegado()
+    protected function acessoNegado(?string $permissao = null)
     {
         http_response_code(403);
-        return $this->render('@admin/errors/403.twig');
+
+        return $this->render('@admin/errors/403.twig', [
+                    'mensagem' => $permissao
+        ]);
     }
 
     // ============================
-    // FLASH MESSAGE (CONTROLLER)
+    // FLASH MESSAGE
     // ============================
     protected function flash($tipo, $mensagem)
     {
@@ -210,7 +212,6 @@ class BaseController
     {
         $template = "@admin/errors/{$codigo}.twig";
 
-        // Se o template não existir, usar fallback
         if (!$this->twig->getLoader()->exists($template)) {
             $template = "@admin/errors/fallback.twig";
             $extra['codigo'] = $codigo;

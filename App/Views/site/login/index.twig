@@ -11,7 +11,7 @@
                 <h1 class="h2 mb-4 text-center">Entrar</h1>
                 
                 <form method="POST" action="/login">
-                    {{ csrf_field() }}
+                    <input type="hidden" name="_csrf" value="{{ _csrf }}">
 
                     <div class="mb-3">
                         <label for="email" class="form-label">Email</label>

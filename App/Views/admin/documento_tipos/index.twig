@@ -39,14 +39,21 @@
                                 <td>{{ tipo.nome }}</td>
 
                                 <td class="text-end">
+
                                     <a href="/admin/documento-tipos/editar/{{ tipo.tipo_id }}"
                                        class="btn btn-sm btn-warning">
                                         <i class="fa fa-pencil"></i> Editar
                                     </a>
 
-                                    <form method="POST" action="/admin/documento-tipos/apagar/{{ tipo.tipo_id }}" class="d-inline">
-                                        {{ csrf_field() }}
-                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Apagar tipo?')">
+                                    <form method="POST"
+                                          action="/admin/documento-tipos/apagar/{{ tipo.tipo_id }}"
+                                          class="d-inline">
+
+                                        <input type="hidden" name="_csrf" value="{{ _csrf }}">
+
+                                        <button type="submit"
+                                                class="btn btn-sm btn-danger"
+                                                onclick="return confirm('Apagar tipo?')">
                                             <i class="fa fa-trash"></i> Apagar
                                         </button>
                                     </form>

@@ -8,24 +8,44 @@ use App\Core\Helpers;
 use App\Models\PasswordReset;
 use App\Models\Utilizador;
 use App\Services\EmailService;
+use App\Core\CSRF;
 
 class PasswordResetController extends BaseController
 {
 
+    /**
+     * Mostrar formulário de recuperação
+     */
     public function solicitar()
     {
-        return $this->render('site/login/recuperar.twig');
+        $csrf = CSRF::token();
+
+        return $this->render('site/login/recuperar.twig', [
+                    'csrf' => $csrf
+        ]);
     }
 
+    /**
+     * Receber email e enviar link
+     */
     public function enviarLink()
     {
-        $email = trim($_POST['email'] ?? '');
+        // Email vem do POST, não da rota
+        $email = trim(strtolower($_POST['email'] ?? ''));
+
+        if ($email === '') {
+            Sessao::flash('erro', 'Introduza um email válido.');
+            return Helpers::redirect('/recuperar');
+        }
 
         $user = Utilizador::findByEmail($email);
 
         if ($user) {
+
+            // Criar token
             $token = PasswordReset::criarToken($email);
 
+            // Enviar email
             EmailService::enviar(
                     $email,
                     'Recuperação de Password',
@@ -41,6 +61,9 @@ class PasswordResetController extends BaseController
         return Helpers::redirect('/login');
     }
 
+    /**
+     * Formulário para definir nova password
+     */
     public function formNovaPassword($token)
     {
         $email = PasswordReset::validarToken($token);
@@ -50,22 +73,24 @@ class PasswordResetController extends BaseController
             return Helpers::redirect('/recuperar');
         }
 
-        // Garante que o CSRF é criado ANTES do layout
-        Sessao::csrfToken();
+        CSRF::regenerate(); // opcional mas recomendado
+        $csrf = CSRF::token();
 
         return $this->render('site/login/nova_password.twig', [
                     'token' => $token,
-                   // 'csrf_token' => Sessao::csrfToken()
+                    '_csrf' => $csrf
         ]);
     }
 
+    /**
+     * Guardar nova password
+     */
     public function guardarNovaPassword()
     {
-        // VALIDAR CSRF
-        //if (!Sessao::validarCsrf($_POST['_csrf'] ?? '')) {
-        //    Sessao::flash('erro', 'Token CSRF inválido.');
-        //    return Helpers::redirect("/reset-password/token/" . ($_POST['token'] ?? ''));
-        //}
+        if (!CSRF::validateFromRequest()) {
+            Sessao::flash('erro', 'Token CSRF inválido.');
+            return Helpers::redirect("/reset-password/token/" . ($_POST['token'] ?? ''));
+        }
 
         $token = $_POST['token'] ?? '';
         $password = $_POST['password'] ?? '';

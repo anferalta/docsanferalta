@@ -10,8 +10,16 @@
 
     <h4 class="mb-3">Editar Estado</h4>
 
+    {% if flash.erro %}
+        <div class="alert alert-danger">{{ flash.erro }}</div>
+    {% endif %}
+
+    {% if flash.sucesso %}
+        <div class="alert alert-success">{{ flash.sucesso }}</div>
+    {% endif %}
+
     <form method="POST" action="/admin/documento-estados/editar/{{ estado.id }}">
-        {{ csrf_field() }}
+        <input type="hidden" name="_csrf" value="{{ _csrf }}">
 
         <div class="mb-3">
             <label class="form-label">Nome</label>

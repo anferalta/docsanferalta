@@ -17,16 +17,13 @@ class AuthController extends BaseController
 
     public function login()
     {
+        CSRF::regenerate();   // força token novo
         $csrf = CSRF::token();
 
-        // LER SEM APAGAR → porque o layout já consome o flash
-        $erro = Sessao::peek('erro');
-        $sucesso = Sessao::peek('sucesso');
-
         return $this->render('site/login/index.twig', [
-            'csrf'    => $csrf,
-            'erro'    => $erro,
-            'sucesso' => $sucesso,
+                    '_csrf' => $csrf,
+                    'erro' => Sessao::peek('erro'),
+                    'sucesso' => Sessao::peek('sucesso'),
         ]);
     }
 
@@ -59,10 +56,14 @@ class AuthController extends BaseController
             Auth::login($user);
             Auditoria::registar('login', $user->id);
 
-            return $user->isAdmin()
-                ? Helpers::redirect('/admin/dashboard')
-                : Helpers::redirect('/dashboard');
+            // ⭐ MELHOR PRÁTICA:
+            // Só entra no admin se tiver a permissão admin.dashboard.ver
+            if ($user->hasPermissao('admin.dashboard.ver')) {
+                return Helpers::redirect('/admin/dashboard');
+            }
 
+            // Caso contrário → painel do site
+            return Helpers::redirect('/dashboard');
         } catch (\Exception $e) {
             return $this->error(500, $e->getMessage());
         }
@@ -79,7 +80,6 @@ class AuthController extends BaseController
 
             Auth::logout();
             return Helpers::redirect('/login');
-
         } catch (\Exception $e) {
             return $this->error(500, $e->getMessage());
         }
@@ -87,7 +87,11 @@ class AuthController extends BaseController
 
     public function registar()
     {
-        return $this->render('site/login/registar.twig');
+        $csrf = CSRF::token();
+
+        return $this->render('site/login/registar.twig', [
+                    '_csrf' => $csrf
+        ]);
     }
 
     public function registarSubmit()
@@ -131,18 +135,17 @@ class AuthController extends BaseController
             }
 
             EmailService::enviar(
-                $email,
-                'Conta criado — aguarda aprovação',
-                'utilizador_criado.twig',
-                [
-                    'nome' => $nome,
-                    'link' => 'A sua conta aguarda aprovação do administrador.'
-                ]
+                    $email,
+                    'Conta criada — aguarda aprovação',
+                    'utilizador_criado.twig',
+                    [
+                        'nome' => $nome,
+                        'link' => 'A sua conta aguarda aprovação do administrador.'
+                    ]
             );
 
             Sessao::flash('sucesso', 'Conta criada com sucesso! Aguarde aprovação.');
             return Helpers::redirect('/login');
-
         } catch (\Exception $e) {
             return $this->error(500, $e->getMessage());
         }
@@ -150,16 +153,34 @@ class AuthController extends BaseController
 
     public function recuperar()
     {
-        return $this->render('site/login/recuperar.twig');
+        $csrf = CSRF::token();
+
+        return $this->render('site/login/recuperar.twig', [
+                    '_csrf' => $csrf,
+        ]);
     }
 
     public function recuperarSubmit()
     {
         try {
 
+            // ============================
+            // 1. Validar CSRF
+            // ============================
+            if (!CSRF::validateFromRequest()) {
+                Sessao::flash('erro', 'Token CSRF inválido.');
+                return Helpers::redirect('/recuperar');
+            }
+
+            // ============================
+            // 2. Normalizar email
+            // ============================
             $email = strtolower(trim($_POST['email'] ?? ''));
             $email = preg_replace('/\s+/u', '', $email);
 
+            // ============================
+            // 3. Validação
+            // ============================
             $v = new Validator();
             $v->required('email', $email, 'Email obrigatório.');
 
@@ -168,11 +189,11 @@ class AuthController extends BaseController
                 return Helpers::redirect('/recuperar');
             }
 
-            (new \App\Controllers\PasswordResetController())->enviarLink($email);
-
-            Sessao::flash('sucesso', 'Se o email existir, receberá instruções em breve.');
-            return Helpers::redirect('/login');
-
+            // ============================
+            // 4. Enviar link corretamente
+            // ============================
+            $controller = new PasswordResetController();
+            return $controller->enviarLink($email);
         } catch (\Exception $e) {
             return $this->error(500, $e->getMessage());
         }

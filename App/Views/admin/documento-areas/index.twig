@@ -16,7 +16,7 @@
                     <tr>
                         <th>Nome</th>
                         <th>Código</th>
-                        <th>Prazo</th>   {# NOVO #}
+                        <th>Prazo</th>
                         <th>Ativo</th>
                         <th width="150">Ações</th>
                     </tr>
@@ -26,17 +26,23 @@
                         <tr>
                             <td>{{ a.nome }}</td>
                             <td>{{ a.codigo }}</td>
-                            <td>{{ a.prazo_resposta }} dias</td>   {# NOVO #}
+                            <td>{{ a.prazo_resposta }} dias</td>
                             <td>{{ a.ativo ? 'Sim' : 'Não' }}</td>
                             <td>
-                                <a href="{{ route('admin.documento_areas.editar', {id: a.id}) }}" class="btn btn-sm btn-warning">Editar</a>
+                                <a href="{{ route('admin.documento_areas.editar', {id: a.id}) }}"
+                                   class="btn btn-sm btn-warning">
+                                    Editar
+                                </a>
 
-                                <form method="POST" action="{{ route('admin.documento_areas.apagar', {id: a.id}) }}" class="d-inline">
-                                    {{ csrf_field() }}
+                                <form method="POST"
+                                      action="{{ route('admin.documento_areas.apagar', {id: a.id}) }}"
+                                      class="d-inline">
+
+                                    <input type="hidden" name="_csrf" value="{{ _csrf }}">
+
                                     <button type="submit"
                                             class="btn btn-sm btn-danger"
-                                            onclick="event.stopPropagation();
-                return confirm('Apagar área?')">
+                                            onclick="event.stopPropagation(); return confirm('Apagar área?')">
                                         Apagar
                                     </button>
                                 </form>

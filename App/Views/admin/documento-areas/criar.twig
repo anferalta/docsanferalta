@@ -8,7 +8,7 @@
         <div class="card-body">
 
             <form method="POST" action="{{ route('admin.documento_areas.store') }}">
-                {{ csrf_field() }}
+                <input type="hidden" name="_csrf" value="{{ _csrf }}">
 
                 <div class="mb-3">
                     <label class="form-label">Nome</label>
@@ -37,7 +37,7 @@
                            class="form-control"
                            id="prazo_resposta"
                            name="prazo_resposta"
-                           value="{{ area.prazo_resposta ?? 3 }}">
+                           value="3">
                 </div>
 
                 <button class="btn btn-success">Criar</button>
@@ -47,4 +47,3 @@
     </div>
 
 {% endblock %}
-

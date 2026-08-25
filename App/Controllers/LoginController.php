@@ -3,7 +3,6 @@
 namespace App\Controllers;
 
 use App\Core\BaseController;
-use App\Core\Conexao;
 use App\Core\Sessao;
 use App\Core\Helpers;
 use App\Core\Auth;
@@ -33,7 +32,7 @@ class LoginController extends BaseController {
             $this->redirect('/login');
         }
 
-        // Usa o sistema de autenticação correto
+        // Autenticação
         $user = Auth::attempt($email, $senha);
 
         if ($user === false) {
@@ -46,7 +45,10 @@ class LoginController extends BaseController {
             $this->redirect('/login');
         }
 
-        // Login OK — sessão já foi criada pelo Auth::attempt()
+        // 🔥 CORREÇÃO CRÍTICA:
+        // Recarregar o utilizador COMPLETO (com perfil e permissões)
+        $user = Auth::user();
+
         Helpers::log("Login efetuado", "ID: {$user->id}");
         $this->redirect('/admin/dashboard');
     }

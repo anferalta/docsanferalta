@@ -17,8 +17,8 @@ class EmailTemplate
 
         $loader = new FilesystemLoader();
 
-        // REGISTAR O NAMESPACE CORRETO
-        $loader->addPath(__DIR__ . '/../Views/emails', 'emails');
+        // Caminho correto dos templates de email
+        $loader->addPath(__DIR__ . '/../Views/site/emails', 'emails');
 
         self::$twig = new Environment($loader, [
             'cache' => false,
@@ -30,12 +30,10 @@ class EmailTemplate
     {
         self::init();
 
-        // Permitir passar apenas "utilizador_rejeitado"
         if (!str_contains($template, '.twig')) {
             $template .= '.twig';
         }
 
-        // *** ESTA LINHA É A CORREÇÃO CRÍTICA ***
         return self::$twig->render("@emails/$template", $dados);
     }
 }

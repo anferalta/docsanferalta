@@ -3,27 +3,22 @@
 namespace App\Models;
 
 use App\Core\Conexao;
+use PDO;
 
 class DocumentoArea
 {
-
-    public static function all()
-    {
-        $db = Conexao::getInstancia();
-        $stmt = $db->query("SELECT * FROM documento_areas ORDER BY nome ASC");
-        return $stmt->fetchAll();
-    }
-
     public static function todas()
     {
         $db = Conexao::getInstancia();
-        return $db->query("SELECT * FROM documento_areas ORDER BY nome ASC")->fetchAll();
+        return $db->query("SELECT * FROM documento_areas ORDER BY nome ASC")
+                  ->fetchAll(PDO::FETCH_OBJ);
     }
 
     public static function ativas()
     {
         $db = Conexao::getInstancia();
-        return $db->query("SELECT * FROM documento_areas WHERE ativo = 1 ORDER BY nome ASC")->fetchAll();
+        return $db->query("SELECT * FROM documento_areas WHERE ativo = 1 ORDER BY nome ASC")
+                  ->fetchAll(PDO::FETCH_OBJ);
     }
 
     public static function find($id)
@@ -31,16 +26,16 @@ class DocumentoArea
         $db = Conexao::getInstancia();
         $stmt = $db->prepare("SELECT * FROM documento_areas WHERE id = ?");
         $stmt->execute([$id]);
-        return $stmt->fetch();
+        return $stmt->fetch(PDO::FETCH_OBJ);
     }
 
     public static function criar($nome, $codigo, $descricao, $ativo, $prazo_resposta)
     {
         $db = Conexao::getInstancia();
         $stmt = $db->prepare("
-        INSERT INTO documento_areas (nome, codigo, descricao, ativo, prazo_resposta, criado_em)
-        VALUES (?, ?, ?, ?, ?, NOW())
-    ");
+            INSERT INTO documento_areas (nome, codigo, descricao, ativo, prazo_resposta, criado_em)
+            VALUES (?, ?, ?, ?, ?, NOW())
+        ");
         return $stmt->execute([$nome, $codigo, $descricao, $ativo, $prazo_resposta]);
     }
 
@@ -48,10 +43,10 @@ class DocumentoArea
     {
         $db = Conexao::getInstancia();
         $stmt = $db->prepare("
-        UPDATE documento_areas
-        SET nome = ?, codigo = ?, descricao = ?, ativo = ?, prazo_resposta = ?, atualizado_em = NOW()
-        WHERE id = ?
-    ");
+            UPDATE documento_areas
+            SET nome = ?, codigo = ?, descricao = ?, ativo = ?, prazo_resposta = ?, atualizado_em = NOW()
+            WHERE id = ?
+        ");
         return $stmt->execute([$nome, $codigo, $descricao, $ativo, $prazo_resposta, $id]);
     }
 

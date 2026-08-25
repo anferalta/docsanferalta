@@ -4,6 +4,7 @@ namespace App\Controllers\Admin;
 
 use App\Core\BaseController;
 use App\Core\Conexao;
+use App\Core\CSRF;
 use App\Models\DocumentoEstado;
 
 class DocumentoEstadosAdminController extends BaseController
@@ -11,17 +12,31 @@ class DocumentoEstadosAdminController extends BaseController
 
     public function index()
     {
+        $csrf = CSRF::token();
+
         $estados = DocumentoEstado::all();
-        return $this->render('admin/documento-estados/index.twig', compact('estados'));
+        return $this->render('admin/documento-estados/index.twig', [
+            'estados' => $estados,
+            '_csrf' => $csrf
+        ]);
     }
 
     public function criar()
     {
-        return $this->render('admin/documento-estados/criar.twig');
+        $csrf = CSRF::token();
+
+        return $this->render('admin/documento-estados/criar.twig', [
+            '_csrf' => $csrf
+        ]);
     }
 
     public function criarPost()
     {
+        if (!CSRF::validateFromRequest()) {
+            $this->flash('erro', 'Token CSRF inválido.');
+            return $this->redirect('/admin/documento-estados/criar');
+        }
+
         $nome = trim($_POST['nome']);
 
         if ($nome === '') {
@@ -32,15 +47,12 @@ class DocumentoEstadosAdminController extends BaseController
         $estado = new DocumentoEstado();
         $estado->nome = $nome;
 
-        // gerar código automático (slug)
         $estado->codigo = strtolower(
-                preg_replace('/[^a-z0-9]+/', '-', $nome)
+            preg_replace('/[^a-z0-9]+/', '-', $nome)
         );
 
-        // ordem automática
         $estado->ordem = count(DocumentoEstado::all()) + 1;
 
-        // final e ativo já têm defaults no model
         $estado->save();
 
         $this->flash('sucesso', 'Estado criado com sucesso.');
@@ -56,11 +68,21 @@ class DocumentoEstadosAdminController extends BaseController
             return $this->redirect('/admin/documento-estados');
         }
 
-        return $this->render('admin/documento-estados/editar.twig', compact('estado'));
+        $csrf = CSRF::token();
+
+        return $this->render('admin/documento-estados/editar.twig', [
+            'estado' => $estado,
+            '_csrf' => $csrf
+        ]);
     }
 
     public function editarPost($id)
     {
+        if (!CSRF::validateFromRequest()) {
+            $this->flash('erro', 'Token CSRF inválido.');
+            return $this->redirect("/admin/documento-estados/editar/$id");
+        }
+
         $estado = DocumentoEstado::find($id);
 
         if (!$estado) {
@@ -77,9 +99,8 @@ class DocumentoEstadosAdminController extends BaseController
 
         $estado->nome = $nome;
 
-        // atualizar código automaticamente
         $estado->codigo = strtolower(
-                preg_replace('/[^a-z0-9]+/', '-', $nome)
+            preg_replace('/[^a-z0-9]+/', '-', $nome)
         );
 
         $estado->save();
@@ -90,6 +111,11 @@ class DocumentoEstadosAdminController extends BaseController
 
     public function apagar($id)
     {
+        if (!CSRF::validateFromRequest()) {
+            $this->flash('erro', 'Token CSRF inválido.');
+            return $this->redirect('/admin/documento-estados');
+        }
+
         $estado = DocumentoEstado::find($id);
 
         if (!$estado) {
@@ -99,7 +125,6 @@ class DocumentoEstadosAdminController extends BaseController
 
         $db = Conexao::getInstancia();
 
-        // Verificar se algum documento usa este estado
         $stmt = $db->prepare("SELECT COUNT(*) FROM documentos WHERE estado_atual = ?");
         $stmt->execute([$estado->codigo]);
         $emUso = $stmt->fetchColumn();
@@ -124,6 +149,11 @@ class DocumentoEstadosAdminController extends BaseController
             return $this->redirect('/admin/documento-estados');
         }
 
-        return $this->render('admin/documento-estados/apagar.twig', compact('estado'));
+        $csrf = CSRF::token();
+
+        return $this->render('admin/documento-estados/apagar.twig', [
+            'estado' => $estado,
+            '_csrf' => $csrf
+        ]);
     }
 }

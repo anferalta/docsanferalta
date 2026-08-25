@@ -3,6 +3,8 @@
 namespace App\Controllers\Admin;
 
 use App\Core\BaseController;
+use App\Core\CSRF;
+use App\Core\Sessao;
 use App\Models\DocumentoArea;
 
 class DocumentoAreasAdminController extends BaseController
@@ -12,10 +14,12 @@ class DocumentoAreasAdminController extends BaseController
     {
         $this->authorize('admin.tramitacao.areas.ver');
 
+        $csrf = CSRF::token();
         $areas = DocumentoArea::todas();
 
         return $this->render('@admin/documento-areas/index.twig', [
-                    'areas' => $areas
+            'areas' => $areas,
+            '_csrf' => $csrf
         ]);
     }
 
@@ -23,25 +27,34 @@ class DocumentoAreasAdminController extends BaseController
     {
         $this->authorize('admin.tramitacao.areas.criar');
 
-        return $this->render('@admin/documento-areas/criar.twig');
+        $csrf = CSRF::token();
+
+        return $this->render('@admin/documento-areas/criar.twig', [
+            '_csrf' => $csrf
+        ]);
     }
 
     public function store()
     {
         $this->authorize('admin.tramitacao.areas.criar');
 
+        if (!CSRF::validateFromRequest()) {
+            Sessao::flash('erro', 'Token CSRF inválido.');
+            return $this->redirect('/admin/documento-areas/criar');
+        }
+
         $ok = DocumentoArea::criar(
-                $_POST['nome'],
-                $_POST['codigo'],
-                $_POST['descricao'],
-                isset($_POST['ativo']) ? 1 : 0,
-                (int) $_POST['prazo_resposta'] // NOVO CAMPO
+            $_POST['nome'],
+            $_POST['codigo'],
+            $_POST['descricao'],
+            isset($_POST['ativo']) ? 1 : 0,
+            (int) $_POST['prazo_resposta']
         );
 
         if ($ok) {
-            \App\Core\Sessao::flash('sucesso', 'Área criada com sucesso.');
+            Sessao::flash('sucesso', 'Área criada com sucesso.');
         } else {
-            \App\Core\Sessao::flash('erro', 'Falha ao criar a área.');
+            Sessao::flash('erro', 'Falha ao criar a área.');
         }
 
         return $this->redirect('/admin/documento-areas');
@@ -54,12 +67,15 @@ class DocumentoAreasAdminController extends BaseController
         $area = DocumentoArea::find($id);
 
         if (!$area) {
-            \App\Core\Sessao::flash('erro', 'A área não existe.');
+            Sessao::flash('erro', 'A área não existe.');
             return $this->redirect('/admin/documento-areas');
         }
 
+        $csrf = CSRF::token();
+
         return $this->render('@admin/documento-areas/editar.twig', [
-                    'area' => $area
+            'area' => $area,
+            '_csrf' => $csrf
         ]);
     }
 
@@ -67,19 +83,24 @@ class DocumentoAreasAdminController extends BaseController
     {
         $this->authorize('admin.tramitacao.areas.editar');
 
+        if (!CSRF::validateFromRequest()) {
+            Sessao::flash('erro', 'Token CSRF inválido.');
+            return $this->redirect("/admin/documento-areas/editar/$id");
+        }
+
         $ok = DocumentoArea::atualizar(
-                $id,
-                $_POST['nome'],
-                $_POST['codigo'],
-                $_POST['descricao'],
-                isset($_POST['ativo']) ? 1 : 0,
-                (int) $_POST['prazo_resposta'] // NOVO CAMPO
+            $id,
+            $_POST['nome'],
+            $_POST['codigo'],
+            $_POST['descricao'],
+            isset($_POST['ativo']) ? 1 : 0,
+            (int) $_POST['prazo_resposta']
         );
 
         if ($ok) {
-            \App\Core\Sessao::flash('sucesso', 'Área atualizada com sucesso.');
+            Sessao::flash('sucesso', 'Área atualizada com sucesso.');
         } else {
-            \App\Core\Sessao::flash('erro', 'Falha ao atualizar a área.');
+            Sessao::flash('erro', 'Falha ao atualizar a área.');
         }
 
         return $this->redirect('/admin/documento-areas');
@@ -89,16 +110,21 @@ class DocumentoAreasAdminController extends BaseController
     {
         $this->authorize('admin.tramitacao.areas.apagar');
 
+        if (!CSRF::validateFromRequest()) {
+            Sessao::flash('erro', 'Token CSRF inválido.');
+            return $this->redirect('/admin/documento-areas');
+        }
+
         $area = DocumentoArea::find($id);
 
         if (!$area) {
-            \App\Core\Sessao::flash('erro', 'A área não existe.');
+            Sessao::flash('erro', 'A área não existe.');
             return $this->redirect('/admin/documento-areas');
         }
 
         DocumentoArea::apagar($id);
 
-        \App\Core\Sessao::flash('sucesso', 'Área apagada com sucesso.');
+        Sessao::flash('sucesso', 'Área apagada com sucesso.');
 
         return $this->redirect('/admin/documento-areas');
     }

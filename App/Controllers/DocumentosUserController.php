@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\BaseController;
 use App\Core\Auth;
 use App\Core\Sessao;
+use App\Core\CSRF;
 use App\Models\Documento;
 use App\Models\DocumentoTipo;
 use App\Models\DocumentoFicheiro;
@@ -58,7 +59,7 @@ class DocumentosUserController extends BaseController
         }
 
         return $this->render('@site/documentos/index.twig', [
-            'documentos' => $documentos
+                    'documentos' => $documentos
         ]);
     }
 
@@ -73,9 +74,11 @@ class DocumentosUserController extends BaseController
         }
 
         $tipos = DocumentoTipo::all();
+        $csrf = CSRF::token();
 
         return $this->render('@site/documentos/criar.twig', [
-            'tipos' => $tipos
+                    'tipos' => $tipos,
+                    '_csrf' => $csrf
         ]);
     }
 
@@ -84,6 +87,11 @@ class DocumentosUserController extends BaseController
      */
     public function criarSubmit()
     {
+        if (!CSRF::validateFromRequest()) {
+            Sessao::flash('erro', 'Token CSRF inválido.');
+            return $this->redirect('/documentos/criar');
+        }
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             return $this->redirect('/documentos/criar');
         }
@@ -139,10 +147,10 @@ class DocumentosUserController extends BaseController
 
             // 2.3 Verificar duplicado
             $duplicado = DocumentoFicheiro::query()
-                ->join('documentos', 'documentos.id', '=', 'documento_ficheiros.documento_id')
-                ->where('documentos.criado_por', '=', $user->id)
-                ->where('documento_ficheiros.ficheiro_original', '=', $nomeOriginal)
-                ->first();
+                    ->join('documentos', 'documentos.id', '=', 'documento_ficheiros.documento_id')
+                    ->where('documentos.criado_por', '=', $user->id)
+                    ->where('documento_ficheiros.ficheiro_original', '=', $nomeOriginal)
+                    ->first();
 
             if ($duplicado) {
                 Sessao::flash('erro', 'Já existe um ficheiro com esse nome.');
@@ -219,6 +227,14 @@ class DocumentosUserController extends BaseController
             exit("Anexo não encontrado.");
         }
 
+        // Garantir que o anexo pertence ao utilizador autenticado
+        $documento = Documento::find($anexo->documento_id);
+
+        if (!$documento || $documento->criado_por != $user->id) {
+            http_response_code(403);
+            exit("Acesso não autorizado.");
+        }
+
         $root = realpath(__DIR__ . '/../../');
         $path = $root . '/storage/documentos/' . $anexo->ficheiro;
 
@@ -255,6 +271,19 @@ class DocumentosUserController extends BaseController
         if (!$anexo) {
             http_response_code(404);
             exit("Anexo não encontrado.");
+        }
+
+        $user = Auth::user();
+        if (!$user) {
+            return $this->redirect('/login');
+        }
+
+        // Garantir que o anexo pertence ao utilizador autenticado
+        $documento = Documento::find($anexo->documento_id);
+
+        if (!$documento || $documento->criado_por != $user->id) {
+            http_response_code(403);
+            exit("Acesso não autorizado.");
         }
 
         $root = realpath(__DIR__ . '/../../');

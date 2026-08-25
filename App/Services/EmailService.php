@@ -9,6 +9,7 @@ use App\Core\Helpers;
 
 class EmailService
 {
+
     public static function enviar(string $para, string $assunto, string $template, array $dados = []): bool
     {
         $mail = new PHPMailer(true);
@@ -16,21 +17,25 @@ class EmailService
         try {
 
             // ============================
-            // CONFIGURAÇÃO SMTP (TLS 587)
+            // SMTP — OTIMIZADO (SMTPS 465)
             // ============================
             $mail->isSMTP();
             $mail->Host = $_ENV['MAIL_HOST'] ?? 'anferalta-com.correoseguro.dinaserver.com';
             $mail->SMTPAuth = true;
             $mail->Username = $_ENV['MAIL_USER'] ?? 'geral@anferalta.com';
             $mail->Password = $_ENV['MAIL_PASS'] ?? '@nF1ra!ta26';
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port = 587;
 
-            $mail->CharSet = 'UTF-8';
-            $mail->Encoding = 'base64';
+            // 🔥 Muito mais rápido que STARTTLS
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+            $mail->Port = 465;
 
             // ============================
-            // OPÇÕES SSL (evitar bloqueios no WAMP)
+            // TIMEOUT — EVITA BLOQUEIOS
+            // ============================
+            $mail->Timeout = 5;     // máximo 5 segundos
+            $mail->SMTPKeepAlive = false; // evita pendurar ligações
+            // ============================
+            // SSL — COMPATÍVEL COM WAMP
             // ============================
             $mail->SMTPOptions = [
                 'ssl' => [
@@ -41,9 +46,19 @@ class EmailService
             ];
 
             // ============================
+            // DEBUG OPCIONAL
+            // ============================
+            if (!empty($_ENV['MAIL_DEBUG']) && $_ENV['MAIL_DEBUG'] == 'true') {
+                $mail->SMTPDebug = 2; // mostra handshake e autenticação
+            }
+
+            // ============================
             // REMETENTE
             // ============================
-            $mail->setFrom($_ENV['MAIL_FROM'] ?? 'geral@anferalta.com', $_ENV['MAIL_FROM_NAME'] ?? 'AnferaltaDocs');
+            $mail->setFrom(
+                    $_ENV['MAIL_FROM'] ?? 'geral@anferalta.com',
+                    $_ENV['MAIL_FROM_NAME'] ?? 'AnferaltaDocs'
+            );
 
             // ============================
             // DESTINATÁRIO
@@ -51,12 +66,13 @@ class EmailService
             $mail->addAddress($para);
 
             // ============================
-            // CONTEÚDO DO EMAIL
+            // CONTEÚDO
             // ============================
+            $mail->CharSet = 'UTF-8';
+            $mail->Encoding = 'base64';
             $mail->isHTML(true);
-            $mail->Subject = $assunto;
 
-            // Renderizar template Twig (agora correto)
+            $mail->Subject = $assunto;
             $mail->Body = EmailTemplate::render($template, $dados);
 
             // ============================
@@ -64,14 +80,16 @@ class EmailService
             // ============================
             $resultado = $mail->send();
 
-            Helpers::log("Email enviado para {$para}", "Assunto: {$assunto}");
+            Helpers::log("Email enviado", "Para: {$para} | Assunto: {$assunto}");
 
             return $resultado;
-
         } catch (Exception $e) {
+            Helpers::log(
+                    "Erro ao enviar email",
+                    "Destinatário: {$para} | Erro PHPMailer: " . $mail->ErrorInfo . " | Exceção: " . $e->getMessage()
+            );
 
-            Helpers::log("Erro ao enviar email", $mail->ErrorInfo);
-            return false;
+            throw $e; // mostra o erro real no ambiente local
         }
     }
 }

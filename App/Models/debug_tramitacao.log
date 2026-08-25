@@ -3748,3 +3748,83 @@ Array
     [estado] => analise
     [criado_em] => 2026-08-19 11:27:44
 )
+Array
+(
+    [documento_id] => 433
+    [area_id] => 1
+    [utilizador_id] => 3
+    [acao] => RECUPERAR
+    [estado] => recuperado
+    [comentario] => Documento recuperado do arquivo para produção.
+    [criado_em] => 2026-08-21 18:34:51
+)
+Array
+(
+    [documento_id] => 469
+    [utilizador_id] => 90
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => Muito urgente.
+    [estado] => novo
+    [criado_em] => 2026-08-24 10:19:31
+)
+Array
+(
+    [documento_id] => 469
+    [area_id] => 3
+    [utilizador_id] => 90
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => Verificar pagamento.
+    [criado_em] => 2026-08-24 10:20:08
+)
+Array
+(
+    [documento_id] => 469
+    [utilizador_id] => 90
+    [acao] => ESTADO
+    [area_id] => 3
+    [comentario] => verificar pagamento.
+    [estado] => analise
+    [criado_em] => 2026-08-24 10:21:49
+)
+Array
+(
+    [documento_id] => 469
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 3
+    [comentario] => Pagamento comprovado.
+    [estado] => analise
+    [criado_em] => 2026-08-24 10:23:33
+)
+Array
+(
+    [documento_id] => 469
+    [area_id] => 4
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => Verificar documentos.
+    [criado_em] => 2026-08-24 10:24:09
+)
+Array
+(
+    [documento_id] => 469
+    [utilizador_id] => 91
+    [acao] => COMENTARIO
+    [area_id] => 4
+    [comentario] => Documentos verificados.Ok
+    [estado] => em_tramitacao
+    [criado_em] => 2026-08-24 10:35:47
+)
+Array
+(
+    [documento_id] => 469
+    [area_id] => 8
+    [utilizador_id] => 91
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => Parecer Jurídico
+    [criado_em] => 2026-08-24 10:36:28
+)

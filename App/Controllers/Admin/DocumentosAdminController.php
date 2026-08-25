@@ -209,6 +209,8 @@ WHERE 1=1
 
     public function criar()
     {
+        $this->authorize('admin.documentos.criar');
+
         $tipos = DocumentoTipo::all();
 
         return $this->render('@admin/documentos/criar.twig', [
@@ -218,6 +220,8 @@ WHERE 1=1
 
     public function criarSubmit()
     {
+        $this->authorize('admin.documentos.criar');
+
         $user = Auth::user();
 
         // 1. Validação
@@ -236,8 +240,7 @@ WHERE 1=1
             return $this->redirect('/admin/documentos/criar');
         }
 
-        // 3. DEFINIR ÁREA INICIAL OBRIGATÓRIA
-        // Escolhe a área inicial (ex.: 1 = Secretaria, ou outra área que exista)
+        // 3. Área inicial
         $areaInicial = 1;
 
         $documento->update([
@@ -246,7 +249,6 @@ WHERE 1=1
             'estado_atual' => 'novo'
                 ], "id = {$documento->id}");
 
-        // 4. Sucesso
         Sessao::flash('sucesso', 'Documentos carregados com sucesso.');
         return $this->redirect('/admin/documentos');
     }
@@ -687,7 +689,7 @@ WHERE 1=1
 
     public function arquivados()
     {
-        $this->autorizar('admin.documentos.arquivados.ver');
+        $this->authorize('admin.documentos.arquivados.ver');
 
         $docModel = new Documento();
 
@@ -710,7 +712,7 @@ WHERE 1=1
 
     public function verArquivado($id)
     {
-        $this->autorizar('admin.documentos.arquivados.ver');
+        $this->authorize('admin.documentos.arquivados.ver');
 
         $documento = Documento::find($id);
 
@@ -841,7 +843,7 @@ WHERE 1=1
 
     public function abrirAnexo($id)
     {
-        // ID obrigatório
+        // Validar ID
         if (!$id || !is_numeric($id)) {
             http_response_code(404);
             return $this->render('@admin/errors/404.twig');
@@ -873,43 +875,31 @@ WHERE 1=1
 
     public function recuperarArquivado($id)
     {
-        $this->autorizar('admin.documentos.arquivados.recuperar');
+        $this->authorize('admin.documentos.arquivados.recuperar');
 
         $documento = Documento::find($id);
-
-        // Tipo do documento
-        $tipo = null;
-        if ($documento->tipo_id) {
-            $tipo = DocumentoTipo::find($documento->tipo_id);
-            $documento->tipo_nome = $tipo ? $tipo->nome : null;
-        }
-
-        // Criador do documento
-        $criador = null;
-        if ($documento->utilizador_id) {
-            $criador = Utilizador::find($documento->utilizador_id);
-            $documento->criador_nome = $criador ? $criador->nome : null;
-        }
 
         if (!$documento || $documento->estado_atual !== 'arquivado') {
             http_response_code(404);
             exit("Documento arquivado não encontrado.");
         }
 
-        // Guardar a área onde estava antes de arquivar
+        // Tipo
+        $tipo = DocumentoTipo::find($documento->tipo_id);
+        $documento->tipo_nome = $tipo ? $tipo->nome : null;
+
+        // Criador
+        $criador = Utilizador::find($documento->utilizador_id);
+        $documento->criador_nome = $criador ? $criador->nome : null;
+
         $areaAnterior = $documento->area_atual_id;
 
-        // Recuperar o documento
         $documento->estado_atual = 'novo';
         $documento->arquivado_em = null;
         $documento->arquivado_por_id = null;
-
-        // 🔥 Mantém a área original
         $documento->area_atual_id = $areaAnterior;
-
         $documento->save();
 
-        // Registar tramitação
         DocumentoTramitacao::create([
             'documento_id' => $id,
             'area_id' => $areaAnterior,
@@ -921,7 +911,6 @@ WHERE 1=1
         ]);
 
         Sessao::flash('sucesso', 'Documento recuperado com sucesso.');
-
         return $this->redirect("/admin/documentos/editar/{$id}");
     }
 
@@ -936,13 +925,11 @@ WHERE 1=1
             return $this->redirect('/admin/documentos');
         }
 
-        // Evitar arquivar duas vezes
         if ($documento->estado_atual === 'arquivado') {
             Sessao::flash('info', 'Este documento já se encontra arquivado.');
             return $this->redirect("/admin/documentos/editar/{$id}");
         }
 
-        // Atualizar documento
         $documento->update([
             'estado_atual' => 'arquivado',
             'arquivado_em' => date('Y-m-d H:i:s'),
@@ -951,7 +938,6 @@ WHERE 1=1
             'estado' => 0
                 ], "id = {$documento->id}");
 
-        // Registar histórico
         DocumentoTramitacao::create([
             'documento_id' => $id,
             'area_id' => null,
@@ -1010,7 +996,6 @@ WHERE 1=1
 
             move_uploaded_file($tmp, $destino);
 
-            // Registar na BD
             DocumentoFicheiro::create([
                 'documento_id' => $id,
                 'ficheiro' => $nomeGuardado,
