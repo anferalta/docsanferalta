@@ -1,43 +1,128 @@
-<div class="row">
+<div class="row g-3">
 
+    {# ---------------- TOTAL DE BACKUPS ---------------- #}
     <div class="col-md-4">
-        <div class="card text-center">
+        <div class="card text-center shadow-sm">
             <div class="card-body">
-                <h3>{{ dashboard.totalBD + dashboard.totalFiles }}</h3>
-                <p>Total de Backups</p>
+                <h3 class="fw-bold">{{ dashboard.totalBD + dashboard.totalFiles }}</h3>
+                <p class="text-muted mb-0">Total de Backups</p>
+
+                <canvas id="graficoDonut" height="140"></canvas>
             </div>
         </div>
     </div>
 
-    <div class="col-md-4">
-        <div class="card text-center">
+    {# ---------------- HISTÓRICO (7 dias) ---------------- #}
+    <div class="col-md-8">
+        <div class="card shadow-sm">
             <div class="card-body">
-                <h3>{{ dashboard.totalBD }} BD / {{ dashboard.totalFiles }} Ficheiros</h3>
-                <p>Distribuição</p>
+                <h5 class="mb-3">Backups nos últimos 7 dias</h5>
+                <canvas id="graficoHistorico" height="120"></canvas>
             </div>
         </div>
     </div>
 
+</div>
+
+<div class="row g-3 mt-3">
+
+    {# ---------------- ESTADO DOS ÚLTIMOS BACKUPS ---------------- #}
     <div class="col-md-4">
         <div class="card text-center shadow-sm">
             <div class="card-body">
 
-                <h5>Último Backup BD</h5>
-                <span class="badge bg-{{ dashboard.estadoBD.cor }} fs-6">
+                <h5 class="mb-3">Estado dos Backups</h5>
+
+                <h6 class="mb-1">Último Backup BD</h6>
+                <span class="badge bg-{{ dashboard.estadoBD.cor }} fs-6 px-3 py-2">
                     {{ dashboard.ultimoBD ?? '—' }}
                 </span>
                 <p class="text-muted mt-1">{{ dashboard.estadoBD.mensagem }}</p>
 
                 <hr>
 
-                <h5>Último Backup Ficheiros</h5>
-                <span class="badge bg-{{ dashboard.estadoFiles.cor }} fs-6">
+                <h6 class="mb-1">Último Backup Ficheiros</h6>
+                <span class="badge bg-{{ dashboard.estadoFiles.cor }} fs-6 px-3 py-2">
                     {{ dashboard.ultimoFiles ?? '—' }}
                 </span>
                 <p class="text-muted mt-1">{{ dashboard.estadoFiles.mensagem }}</p>
 
             </div>
         </div>
-    </div>           
+    </div>
+
+    {# ---------------- CRESCIMENTO ---------------- #}
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="mb-3">Crescimento dos Backups</h5>
+                <canvas id="graficoCrescimento" height="120"></canvas>
+            </div>
+        </div>
+    </div>
 
 </div>
+
+{# ---------------- SCRIPTS CHART.JS ---------------- #}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+/* ---------------- DONUT BD vs FILES ---------------- */
+new Chart(document.getElementById('graficoDonut'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Base de Dados', 'Ficheiros'],
+        datasets: [{
+            data: [{{ dashboard.totalBD }}, {{ dashboard.totalFiles }}],
+            backgroundColor: ['#0d6efd', '#20c997']
+        }]
+    },
+    options: {
+        plugins: { legend: { position: 'bottom' } }
+    }
+});
+
+/* ---------------- HISTÓRICO 7 DIAS ---------------- */
+new Chart(document.getElementById('graficoHistorico'), {
+    type: 'bar',
+    data: {
+        labels: {{ dashboard.historico.labels|json_encode|raw }},
+        datasets: [
+            {
+                label: 'BD',
+                data: {{ dashboard.historico.bd|json_encode|raw }},
+                backgroundColor: '#0d6efd'
+            },
+            {
+                label: 'Ficheiros',
+                data: {{ dashboard.historico.files|json_encode|raw }},
+                backgroundColor: '#20c997'
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+
+/* ---------------- CRESCIMENTO TOTAL ---------------- */
+new Chart(document.getElementById('graficoCrescimento'), {
+    type: 'line',
+    data: {
+        labels: {{ dashboard.crescimento.labels|json_encode|raw }},
+        datasets: [{
+            label: 'Total de Backups',
+            data: {{ dashboard.crescimento.valores|json_encode|raw }},
+            borderColor: '#6610f2',
+            backgroundColor: 'rgba(102,16,242,0.2)',
+            tension: 0.3
+        }]
+    },
+    options: {
+        responsive: true
+    }
+});
+</script>

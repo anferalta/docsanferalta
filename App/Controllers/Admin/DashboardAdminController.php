@@ -10,6 +10,7 @@ use App\Models\Auditoria;
 
 class DashboardAdminController extends BaseController
 {
+
     public function index()
     {
         // ACL
@@ -74,12 +75,12 @@ class DashboardAdminController extends BaseController
 
             // DOCUMENTOS — atualizado com "concluido"
             $totalDocumentos = Documento::count();
-            $totalDocsPendentes   = (int) $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'pendente'")->fetchColumn();
-            $totalDocsAnalise     = (int) $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'analise'")->fetchColumn();
-            $totalDocsTramitacao  = (int) $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'em_tramitacao'")->fetchColumn();
-            $totalDocsConcluidos  = (int) $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'concluido'")->fetchColumn();
-            $totalDocsArquivados  = (int) $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'arquivado'")->fetchColumn();
-            $totalDocsDevolvidos  = (int) $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'devolvido'")->fetchColumn();
+            $totalDocsPendentes = (int) $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'pendente'")->fetchColumn();
+            $totalDocsAnalise = (int) $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'analise'")->fetchColumn();
+            $totalDocsTramitacao = (int) $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'em_tramitacao'")->fetchColumn();
+            $totalDocsConcluidos = (int) $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'concluido'")->fetchColumn();
+            $totalDocsArquivados = (int) $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'arquivado'")->fetchColumn();
+            $totalDocsDevolvidos = (int) $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'devolvido'")->fetchColumn();
 
             // ÚLTIMOS DOCUMENTOS
             $ultimosDocs = $db->query("
@@ -111,9 +112,9 @@ class DashboardAdminController extends BaseController
             $registosPorMes = [];
 
             $periodo = new \DatePeriod(
-                (new \DateTime('first day of -11 month'))->setTime(0, 0),
-                new \DateInterval('P1M'),
-                (new \DateTime('first day of next month'))->setTime(0, 0)
+                    (new \DateTime('first day of -11 month'))->setTime(0, 0),
+                    new \DateInterval('P1M'),
+                    (new \DateTime('first day of next month'))->setTime(0, 0)
             );
 
             $map = [];
@@ -156,34 +157,34 @@ class DashboardAdminController extends BaseController
             $rankingAreas = $db->query($sqlRanking)->fetchAll(\PDO::FETCH_ASSOC);
 
             return $this->render('admin/dashboard/index.twig', [
-                'isAdmin' => true,
-                // UTILIZADORES
-                'totalUtilizadores' => $totalUtilizadores,
-                'totalAtivos' => $totalAtivos,
-                'totalPendentes' => $totalPendentes,
-                'totalBloqueados' => $totalBloqueados,
-                // DOCUMENTOS
-                'totalDocumentos' => $totalDocumentos,
-                'totalDocsPendentes' => $totalDocsPendentes,
-                'totalDocsAnalise' => $totalDocsAnalise,
-                'totalDocsTramitacao' => $totalDocsTramitacao,
-                'totalDocsConcluidos' => $totalDocsConcluidos,
-                'totalDocsArquivados' => $totalDocsArquivados,
-                'totalDocsDevolvidos' => $totalDocsDevolvidos,
-                // LISTAS
-                'ultimosDocs' => $ultimosDocs,
-                'ultimosUsers' => $ultimosUsers,
-                // GRÁFICOS
-                'meses' => $meses,
-                'registosPorMes' => $registosPorMes,
-                // LOGS
-                'ultimosLogs' => $ultimosLogs,
-                // SLA
-                'slaOk' => $slaOk,
-                'slaAlerta' => $slaAlerta,
-                'slaAtrasado' => $slaAtrasado,
-                // RANKING
-                'rankingAreas' => $rankingAreas,
+                        'isAdmin' => true,
+                        // UTILIZADORES
+                        'totalUtilizadores' => $totalUtilizadores,
+                        'totalAtivos' => $totalAtivos,
+                        'totalPendentes' => $totalPendentes,
+                        'totalBloqueados' => $totalBloqueados,
+                        // DOCUMENTOS
+                        'totalDocumentos' => $totalDocumentos,
+                        'totalDocsPendentes' => $totalDocsPendentes,
+                        'totalDocsAnalise' => $totalDocsAnalise,
+                        'totalDocsTramitacao' => $totalDocsTramitacao,
+                        'totalDocsConcluidos' => $totalDocsConcluidos,
+                        'totalDocsArquivados' => $totalDocsArquivados,
+                        'totalDocsDevolvidos' => $totalDocsDevolvidos,
+                        // LISTAS
+                        'ultimosDocs' => $ultimosDocs,
+                        'ultimosUsers' => $ultimosUsers,
+                        // GRÁFICOS
+                        'meses' => $meses,
+                        'registosPorMes' => $registosPorMes,
+                        // LOGS
+                        'ultimosLogs' => $ultimosLogs,
+                        // SLA
+                        'slaOk' => $slaOk,
+                        'slaAlerta' => $slaAlerta,
+                        'slaAtrasado' => $slaAtrasado,
+                        // RANKING
+                        'rankingAreas' => $rankingAreas,
             ]);
         }
 
@@ -219,10 +220,23 @@ class DashboardAdminController extends BaseController
         }
 
         return $this->render('admin/dashboard/index.twig', [
-            'isAdmin' => false,
-            'totalDocsDoUtilizador' => $totalDocsDoUtilizador,
-            'docsUserPendentes' => $docsUserPendentes,
-            'docsUserConcluidos' => $docsUserConcluidos,
+                    'isAdmin' => false,
+                    'totalDocsDoUtilizador' => $totalDocsDoUtilizador,
+                    'docsUserPendentes' => $docsUserPendentes,
+                    'docsUserConcluidos' => $docsUserConcluidos,
         ]);
+
+        $integridadeBD = null;
+        $integridadeFiles = null;
+
+        if ($ultimoBD) {
+            $pathBD = $this->resolverCaminho($backupsDB[0]['path']);
+            $integridadeBD = (new \App\Services\BackupIntegrityService())->analisar($pathBD, 'bd');
+        }
+
+        if ($ultimoFiles) {
+            $pathFiles = $this->resolverCaminho($backupsFiles[0]['path']);
+            $integridadeFiles = (new \App\Services\BackupIntegrityService())->analisar($pathFiles, 'files');
+        }
     }
 }

@@ -129,17 +129,6 @@ class BackupsAdminController extends BaseController
         $this->authorize('admin.backups.bd.restaurar.confirmar');
 
         $ficheiro = $this->decodePath($ficheiro);
-
-        return $this->render('admin/backups/restaurar_confirmar.twig', [
-                    'ficheiro' => $ficheiro,
-        ]);
-    }
-
-    public function restaurarExecutar(string $ficheiro)
-    {
-        $this->authorize('admin.backups.bd.restaurar.executar');
-
-        $ficheiro = $this->decodePath($ficheiro);
         $path = $this->resolverCaminho($ficheiro);
 
         if (!$path) {
@@ -147,14 +136,17 @@ class BackupsAdminController extends BaseController
             return $this->redirect('/admin/backups');
         }
 
-        try {
-            (new RestoreService())->restaurarBD($path);
-            Sessao::flash('sucesso', 'Base de dados restaurada com sucesso.');
-        } catch (\Exception $e) {
-            Sessao::flash('erro', 'Erro ao restaurar: ' . $e->getMessage());
-        }
+        // Detectar tipo automaticamente
+        $tipo = str_contains($path, '/BaseDados/') ? 'bd' : 'files';
 
-        return $this->redirect('/admin/backups');
+        // Verificação de integridade avançada
+        $integridade = (new \App\Services\BackupIntegrityService())->analisar($path, $tipo);
+
+        return $this->render('admin/backups/restaurar_confirmar_avancado.twig', [
+                    'ficheiro' => $ficheiro,
+                    'tipo' => $tipo,
+                    'detalhes' => $integridade
+        ]);
     }
 
     public function delete(string $ficheiro)
@@ -237,7 +229,6 @@ class BackupsAdminController extends BaseController
             return;
         }
 
-        // Tentar arrancar novamente
         exec("net start {$service}");
         sleep(1);
 
@@ -245,7 +236,6 @@ class BackupsAdminController extends BaseController
             return;
         }
 
-        // Fallback final: reiniciar WAMP
         exec('"C:\wamp64\wampmanager.exe" -restart');
     }
 
@@ -253,7 +243,6 @@ class BackupsAdminController extends BaseController
     {
         $this->authorize('admin.backups.bd.restaurar.executar');
 
-        // Corrigir caminho
         $ficheiro = $this->decodePath($ficheiro);
         $path = $this->resolverCaminho($ficheiro);
 
@@ -263,28 +252,109 @@ class BackupsAdminController extends BaseController
         }
 
         try {
-            // Restaurar BD
-            (new RestoreService())->restaurarBD($path);
+            $restore = new \App\Services\RestoreService();
+            $restore->restaurarBD($path);
 
-            // Detetar serviço Apache
+            // Reiniciar Apache
             $apache = $this->detectarServicoApache();
+            $reinicioOK = true;
 
             if ($apache) {
-                // Reiniciar Apache
-                $ok = $this->restartService($apache);
-
-                // Garantir que arrancou
+                $reinicioOK = $this->restartService($apache);
                 $this->garantirApacheAtivo($apache);
-
-                if (!$ok) {
-                    Sessao::flash('erro', 'BD restaurada, mas o Apache não arrancou automaticamente.');
-                    return $this->redirect('/admin/backups');
-                }
             }
 
-            Sessao::flash('sucesso', 'Base de dados restaurada e Apache reiniciado com sucesso.');
+            // Auditoria + Email
+            \App\Services\BackupLogger::registar(
+                    'BD',
+                    $ficheiro,
+                    $reinicioOK,
+                    $reinicioOK ? "Restauro + reinício Apache concluído." : "Restauro OK, mas Apache não reiniciou."
+            );
+
+            if ($reinicioOK) {
+                Sessao::flash('sucesso', 'BD restaurada e Apache reiniciado com sucesso.');
+            } else {
+                Sessao::flash('erro', 'BD restaurada, mas o Apache não reiniciou.');
+            }
         } catch (\Exception $e) {
-            Sessao::flash('erro', 'Erro: ' . $e->getMessage());
+
+            \App\Services\BackupLogger::registar(
+                    'BD',
+                    $ficheiro,
+                    false,
+                    "Falha no restauro: " . $e->getMessage()
+            );
+
+            Sessao::flash('erro', 'Erro ao restaurar: ' . $e->getMessage());
+        }
+
+        return $this->redirect('/admin/backups');
+    }
+
+    public function restaurarExecutar(string $ficheiro)
+    {
+        $this->authorize('admin.backups.bd.restaurar.executar');
+
+        $ficheiro = $this->decodePath($ficheiro);
+        $path = $this->resolverCaminho($ficheiro);
+
+        if (!$path) {
+            Sessao::flash('erro', 'Ficheiro não encontrado.');
+            return $this->redirect('/admin/backups');
+        }
+
+        // Detectar tipo
+        $tipo = str_contains($path, '/BaseDados/') ? 'bd' : 'files';
+
+        // Verificação de integridade
+        $integridade = (new \App\Services\BackupIntegrityService())->analisar($path, $tipo);
+
+        // Bloquear restauro se falhar
+        if (
+                !$integridade['zip_ok'] ||
+                ($tipo === 'bd' && !$integridade['sql_ok']) ||
+                ($integridade['encriptado'] && !$integridade['password_ok']) ||
+                !$integridade['permissoes_ok']
+        ) {
+            BackupLogger::registar(
+                    strtoupper($tipo),
+                    $ficheiro,
+                    false,
+                    "Restauro bloqueado — backup inválido."
+            );
+
+            Sessao::flash('erro', 'O backup não passou na verificação de integridade.');
+            return $this->redirect('/admin/backups');
+        }
+
+        try {
+            $restore = new \App\Services\RestoreService();
+
+            if ($tipo === 'bd') {
+                $restore->restaurarBD($path);
+            } else {
+                $restore->restaurarFiles($path);
+            }
+
+            BackupLogger::registar(
+                    strtoupper($tipo),
+                    $ficheiro,
+                    true,
+                    "Restauro concluído com sucesso."
+            );
+
+            Sessao::flash('sucesso', 'Restauro concluído com sucesso.');
+        } catch (\Exception $e) {
+
+            BackupLogger::registar(
+                    strtoupper($tipo),
+                    $ficheiro,
+                    false,
+                    "Falha no restauro: " . $e->getMessage()
+            );
+
+            Sessao::flash('erro', 'Erro ao restaurar: ' . $e->getMessage());
         }
 
         return $this->redirect('/admin/backups');
@@ -304,7 +374,6 @@ class BackupsAdminController extends BaseController
 
         foreach ($iterator as $ficheiro) {
             if ($ficheiro->isFile() && $ficheiro->getExtension() === 'zip') {
-
                 $rel = str_replace('\\', '/', $ficheiro->getPathname());
                 $rel = str_replace($baseDir, '', $rel);
                 $rel = ltrim($rel, '/');
@@ -333,7 +402,6 @@ class BackupsAdminController extends BaseController
         $pastas = [$this->dirBD, $this->dirFiles];
 
         foreach ($pastas as $pasta) {
-
             if (!is_dir($pasta)) {
                 continue;
             }
@@ -343,7 +411,6 @@ class BackupsAdminController extends BaseController
             );
 
             foreach ($iterator as $f) {
-
                 if (strpos($f->getPathname(), 'restore_db_') !== false) {
                     continue;
                 }
@@ -364,7 +431,11 @@ class BackupsAdminController extends BaseController
     private function avaliarEstadoBackup(?string $data): array
     {
         if (!$data) {
-            return ['estado' => 'nenhum', 'cor' => 'secondary', 'mensagem' => 'Nenhum backup encontrado'];
+            return [
+                'estado' => 'nenhum',
+                'cor' => 'secondary',
+                'mensagem' => 'Nenhum backup encontrado',
+            ];
         }
 
         $timestamp = strtotime($data);
@@ -372,13 +443,25 @@ class BackupsAdminController extends BaseController
         $diferencaHoras = ($agora - $timestamp) / 3600;
 
         if ($diferencaHoras < 24) {
-            return ['estado' => 'ok', 'cor' => 'success', 'mensagem' => 'Backup recente'];
+            return [
+                'estado' => 'ok',
+                'cor' => 'success',
+                'mensagem' => 'Backup recente',
+            ];
         }
 
         if ($diferencaHoras < 72) {
-            return ['estado' => 'aviso', 'cor' => 'warning', 'mensagem' => 'Backup com mais de 24h'];
+            return [
+                'estado' => 'aviso',
+                'cor' => 'warning',
+                'mensagem' => 'Backup com mais de 24h',
+            ];
         }
 
-        return ['estado' => 'critico', 'cor' => 'danger', 'mensagem' => 'Backup atrasado'];
+        return [
+            'estado' => 'critico',
+            'cor' => 'danger',
+            'mensagem' => 'Backup atrasado',
+        ];
     }
 }

@@ -35,11 +35,18 @@
             <div class="card">
                 <div class="card-body">
 
-                    <a href="/admin/backups/bd/criar" class="btn btn-primary mb-3">Criar Backup da BD</a>
-                    <a href="/admin/agendamentos" class="btn btn-outline-primary mb-3 ms-2">Gerir Agendamentos</a>
+                    <div class="d-flex justify-content-between mb-3">
+                        <a href="/admin/backups/bd/criar" class="btn btn-primary">
+                            Criar Backup da BD
+                        </a>
 
-                    <table class="table table-striped">
-                        <thead>
+                        <a href="/admin/agendamentos" class="btn btn-outline-primary">
+                            Gerir Agendamentos
+                        </a>
+                    </div>
+
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
                             <tr>
                                 <th>Nome</th>
                                 <th>Tamanho</th>
@@ -51,22 +58,26 @@
                         <tbody>
                         {% for b in backupsDB %}
                             <tr>
-                                <td>{{ b.nome }}</td>
+                                <td class="fw-semibold">{{ b.nome }}</td>
                                 <td>{{ b.tamanho }}</td>
                                 <td>{{ b.data }}</td>
 
                                 <td class="text-end">
 
-                                    {# DOWNLOAD BD (GET permitido) #}
+                                    {# DOWNLOAD BD — GET permitido #}
                                     <a href="/admin/backups/bd/download/{{ b.path|replace({'/':'---'}) }}"
-                                       class="btn btn-sm btn-primary">Download</a>
+                                       class="btn btn-sm btn-outline-primary">
+                                        Download
+                                    </a>
 
                                     {# RESTAURAR BD — POST #}
                                     <form method="POST"
                                           action="/admin/backups/bd/restaurar/{{ b.path|replace({'/':'---'}) }}"
                                           class="d-inline">
                                         {{ csrf_field() }}
-                                        <button class="btn btn-sm btn-warning">Restaurar</button>
+                                        <button class="btn btn-sm btn-outline-warning">
+                                            Restaurar
+                                        </button>
                                     </form>
 
                                     {# RESTAURAR + REINICIAR — POST #}
@@ -74,7 +85,7 @@
                                           action="/admin/backups/bd/restaurar-reiniciar/{{ b.path|replace({'/':'---'}) }}"
                                           class="d-inline">
                                         {{ csrf_field() }}
-                                        <button class="btn btn-sm btn-danger"
+                                        <button class="btn btn-sm btn-outline-danger"
                                                 onclick="return confirm('Tem a certeza? Isto vai restaurar a BD e reiniciar o servidor?');">
                                             Restaurar + Reiniciar
                                         </button>
@@ -85,7 +96,7 @@
                                           action="/admin/backups/bd/delete/{{ b.path|replace({'/':'---'}) }}"
                                           class="d-inline">
                                         {{ csrf_field() }}
-                                        <button class="btn btn-sm btn-danger"
+                                        <button class="btn btn-sm btn-outline-danger"
                                                 onclick="return confirm('Eliminar este backup?');">
                                             Eliminar
                                         </button>
@@ -95,7 +106,10 @@
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="4" class="text-center text-muted">Nenhum backup.</td>
+                                <td colspan="4" class="text-center text-muted py-4">
+                                    <i class="bi bi-database-x fs-3 d-block mb-2"></i>
+                                    Nenhum backup da base de dados.
+                                </td>
                             </tr>
                         {% endfor %}
                         </tbody>
@@ -110,10 +124,12 @@
             <div class="card">
                 <div class="card-body">
 
-                    <a href="/admin/backups/files/criar" class="btn btn-primary mb-3">Criar Backup dos Ficheiros</a>
+                    <a href="/admin/backups/files/criar" class="btn btn-primary mb-3">
+                        Criar Backup dos Ficheiros
+                    </a>
 
-                    <table class="table table-striped">
-                        <thead>
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
                             <tr>
                                 <th>Nome</th>
                                 <th>Tamanho</th>
@@ -125,7 +141,7 @@
                         <tbody>
                         {% for b in backupsFiles %}
                             <tr>
-                                <td>{{ b.nome }}</td>
+                                <td class="fw-semibold">{{ b.nome }}</td>
                                 <td>{{ b.tamanho }}</td>
                                 <td>{{ b.data }}</td>
 
@@ -133,14 +149,18 @@
 
                                     {# DOWNLOAD FICHEIROS — GET permitido #}
                                     <a href="/admin/backups/files/download/{{ b.path|replace({'/':'---'}) }}"
-                                       class="btn btn-sm btn-primary">Download</a>
+                                       class="btn btn-sm btn-outline-primary">
+                                        Download
+                                    </a>
 
                                     {# RESTAURAR FICHEIROS — POST #}
                                     <form method="POST"
                                           action="/admin/backups/files/restaurar/{{ b.path|replace({'/':'---'}) }}"
                                           class="d-inline">
                                         {{ csrf_field() }}
-                                        <button class="btn btn-sm btn-warning">Restaurar</button>
+                                        <button class="btn btn-sm btn-outline-warning">
+                                            Restaurar
+                                        </button>
                                     </form>
 
                                     {# ELIMINAR FICHEIROS — POST #}
@@ -148,7 +168,7 @@
                                           action="/admin/backups/files/delete/{{ b.path|replace({'/':'---'}) }}"
                                           class="d-inline">
                                         {{ csrf_field() }}
-                                        <button class="btn btn-sm btn-danger"
+                                        <button class="btn btn-sm btn-outline-danger"
                                                 onclick="return confirm('Eliminar este backup?');">
                                             Eliminar
                                         </button>
@@ -158,7 +178,10 @@
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="4" class="text-center text-muted">Nenhum backup.</td>
+                                <td colspan="4" class="text-center text-muted py-4">
+                                    <i class="bi bi-folder-x fs-3 d-block mb-2"></i>
+                                    Nenhum backup de ficheiros.
+                                </td>
                             </tr>
                         {% endfor %}
                         </tbody>

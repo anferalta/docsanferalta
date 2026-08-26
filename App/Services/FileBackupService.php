@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use ZipArchive;
+
 class FileBackupService
 {
     private string $baseDir;
@@ -10,9 +12,9 @@ class FileBackupService
 
     public function __construct()
     {
-        // Pasta correta dos ficheiros a fazer backup
-        $this->sourceDir = realpath(__DIR__ . '/../../storage/uploads/documentos')
-            ?: (__DIR__ . '/../../storage/uploads/documentos');
+        // PASTA CORRETA DOS DOCUMENTOS
+        $this->sourceDir = realpath(__DIR__ . '/../../storage/documentos')
+            ?: (__DIR__ . '/../../storage/documentos');
 
         $this->sourceDir = rtrim(str_replace('\\', '/', $this->sourceDir), '/') . '/';
 
@@ -36,6 +38,11 @@ class FileBackupService
 
     public function criar(): string
     {
+        // Verificar espaço mínimo (200 MB)
+        if (!$this->temEspaco(200)) {
+            throw new \Exception("Espaço insuficiente para criar backup de ficheiros.");
+        }
+
         // Subpastas ano/mês
         $ano = date('Y');
         $mes = date('m');
@@ -52,11 +59,14 @@ class FileBackupService
         $nome = 'backup_files_' . date('Y-m-d_H-i-s') . '.zip';
         $zipPath = $dir . $nome;
 
-        $zip = new \ZipArchive();
-        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+        $zip = new ZipArchive();
+        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             throw new \Exception("Não foi possível criar o ZIP de backup.");
         }
 
+        $totalAdicionados = 0;
+
+        // ITERAR DOCUMENTOS REAIS
         $files = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($this->sourceDir, \FilesystemIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::LEAVES_ONLY
@@ -65,32 +75,72 @@ class FileBackupService
         foreach ($files as $file) {
             if ($file->isDir()) continue;
 
-            $filePath = $file->getRealPath();
-            if (!$filePath) continue;
-
-            $filePath = str_replace('\\', '/', $filePath);
+            $filePath = str_replace('\\', '/', $file->getRealPath());
             $relative = substr($filePath, strlen($this->sourceDir));
 
-            // --- BACKUP INCREMENTAL ---
+            // Ignorar ficheiros corrompidos ou vazios
+            if (!is_readable($filePath) || filesize($filePath) === 0) {
+                continue;
+            }
+
+            // BACKUP INCREMENTAL
             $hashAtual = md5_file($filePath);
             $hashAnterior = $this->lerHashAnterior($relative);
 
             if ($hashAtual === $hashAnterior) {
-                continue; // ficheiro não mudou
+                continue;
             }
 
             $this->guardarHash($relative, $hashAtual);
-            // --------------------------
 
-            $zip->addFile($filePath, $relative);
+            if (!$zip->addFile($filePath, $relative)) {
+                throw new \Exception("Erro ao adicionar ficheiro ao ZIP: {$relative}");
+            }
+
+            $totalAdicionados++;
         }
 
         $zip->close();
+
+        // Proteger contra ZIP vazio
+        if ($totalAdicionados === 0) {
+            unlink($zipPath);
+            throw new \Exception("Nenhum ficheiro novo ou alterado para backup.");
+        }
+
+        // Verificar integridade do ZIP
+        if (!$this->validarZip($zipPath)) {
+            unlink($zipPath);
+            throw new \Exception("Backup inválido — ZIP corrompido.");
+        }
 
         // Limpeza automática (30 dias)
         $this->limparAntigos($this->baseDir, 30);
 
         return $zipPath;
+    }
+
+    private function temEspaco(int $minMB): bool
+    {
+        $livre = disk_free_space(__DIR__);
+        return ($livre / 1024 / 1024) > $minMB;
+    }
+
+    private function validarZip(string $ficheiro): bool
+    {
+        if (!file_exists($ficheiro) || filesize($ficheiro) < 1024) {
+            return false;
+        }
+
+        $zip = new ZipArchive();
+        if ($zip->open($ficheiro) !== true) {
+            return false;
+        }
+
+        $ok = $zip->numFiles > 0;
+        $zip->close();
+
+        return $ok;
     }
 
     private function lerHashAnterior(string $ficheiro): ?string

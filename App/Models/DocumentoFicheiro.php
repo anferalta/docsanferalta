@@ -6,9 +6,9 @@ use App\Core\Model;
 
 class DocumentoFicheiro extends Model
 {
-
     protected string $table = 'documento_ficheiros';
     protected string $primaryKey = 'id';
+
     public ?int $id = null;
     public ?int $documento_id = null;
     public ?string $ficheiro = null;
@@ -19,6 +19,7 @@ class DocumentoFicheiro extends Model
     public ?string $hash = null;
     public ?string $criado_em = null;
     public ?string $mime = null;
+
     protected array $fillable = [
         'documento_id',
         'ficheiro',
@@ -43,7 +44,7 @@ class DocumentoFicheiro extends Model
      */
     public function nome()
     {
-        return $this->ficheiro_original ?: basename($this->ficheiro);
+        return $this->ficheiro_original ?: basename((string) $this->ficheiro);
     }
 
     /**
@@ -51,7 +52,7 @@ class DocumentoFicheiro extends Model
      */
     public function ext()
     {
-        return strtolower(pathinfo($this->ficheiro, PATHINFO_EXTENSION));
+        return strtolower(pathinfo((string) $this->ficheiro, PATHINFO_EXTENSION));
     }
 
     /**
@@ -60,7 +61,12 @@ class DocumentoFicheiro extends Model
     public function caminhoAbsoluto()
     {
         $root = realpath(__DIR__ . '/../../');
-        return $root . '/storage/documentos/' . $this->caminho . $this->ficheiro;
+
+        // Normalizar caminho — evitar null
+        $caminho = trim((string) $this->caminho, '/');
+        $ficheiro = ltrim((string) $this->ficheiro, '/');
+
+        return "{$root}/storage/documentos/{$caminho}/{$ficheiro}";
     }
 
     /**

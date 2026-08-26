@@ -8,22 +8,25 @@ class DocumentoFileService
     {
         $root = dirname(__DIR__, 2) . '/storage/documentos';
 
-        // Sanitização segura
+        // Sanitização
         $ano = preg_replace('/[^0-9]/', '', $ano);
         $mes = preg_replace('/[^0-9]/', '', $mes);
         $dia = preg_replace('/[^0-9]/', '', $dia);
         $ficheiro = basename($ficheiro);
 
         if (!$ano || !$mes || !$dia) {
-            throw new \Exception("Caminho inválido.");
+            return null; // nunca lançar exceção
         }
 
-        $path = "$root/$ano/$mes/$dia/$ficheiro";
+        // Normalizar caminho
+        $path = rtrim("$root/$ano/$mes/$dia", '/');
+        $full = $path . '/' . $ficheiro;
 
-        if (!file_exists($path)) {
-            throw new \Exception("Ficheiro não encontrado.");
+        // Se não existir, não lançar exceção
+        if (!file_exists($full)) {
+            return null;
         }
 
-        return $path;
+        return $full;
     }
 }

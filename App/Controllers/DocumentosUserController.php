@@ -195,8 +195,9 @@ class DocumentosUserController extends BaseController
 
             DocumentoFicheiro::create([
                 'documento_id' => $documentoId,
-                'ficheiro' => $baseDir . $novoNome,
+                'ficheiro' => $novoNome,
                 'ficheiro_original' => $nomeOriginal,
+                'caminho' => $baseDir, // <-- ADICIONADO
                 'tamanho' => filesize($destino),
                 'mime' => mime_content_type($destino),
                 'criado_em' => date('Y-m-d H:i:s')
@@ -236,7 +237,7 @@ class DocumentosUserController extends BaseController
         }
 
         $root = realpath(__DIR__ . '/../../');
-        $path = $root . '/storage/documentos/' . $anexo->ficheiro;
+        $path = $root . '/storage/documentos/' . $anexo->caminho . $anexo->ficheiro;
 
         if (!file_exists($path)) {
             http_response_code(404);

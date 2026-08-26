@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use ZipArchive;
+
 class DatabaseBackupService
 {
     private string $baseDir;
@@ -10,7 +12,8 @@ class DatabaseBackupService
     public function __construct()
     {
         // Diretório base dos backups
-        $this->baseDir = realpath(__DIR__ . '/../../backups/BaseDados') ?: (__DIR__ . '/../../backups/BaseDados');
+        $this->baseDir = realpath(__DIR__ . '/../../backups/BaseDados')
+            ?: (__DIR__ . '/../../backups/BaseDados');
 
         if (!is_dir($this->baseDir)) {
             mkdir($this->baseDir, 0777, true);
@@ -32,6 +35,11 @@ class DatabaseBackupService
      */
     public function criar(): string
     {
+        // Verificar espaço mínimo (200 MB)
+        if (!$this->temEspaco(200)) {
+            throw new \Exception("Espaço insuficiente para criar backup da base de dados.");
+        }
+
         // Criar subpastas ano/mês
         $ano = date('Y');
         $mes = date('m');
@@ -50,7 +58,7 @@ class DatabaseBackupService
 
         // Credenciais
         $host = $_ENV['DB_HOST'] ?? 'localhost';
-        $db = $_ENV['DB_NAME'] ?? 'anferaltadocs';
+        $db   = $_ENV['DB_NAME'] ?? 'anferaltadocs';
         $user = $_ENV['DB_USER'] ?? 'root';
         $pass = $_ENV['DB_PASS'] ?? '';
 
@@ -89,8 +97,26 @@ class DatabaseBackupService
             throw new \Exception("Falha ao criar backup da base de dados.");
         }
 
+        // Verificar integridade mínima do SQL
+        if (!$this->validarSQL($ficheiroSQL)) {
+            unlink($ficheiroSQL);
+            throw new \Exception("Backup inválido — SQL corrompido ou incompleto.");
+        }
+
         // Criar ZIP
         $ficheiroZIP = $this->comprimirZip($ficheiroSQL);
+
+        // Verificar integridade do ZIP
+        if (!$this->validarZip($ficheiroZIP)) {
+            unlink($ficheiroZIP);
+            throw new \Exception("Backup inválido — ZIP corrompido.");
+        }
+
+        // Teste automático de restauração (sandbox)
+        if (!$this->testarRestauro($ficheiroZIP)) {
+            unlink($ficheiroZIP);
+            throw new \Exception("Backup inválido — falha no teste de restauração.");
+        }
 
         // Encriptar ZIP (AES‑256)
         $ficheiroFinal = $this->encriptar($ficheiroZIP);
@@ -101,6 +127,99 @@ class DatabaseBackupService
         $this->log("Backup criado com sucesso: $ficheiroFinal");
 
         return $ficheiroFinal;
+    }
+
+    /**
+     * Verificar espaço em disco
+     */
+    private function temEspaco(int $minMB): bool
+    {
+        $livre = disk_free_space(__DIR__);
+        return ($livre / 1024 / 1024) > $minMB;
+    }
+
+    /**
+     * Verificar integridade mínima do SQL
+     */
+    private function validarSQL(string $ficheiro): bool
+    {
+        if (!file_exists($ficheiro) || filesize($ficheiro) < 1024) {
+            return false;
+        }
+
+        $conteudo = file_get_contents($ficheiro);
+
+        return (
+            str_contains($conteudo, 'CREATE TABLE') ||
+            str_contains($conteudo, 'INSERT INTO')
+        );
+    }
+
+    /**
+     * Verificar integridade do ZIP
+     */
+    private function validarZip(string $ficheiro): bool
+    {
+        if (!file_exists($ficheiro) || filesize($ficheiro) < 1024) {
+            return false;
+        }
+
+        $zip = new ZipArchive();
+        if ($zip->open($ficheiro) !== true) {
+            return false;
+        }
+
+        $ok = $zip->numFiles > 0;
+        $zip->close();
+
+        return $ok;
+    }
+
+    /**
+     * Teste automático de restauração (sandbox)
+     */
+    private function testarRestauro(string $ficheiroZIP): bool
+    {
+        $tempDir = sys_get_temp_dir() . '/restore_test_' . uniqid();
+        mkdir($tempDir);
+
+        $zip = new ZipArchive();
+        if ($zip->open($ficheiroZIP) !== true) {
+            return false;
+        }
+
+        $zip->extractTo($tempDir);
+        $zip->close();
+
+        $sqlFiles = glob($tempDir . '/*.sql');
+        if (empty($sqlFiles)) {
+            return false;
+        }
+
+        $sql = $sqlFiles[0];
+
+        // Criar BD temporária
+        $tempDB = "test_restore_" . uniqid();
+
+        $mysql = $this->detetarMysql();
+        if (!$mysql) {
+            return false;
+        }
+
+        $cmdCreate = "\"{$mysql}\" -u root -e \"CREATE DATABASE {$tempDB}\"";
+        exec($cmdCreate);
+
+        $cmdImport = "\"{$mysql}\" {$tempDB} < \"{$sql}\"";
+        exec($cmdImport, $out, $code);
+
+        // Apagar BD temporária
+        exec("\"{$mysql}\" -u root -e \"DROP DATABASE {$tempDB}\"");
+
+        // Limpar diretório temporário
+        array_map('unlink', glob("$tempDir/*"));
+        @rmdir($tempDir);
+
+        return $code === 0;
     }
 
     /**
@@ -134,15 +253,13 @@ class DatabaseBackupService
      */
     private function detetarMysqldump(): ?string
     {
-        // 1) .env
         $envPath = $_ENV['MYSQLDUMP_PATH'] ?? null;
         if ($envPath && file_exists($envPath)) {
             return $envPath;
         }
 
-        // 2) Caminhos típicos do WAMP/XAMPP
         $possiveis = [
-            'C:\\wamp\\bin\\mysql\\mysql9.1.0\\bin\\mysqldump.exe', // O TEU CAMINHO REAL
+            'C:\\wamp\\bin\\mysql\\mysql9.1.0\\bin\\mysqldump.exe',
             'C:\\wamp64\\bin\\mysql\\mysql9.1.0\\bin\\mysqldump.exe',
             'C:\\xampp\\mysql\\bin\\mysqldump.exe',
         ];
@@ -153,13 +270,8 @@ class DatabaseBackupService
             }
         }
 
-        // 3) Linux
         $which = trim(shell_exec('which mysqldump 2>/dev/null') ?? '');
-        if ($which !== '' && file_exists($which)) {
-            return $which;
-        }
-
-        return null;
+        return ($which !== '' && file_exists($which)) ? $which : null;
     }
 
     /**
@@ -167,15 +279,13 @@ class DatabaseBackupService
      */
     public function detetarMysql(): ?string
     {
-        // 1) .env
         $envPath = $_ENV['MYSQL_PATH'] ?? null;
         if ($envPath && file_exists($envPath)) {
             return $envPath;
         }
 
-        // 2) Caminhos típicos do WAMP/XAMPP
         $possiveis = [
-            'C:\\wamp\\bin\\mysql\\mysql9.1.0\\bin\\mysql.exe', // O TEU CAMINHO REAL
+            'C:\\wamp\\bin\\mysql\\mysql9.1.0\\bin\\mysql.exe',
             'C:\\wamp64\\bin\\mysql\\mysql9.1.0\\bin\\mysql.exe',
             'C:\\xampp\\mysql\\bin\\mysql.exe',
         ];
@@ -186,13 +296,8 @@ class DatabaseBackupService
             }
         }
 
-        // 3) Linux
         $which = trim(shell_exec('which mysql 2>/dev/null') ?? '');
-        if ($which !== '' && file_exists($which)) {
-            return $which;
-        }
-
-        return null;
+        return ($which !== '' && file_exists($which)) ? $which : null;
     }
 
     /**
@@ -202,8 +307,8 @@ class DatabaseBackupService
     {
         $zipPath = $ficheiroSQL . '.zip';
 
-        $zip = new \ZipArchive();
-        if ($zip->open($zipPath, \ZipArchive::CREATE) === true) {
+        $zip = new ZipArchive();
+        if ($zip->open($zipPath, ZipArchive::CREATE) === true) {
             $zip->addFile($ficheiroSQL, basename($ficheiroSQL));
             $zip->close();
 

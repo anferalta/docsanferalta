@@ -4,20 +4,122 @@
 
 {% block content %}
 
-<div class="card">
+<div class="card border-danger">
     <div class="card-body">
 
-        <h4 class="text-danger">⚠ Atenção</h4>
+        <h4 class="text-danger mb-3">
+            ⚠ Operação Crítica — Confirmar Restauro
+        </h4>
 
-        <p>Vai restaurar o backup:</p>
+        <p class="mb-2">Vai restaurar o seguinte backup:</p>
 
-        <pre class="bg-light p-2">{{ ficheiro }}</pre>
+        <pre class="bg-light p-2 border">{{ ficheiro }}</pre>
 
-        <p class="fw-bold text-danger">
+        {# ------------------ DETALHES DO BACKUP ------------------ #}
+        <h5 class="mt-4 mb-3">Detalhes do Backup</h5>
+
+        <ul class="list-group mb-3">
+
+            <li class="list-group-item">
+                <strong>Tamanho:</strong> {{ detalhes.tamanho ?? '—' }}
+            </li>
+
+            <li class="list-group-item">
+                <strong>Data:</strong> {{ detalhes.data ?? '—' }}
+            </li>
+
+            <li class="list-group-item">
+                <strong>Tipo:</strong>
+                {% if tipo == 'files' %}
+                    Backup de Ficheiros
+                {% else %}
+                    Backup da Base de Dados
+                {% endif %}
+            </li>
+
+            <li class="list-group-item">
+                <strong>Encriptação:</strong>
+                {% if detalhes.encriptado %}
+                    <span class="badge bg-warning text-dark">Encriptado (.enc)</span>
+                {% else %}
+                    <span class="badge bg-success">Não encriptado</span>
+                {% endif %}
+            </li>
+
+            <li class="list-group-item">
+                <strong>Integridade ZIP:</strong>
+                {% if detalhes.zip_ok %}
+                    <span class="badge bg-success">OK</span>
+                {% else %}
+                    <span class="badge bg-danger">Corrompido</span>
+                {% endif %}
+            </li>
+
+            {% if tipo != 'files' %}
+                <li class="list-group-item">
+                    <strong>Integridade SQL:</strong>
+                    {% if detalhes.sql_ok %}
+                        <span class="badge bg-success">OK</span>
+                    {% else %}
+                        <span class="badge bg-danger">Problemas detectados</span>
+                    {% endif %}
+                </li>
+            {% endif %}
+
+        </ul>
+
+        {# ------------------ PREVIEW DO ZIP ------------------ #}
+        <h5 class="mt-4 mb-3">Conteúdo do Backup</h5>
+
+        {% if detalhes.ficheiros is not empty %}
+            <ul class="list-group mb-3">
+                {% for f in detalhes.ficheiros %}
+                    <li class="list-group-item">{{ f }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted">Não foi possível listar o conteúdo.</p>
+        {% endif %}
+
+        {# ------------------ ALERTAS INTELIGENTES ------------------ #}
+        <h5 class="mt-4 mb-3">Verificações</h5>
+
+        {% if not detalhes.zip_ok %}
+            <div class="alert alert-danger">
+                ⚠ O ficheiro ZIP está corrompido. O restauro pode falhar.
+            </div>
+        {% endif %}
+
+        {% if tipo != 'files' and not detalhes.sql_ok %}
+            <div class="alert alert-danger">
+                ⚠ O ficheiro SQL parece incompleto ou inválido.
+            </div>
+        {% endif %}
+
+        {% if detalhes.encriptado and not detalhes.password_ok %}
+            <div class="alert alert-danger">
+                ⚠ Backup encriptado, mas a password não está definida no sistema.
+            </div>
+        {% endif %}
+
+        {% if detalhes.permissoes_ok == false %}
+            <div class="alert alert-danger">
+                ⚠ O sistema não tem permissões suficientes para restaurar este backup.
+            </div>
+        {% endif %}
+
+        <p class="fw-bold text-danger mt-4">
             Este processo é irreversível. Todos os dados atuais serão substituídos.
         </p>
 
-        {% if tipo is defined and tipo == 'files' %}
+        {# ------------------ BOTÕES ------------------ #}
+
+        {% set pode_restaurar = detalhes.zip_ok 
+                                and (tipo == 'files' or detalhes.sql_ok)
+                                and (not detalhes.encriptado or detalhes.password_ok)
+                                and detalhes.permissoes_ok %}
+
+        {% if tipo == 'files' %}
             <form method="post" action="/admin/backups/files/restaurar/{{ ficheiro|replace({'/':'---'}) }}">
         {% else %}
             <form method="post" action="/admin/backups/bd/restaurar/{{ ficheiro|replace({'/':'---'}) }}">
@@ -25,15 +127,23 @@
 
             {{ csrf_field() }}
 
-            <button type="submit" class="btn btn-danger">
+            <button type="submit"
+                    class="btn btn-danger"
+                    {% if not pode_restaurar %}disabled{% endif %}>
                 Confirmar Restauro
             </button>
 
-            <a href="/admin/backups" class="btn btn-secondary">
+            <a href="/admin/backups" class="btn btn-light ms-2">
                 Cancelar
             </a>
 
         </form>
+
+        {% if not pode_restaurar %}
+            <p class="text-muted mt-3">
+                O restauro está desativado porque foram detectados problemas no backup.
+            </p>
+        {% endif %}
 
     </div>
 </div>

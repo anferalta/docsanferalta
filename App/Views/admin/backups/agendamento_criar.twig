@@ -3,32 +3,38 @@
 {% block page_title %}Criar Agendamento{% endblock %}
 
 {% block content %}
+
 <div class="card">
     <div class="card-body">
 
         <form method="post">
-
             {{ csrf_field() }}
 
             <div class="mb-3">
-                <label class="form-label">Nome</label>
-                <input type="text" name="nome" class="form-control" required>
+                <label class="form-label fw-semibold">Nome da tarefa</label>
+                <input type="text" name="nome" class="form-control" placeholder="ex: backup_bd_diario" required>
+                <small class="text-muted">Use nomes simples, sem espaços.</small>
             </div>
 
             <div class="mb-3">
-                <label class="form-label">Frequência</label>
-                <select name="frequencia" class="form-select">
-                    <option value="diario">Diário</option>
-                    <option value="semanal">Semanal</option>
-                    <option value="mensal">Mensal</option>
-                </select>
+                <label class="form-label fw-semibold">Frequência (cron)</label>
+                <input type="text" name="frequencia" class="form-control" placeholder="ex: 0 3 * * *" required>
+
+                <small class="text-muted d-block mt-1">
+                    Exemplos:
+                    <ul class="mt-1 mb-0">
+                        <li><code>0 3 * * *</code> — todos os dias às 03:00</li>
+                        <li><code>0 4 * * 0</code> — todos os domingos às 04:00</li>
+                        <li><code>30 2 * * *</code> — todos os dias às 02:30</li>
+                    </ul>
+                </small>
             </div>
 
             <button class="btn btn-primary">Criar</button>
-            <a href="/admin/backups#cron" class="btn btn-light">Cancelar</a>
-
+            <a href="/admin/agendamentos" class="btn btn-light">Cancelar</a>
         </form>
 
     </div>
 </div>
+
 {% endblock %}

@@ -29,7 +29,6 @@ class AgendamentosController extends BaseController
 
     public function criar()
     {
-        // Não existe permissão "criar" na BD → usar editar
         $this->authorize('admin.backups.agendamentos.editar');
 
         return $this->render('admin/backups/agendamento_criar.twig');
@@ -43,145 +42,123 @@ class AgendamentosController extends BaseController
         $frequencia = trim($_POST['frequencia'] ?? '');
 
         if ($nome === '' || $frequencia === '') {
-            $this->flash('error', 'Preencha todos os campos.');
+            Sessao::flash('erro', 'Preencha todos os campos.');
             return $this->redirect('/admin/agendamentos/criar');
         }
 
-        $ficheiro = strtolower(preg_replace('/[^a-z0-9_\-]/i', '_', $nome)) . '.txt';
+        $this->service->definir($nome, $frequencia, true);
 
-        $dados = [
-            'nome' => $nome,
-            'frequencia' => $frequencia,
-            'ativo' => 1,
-            'ultima_execucao' => null,
-            'proxima_execucao' => null
-        ];
-
-        $this->service->guardar($ficheiro, $dados);
-
-        $this->flash('success', 'Agendamento criado.');
+        Sessao::flash('sucesso', 'Agendamento criado.');
         return $this->redirect('/admin/agendamentos');
     }
 
-    public function ver($ficheiro)
+    public function ver($nome)
     {
         $this->authorize('admin.backups.agendamentos.ver');
 
-        if (!$this->validarFicheiro($ficheiro)) {
-            $this->flash('error', 'Ficheiro inválido.');
+        $cron = $this->service->listar();
+
+        if (!isset($cron[$nome])) {
+            Sessao::flash('erro', 'Agendamento não encontrado.');
             return $this->redirect('/admin/agendamentos');
         }
-
-        $path = $this->service->getPath($ficheiro);
-
-        if (!file_exists($path)) {
-            $this->flash('error', 'Agendamento não encontrado.');
-            return $this->redirect('/admin/agendamentos');
-        }
-
-        $dados = $this->service->parse($path);
 
         return $this->render('admin/backups/agendamento_ver.twig', [
-            'ficheiro' => $ficheiro,
-            'dados' => $dados
+            'nome' => $nome,
+            'dados' => $cron[$nome]
         ]);
     }
 
-    public function editar($ficheiro)
+    public function editar($nome)
     {
         $this->authorize('admin.backups.agendamentos.editar');
 
-        if (!$this->validarFicheiro($ficheiro)) {
-            $this->flash('error', 'Ficheiro inválido.');
+        $cron = $this->service->listar();
+
+        if (!isset($cron[$nome])) {
+            Sessao::flash('erro', 'Agendamento não encontrado.');
             return $this->redirect('/admin/agendamentos');
         }
-
-        $path = $this->service->getPath($ficheiro);
-
-        if (!file_exists($path)) {
-            $this->flash('error', 'Agendamento não encontrado.');
-            return $this->redirect('/admin/agendamentos');
-        }
-
-        $dados = $this->service->parse($path);
 
         return $this->render('admin/backups/agendamento_editar.twig', [
-            'ficheiro' => $ficheiro,
-            'dados' => $dados
+            'nome' => $nome,
+            'dados' => $cron[$nome]
         ]);
     }
 
-    public function editarPost($ficheiro)
+    public function editarPost($nome)
     {
         $this->authorize('admin.backups.agendamentos.editar');
 
-        if (!$this->validarFicheiro($ficheiro)) {
-            $this->flash('error', 'Ficheiro inválido.');
+        $cron = $this->service->listar();
+
+        if (!isset($cron[$nome])) {
+            Sessao::flash('erro', 'Agendamento não encontrado.');
             return $this->redirect('/admin/agendamentos');
         }
 
-        $dados = [
-            'nome' => $_POST['nome'] ?? '',
-            'frequencia' => $_POST['frequencia'] ?? '',
-            'ultima_execucao' => $_POST['ultima_execucao'] ?: null,
-            'proxima_execucao' => $_POST['proxima_execucao'] ?: null,
-            'ativo' => isset($_POST['ativo']) ? 1 : 0,
-        ];
+        $frequencia = trim($_POST['frequencia'] ?? '');
+        $ativo = isset($_POST['ativo']);
 
-        $this->service->guardar($ficheiro, $dados);
+        if ($frequencia === '') {
+            Sessao::flash('erro', 'A frequência é obrigatória.');
+            return $this->redirect("/admin/agendamentos/editar/{$nome}");
+        }
 
-        $this->flash('success', 'Agendamento atualizado.');
+        $this->service->definir($nome, $frequencia, $ativo);
+
+        Sessao::flash('sucesso', 'Agendamento atualizado.');
         return $this->redirect('/admin/agendamentos');
     }
 
-    public function ativar($ficheiro)
+    public function ativar($nome)
     {
         $this->authorize('admin.backups.agendamentos.editar');
 
-        if (!$this->validarFicheiro($ficheiro)) {
-            $this->flash('error', 'Ficheiro inválido.');
+        $cron = $this->service->listar();
+
+        if (!isset($cron[$nome])) {
+            Sessao::flash('erro', 'Agendamento não encontrado.');
             return $this->redirect('/admin/agendamentos');
         }
 
-        $this->service->ativar($ficheiro);
+        $this->service->ativar($nome);
 
-        $this->flash('success', 'Agendamento ativado.');
+        Sessao::flash('sucesso', 'Agendamento ativado.');
         return $this->redirect('/admin/agendamentos');
     }
 
-    public function desativar($ficheiro)
+    public function desativar($nome)
     {
         $this->authorize('admin.backups.agendamentos.editar');
 
-        if (!$this->validarFicheiro($ficheiro)) {
-            $this->flash('error', 'Ficheiro inválido.');
+        $cron = $this->service->listar();
+
+        if (!isset($cron[$nome])) {
+            Sessao::flash('erro', 'Agendamento não encontrado.');
             return $this->redirect('/admin/agendamentos');
         }
 
-        $this->service->desativar($ficheiro);
+        $this->service->desativar($nome);
 
-        $this->flash('success', 'Agendamento desativado.');
+        Sessao::flash('sucesso', 'Agendamento desativado.');
         return $this->redirect('/admin/agendamentos');
     }
 
-    public function eliminar($ficheiro)
+    public function eliminar($nome)
     {
-        // Não existe "apagar" na BD → usar editar
         $this->authorize('admin.backups.agendamentos.editar');
 
-        if (!$this->validarFicheiro($ficheiro)) {
-            $this->flash('error', 'Ficheiro inválido.');
+        $cron = $this->service->listar();
+
+        if (!isset($cron[$nome])) {
+            Sessao::flash('erro', 'Agendamento não encontrado.');
             return $this->redirect('/admin/agendamentos');
         }
 
-        $this->service->eliminar($ficheiro);
+        $this->service->eliminar($nome);
 
-        $this->flash('success', 'Agendamento eliminado.');
+        Sessao::flash('sucesso', 'Agendamento eliminado.');
         return $this->redirect('/admin/agendamentos');
-    }
-
-    private function validarFicheiro(string $ficheiro): bool
-    {
-        return preg_match('/^[a-z0-9_\-]+\.txt$/i', $ficheiro) === 1;
     }
 }

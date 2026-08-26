@@ -1,0 +1,93 @@
+{% extends "@admin/layout.twig" %}
+{% block title %}Detalhes do Log{% endblock %}
+{% block page_title %}Detalhes do Log{% endblock %}
+
+{% block content %}
+
+{% set tipos = {
+    'sucesso':        {'label': 'Sucesso',          'cor': 'success',  'icon': 'bi-check-circle'},
+    'erro':           {'label': 'Erro',             'cor': 'danger',   'icon': 'bi-x-circle'},
+    'exception':      {'label': 'Exceção',          'cor': 'warning',  'icon': 'bi-exclamation-triangle'},
+    'backup_erro':    {'label': 'Erro de Backup',   'cor': 'danger',   'icon': 'bi-bug'},
+    'backup_sucesso': {'label': 'Backup concluído', 'cor': 'success',  'icon': 'bi-check2-square'}
+} %}
+
+{% set info = tipos[log.tipo] ?? {'label': log.tipo, 'cor': 'secondary', 'icon': 'bi-info-circle'} %}
+
+<div class="card shadow-sm">
+    <div class="card-body">
+
+        {# ---------------- HEADER ---------------- #}
+        <div class="d-flex align-items-center mb-3">
+            <i class="{{ info.icon }} text-{{ info.cor }} fs-2 me-2"></i>
+            <h4 class="mb-0">{{ info.label }}</h4>
+        </div>
+
+        <p class="text-muted mb-4">
+            Registo criado em <strong>{{ log.criado_em|date("Y-m-d H:i:s") }}</strong>
+        </p>
+
+        {# ---------------- MENSAGEM PRINCIPAL ---------------- #}
+        <div class="mb-4">
+            <h5 class="fw-semibold">Mensagem</h5>
+            <div class="alert alert-{{ info.cor }} py-3">
+                {{ log.mensagem }}
+            </div>
+        </div>
+
+        {# ---------------- METADADOS ---------------- #}
+        <h5 class="fw-semibold mb-3">Metadados</h5>
+
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <p><strong>Tipo:</strong> {{ info.label }}</p>
+                <p><strong>IP:</strong> {{ log.ip ?? '—' }}</p>
+                <p><strong>Ficheiro:</strong> <code>{{ log.ficheiro ?? '—' }}</code></p>
+                <p><strong>Utilizador:</strong> ID {{ log.utilizador_id ?? '—' }}</p>
+            </div>
+
+            <div class="col-md-6">
+                <p><strong>Linha:</strong> {{ log.linha ?? '—' }}</p>
+                <p><strong>URL:</strong> <code>{{ log.url ?? '—' }}</code></p>
+                <p><strong>Método HTTP:</strong> {{ log.metodo ?? '—' }}</p>
+                <p><strong>User Agent:</strong> <small class="text-muted">{{ log.user_agent ?? '—' }}</small></p>
+            </div>
+        </div>
+
+        {# ---------------- DETALHES TÉCNICOS / STACK TRACE ---------------- #}
+        {% if log.detalhes %}
+            <h5 class="fw-semibold mb-2">Detalhes Técnicos</h5>
+
+            <pre id="detalhesBox"
+                 class="p-3 bg-light border rounded"
+                 style="max-height: 350px; overflow-y: auto; white-space: pre-wrap;">
+{{ log.detalhes }}
+            </pre>
+
+            <button class="btn btn-outline-secondary mt-2"
+                    onclick="navigator.clipboard.writeText(document.getElementById('detalhesBox').innerText)">
+                <i class="bi bi-clipboard"></i> Copiar detalhes
+            </button>
+        {% endif %}
+
+        <hr class="my-4">
+
+        {# ---------------- BOTÕES ---------------- #}
+        <div class="d-flex justify-content-between">
+            <a href="/admin/logs" class="btn btn-light">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+
+            <form action="/admin/logs/delete/{{ log.id }}" method="post" class="d-inline">
+                {{ csrf_field() }}
+                <button class="btn btn-danger"
+                        onclick="return confirm('Eliminar este log?');">
+                    <i class="bi bi-trash"></i> Eliminar
+                </button>
+            </form>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

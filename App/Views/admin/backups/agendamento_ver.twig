@@ -1,19 +1,21 @@
 {% extends "@admin/layout.twig" %}
-{% block title %}Agendamento: {{ ficheiro }}{% endblock %}
+{% block title %}Agendamento: {{ nome }}{% endblock %}
 {% block page_title %}Detalhes do Agendamento{% endblock %}
 
 {% block content %}
+
 <div class="card">
     <div class="card-body">
 
-        <p><strong>Nome:</strong> {{ dados.nome }}</p>
-        <p><strong>Frequência:</strong> {{ dados.frequencia }}</p>
+        <h5 class="mb-3">{{ dados.nome }}</h5>
+
+        <p><strong>Frequência:</strong> <code>{{ dados.frequencia }}</code></p>
 
         <p><strong>Estado:</strong>
             {% if dados.ativo %}
-                <span class="badge bg-success">Ativo</span>
+                <span class="badge bg-success px-3 py-2">Ativo</span>
             {% else %}
-                <span class="badge bg-secondary">Inativo</span>
+                <span class="badge bg-secondary px-3 py-2">Inativo</span>
             {% endif %}
         </p>
 
@@ -22,29 +24,37 @@
 
         <hr>
 
-        <a href="/admin/agendamentos/editar/{{ ficheiro }}" class="btn btn-warning">Editar</a>
+        <div class="d-flex gap-2">
 
-        {% if dados.ativo %}
-            <form action="/admin/agendamentos/desativar/{{ ficheiro }}" method="post" class="d-inline">
+            <a href="/admin/agendamentos/editar/{{ nome }}" class="btn btn-outline-warning">
+                Editar
+            </a>
+
+            {% if dados.ativo %}
+                <form action="/admin/agendamentos/desativar/{{ nome }}" method="post" class="d-inline">
+                    {{ csrf_field() }}
+                    <button class="btn btn-outline-secondary">Desativar</button>
+                </form>
+            {% else %}
+                <form action="/admin/agendamentos/ativar/{{ nome }}" method="post" class="d-inline">
+                    {{ csrf_field() }}
+                    <button class="btn btn-outline-success">Ativar</button>
+                </form>
+            {% endif %}
+
+            <form action="/admin/agendamentos/eliminar/{{ nome }}" method="post" class="d-inline">
                 {{ csrf_field() }}
-                <button class="btn btn-secondary">Desativar</button>
+                <button class="btn btn-outline-danger"
+                        onclick="return confirm('Eliminar este agendamento?');">
+                    Eliminar
+                </button>
             </form>
-        {% else %}
-            <form action="/admin/agendamentos/ativar/{{ ficheiro }}" method="post" class="d-inline">
-                {{ csrf_field() }}
-                <button class="btn btn-success">Ativar</button>
-            </form>
-        {% endif %}
 
-        <form action="/admin/agendamentos/eliminar/{{ ficheiro }}" method="post" class="d-inline">
-            {{ csrf_field() }}
-            <button class="btn btn-danger" onclick="return confirm('Eliminar este agendamento?');">
-                Eliminar
-            </button>
-        </form>
+            <a href="/admin/agendamentos" class="btn btn-light">Voltar</a>
 
-        <a href="/admin/backups#cron" class="btn btn-light">Voltar</a>
+        </div>
 
     </div>
 </div>
+
 {% endblock %}

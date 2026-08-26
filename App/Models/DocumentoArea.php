@@ -7,6 +7,13 @@ use PDO;
 
 class DocumentoArea
 {
+    public static function all()
+    {
+        $db = Conexao::getInstancia();
+        return $db->query("SELECT * FROM documento_areas ORDER BY nome ASC")
+                  ->fetchAll(PDO::FETCH_OBJ);
+    }
+
     public static function todas()
     {
         $db = Conexao::getInstancia();

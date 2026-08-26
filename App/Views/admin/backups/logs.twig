@@ -1,39 +1,57 @@
-<table class="table table-striped">
-    <thead>
+<table class="table table-hover align-middle">
+    <thead class="table-light">
         <tr>
-            <th>Data</th>
+            <th style="width: 180px;">Data</th>
             <th>Mensagem</th>
-            <th>Tipo</th>
-            <th class="text-end">Ação</th>
+            <th style="width: 160px;">Tipo</th>
+            <th class="text-end" style="width: 120px;">Ação</th>
         </tr>
     </thead>
+
     <tbody>
         {% for l in logs %}
+            {% set tipos = {
+                'sucesso':        {'label': 'Sucesso',          'cor': 'success',  'icon': 'bi-check-circle'},
+                'erro':           {'label': 'Erro',             'cor': 'danger',   'icon': 'bi-x-circle'},
+                'exception':      {'label': 'Exceção',          'cor': 'warning',  'icon': 'bi-exclamation-triangle'},
+                'backup_erro':    {'label': 'Erro de Backup',   'cor': 'danger',   'icon': 'bi-bug'},
+                'backup_sucesso': {'label': 'Backup concluído', 'cor': 'success',  'icon': 'bi-check2-square'}
+            } %}
+
+            {% set info = tipos[l.tipo] ?? {'label': l.tipo, 'cor': 'secondary', 'icon': 'bi-info-circle'} %}
+
             <tr>
-                <td>{{ l.criado_em }}</td>
-                <td>{{ l.mensagem }}</td>
-                <td>
-                    {% set tipos = {
-        'sucesso': {'label': 'Sucesso', 'cor': 'success'},
-        'erro': {'label': 'Erro', 'cor': 'danger'},
-        'exception': {'label': 'Exceção', 'cor': 'warning'},
-        'backup_erro': {'label': 'Erro de Backup', 'cor': 'danger'},
-        'backup_sucesso': {'label': 'Backup concluído', 'cor': 'success'}
-    } %}
-
-                    {% set info = tipos[l.tipo] ?? {'label': l.tipo, 'cor': 'secondary'} %}
-
-                    <span class="badge bg-{{ info.cor }}">{{ info.label }}</span>
+                <td class="text-muted">
+                    <i class="bi bi-clock me-1"></i>
+                    {{ l.criado_em|date("Y-m-d H:i:s") }}
                 </td>
+
+                <td>
+                    <div class="text-break">
+                        {{ l.mensagem }}
+                    </div>
+                </td>
+
+                <td>
+                    <span class="badge bg-{{ info.cor }} px-3 py-2">
+                        <i class="{{ info.icon }} me-1"></i>
+                        {{ info.label }}
+                    </span>
+                </td>
+
                 <td class="text-end">
-                    <a href="/admin/logs/{{ l.id }}" class="btn btn-sm btn-secondary">
-                        Ver erro
+                    <a href="/admin/logs/{{ l.id }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-search"></i> Ver
                     </a>
                 </td>
             </tr>
+
         {% else %}
             <tr>
-                <td colspan="4" class="text-center text-muted">Sem registos.</td>
+                <td colspan="4" class="text-center text-muted py-4">
+                    <i class="bi bi-journal-x fs-3 d-block mb-2"></i>
+                    Sem registos.
+                </td>
             </tr>
         {% endfor %}
     </tbody>

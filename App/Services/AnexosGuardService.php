@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Services\BackupLogger;
+
 class AnexosGuardService
 {
     private string $baseDir;
@@ -18,28 +20,65 @@ class AnexosGuardService
         }
     }
 
-    public function garantirEstrutura(): void
+    /**
+     * Protege toda a estrutura: ano/mês/dia
+     */
+    public function protegerEstruturaCompleta(): void
     {
         $ano = date('Y');
         $mes = date('m');
         $dia = date('d');
 
-        $dir = "{$this->baseDir}/{$ano}/{$mes}/{$dia}";
+        $this->protegerPasta($this->baseDir);
+        $this->protegerPasta("{$this->baseDir}/{$ano}");
+        $this->protegerPasta("{$this->baseDir}/{$ano}/{$mes}");
+        $this->protegerPasta("{$this->baseDir}/{$ano}/{$mes}/{$dia}");
+    }
 
+    /**
+     * Protege uma pasta específica
+     */
+    private function protegerPasta(string $dir): void
+    {
         if (!is_dir($dir)) {
             $this->log("Pasta não existia, criada: {$dir}");
             mkdir($dir, 0777, true);
-            // opcional: criar um ficheiro sentinel
             file_put_contents($dir . '/.keep', 'sentinel');
-        } else {
-            // se existir mas estiver vazia, registar
-            $files = array_diff(scandir($dir), ['.', '..']);
-            if (empty($files)) {
-                $this->log("Pasta existe mas está vazia: {$dir}");
-                // opcional: criar sentinel
-                file_put_contents($dir . '/.keep', 'sentinel');
-            }
+            return;
         }
+
+        // Verificar permissões
+        if (!is_writable($dir)) {
+            $this->log("Pasta sem permissões de escrita: {$dir}");
+            BackupLogger::registar('ANEXOS', $dir, false, "Pasta sem permissões: {$dir}");
+        }
+
+        // Verificar se está vazia
+        $conteudo = array_diff(scandir($dir), ['.', '..']);
+        if (empty($conteudo)) {
+            $this->log("Pasta existe mas está vazia: {$dir}");
+            file_put_contents($dir . '/.keep', 'sentinel');
+        }
+    }
+
+    /**
+     * Verificar integridade de ficheiros
+     */
+    public function validarIntegridade(string $path): bool
+    {
+        if (!file_exists($path)) {
+            $this->log("Ficheiro desapareceu: {$path}");
+            BackupLogger::registar('ANEXOS', $path, false, "Ficheiro desaparecido: {$path}");
+            return false;
+        }
+
+        if (filesize($path) === 0) {
+            $this->log("Ficheiro corrompido (0 bytes): {$path}");
+            BackupLogger::registar('ANEXOS', $path, false, "Ficheiro corrompido: {$path}");
+            return false;
+        }
+
+        return true;
     }
 
     private function log(string $msg): void
