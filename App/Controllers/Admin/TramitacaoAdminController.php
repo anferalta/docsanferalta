@@ -15,6 +15,10 @@ use App\Models\DocumentoTramitacaoAnexo;
 use App\Models\Notificacao;
 use App\Models\DocumentoTipo;
 use App\Models\Utilizador;
+use App\Services\DocumentoExistsValidator;
+use App\Services\AreaExistsValidator;
+use App\Services\UtilizadorExistsValidator;
+use App\Services\EstadoService;
 use PDO;
 
 class TramitacaoAdminController extends BaseController
@@ -174,26 +178,26 @@ class TramitacaoAdminController extends BaseController
                 return $this->error(403, "Não tem permissão para encaminhar documentos.");
             }
 
-            $id = $_POST['documento_id'] ?? null;
-            $nova_area = $_POST['area_id'] ?? null;
+            // VALIDAR DOCUMENTO
+            $id = intval($_POST['documento_id'] ?? 0);
+            $documento = \App\Services\DocumentoExistsValidator::validarOuFalhar($id);
+
+            // VALIDAR ÁREA
+            $nova_area = intval($_POST['area_id'] ?? 0);
+            if ($nova_area <= 0) {
+                return $this->error(422, "Área inválida.");
+            }
+
             $comentario = trim($_POST['comentario'] ?? '');
 
-            if (!$id || !$nova_area) {
-                return $this->error(422, "Dados inválidos.");
-            }
-
-            $documento = Documento::find($id);
-
-            if (!$documento) {
-                return $this->error(404, "Documento não encontrado.");
-            }
-
+            // Atualizar estado e área
             $documento->update([
                 'area_atual_id' => $nova_area,
                 'estado_atual' => 'em_tramitacao',
                 'area_atual_desde' => date('Y-m-d H:i:s'),
                     ], "id = {$id}");
 
+            // Histórico
             $mov = DocumentoTramitacao::create([
                 'documento_id' => $id,
                 'area_id' => $nova_area,
@@ -230,17 +234,14 @@ class TramitacaoAdminController extends BaseController
                 return $this->error(403, "Sem permissão para comentar.");
             }
 
+            // VALIDAR DOCUMENTO
             $documento_id = intval($_POST['documento_id'] ?? 0);
+            $documento = \App\Services\DocumentoExistsValidator::validarOuFalhar($documento_id);
+
+            // VALIDAR COMENTÁRIO
             $comentario = trim($_POST['comentario'] ?? '');
-
-            if ($documento_id <= 0 || $comentario === '') {
+            if ($comentario === '') {
                 return $this->error(422, "Comentário inválido.");
-            }
-
-            $documento = Documento::find($documento_id);
-
-            if (!$documento) {
-                return $this->error(404, "Documento não encontrado.");
             }
 
             // Histórico — gravar na coluna CORRETA: estado
@@ -289,19 +290,15 @@ class TramitacaoAdminController extends BaseController
                 return $this->error(403, "Sem permissão para alterar estado.");
             }
 
+            // VALIDAR DOCUMENTO
             $documento_id = intval($_POST['documento_id'] ?? 0);
+            $documento = \App\Services\DocumentoExistsValidator::validarOuFalhar($documento_id);
+
+            // VALIDAR ESTADO
             $estado = trim($_POST['estado'] ?? '');
+            $estado = \App\Services\EstadoService::validarOuFalhar($estado);
+
             $comentario = trim($_POST['comentario'] ?? '');
-
-            if ($documento_id <= 0 || $estado === '') {
-                return $this->error(422, "Dados inválidos.");
-            }
-
-            $documento = Documento::find($documento_id);
-
-            if (!$documento) {
-                return $this->error(404, "Documento não encontrado.");
-            }
 
             // Histórico — gravar na coluna CORRETA: estado
             $mov = DocumentoTramitacao::create([

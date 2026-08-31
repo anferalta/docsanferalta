@@ -6,14 +6,14 @@ use ZipArchive;
 
 class DatabaseBackupService
 {
+
     private string $baseDir;
     private string $logFile;
 
     public function __construct()
     {
         // Diretório base dos backups
-        $this->baseDir = realpath(__DIR__ . '/../../backups/BaseDados')
-            ?: (__DIR__ . '/../../backups/BaseDados');
+        $this->baseDir = realpath(__DIR__ . '/../../backups/BaseDados') ?: (__DIR__ . '/../../backups/BaseDados');
 
         if (!is_dir($this->baseDir)) {
             mkdir($this->baseDir, 0777, true);
@@ -58,7 +58,7 @@ class DatabaseBackupService
 
         // Credenciais
         $host = $_ENV['DB_HOST'] ?? 'localhost';
-        $db   = $_ENV['DB_NAME'] ?? 'anferaltadocs';
+        $db = $_ENV['DB_NAME'] ?? 'anferaltadocs';
         $user = $_ENV['DB_USER'] ?? 'root';
         $pass = $_ENV['DB_PASS'] ?? '';
 
@@ -73,16 +73,16 @@ class DatabaseBackupService
         $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
 
         if ($isWindows) {
-            $cmd = "\"{$mysqldump}\" --host={$host} --user={$user} --password={$pass} {$db} > \"{$ficheiroSQL}\"";
+            $cmd = "\"{$mysqldump}\" --host=\"{$host}\" --user=\"{$user}\" --password=\"{$pass}\" --databases \"{$db}\" --result-file=\"{$ficheiroSQL}\"";
         } else {
             $cmd = sprintf(
-                '%s -h%s -u%s -p%s %s > %s',
-                escapeshellarg($mysqldump),
-                escapeshellarg($host),
-                escapeshellarg($user),
-                escapeshellarg($pass),
-                escapeshellarg($db),
-                escapeshellarg($ficheiroSQL)
+                    '%s -h%s -u%s -p%s %s > %s',
+                    escapeshellarg($mysqldump),
+                    escapeshellarg($host),
+                    escapeshellarg($user),
+                    escapeshellarg($pass),
+                    escapeshellarg($db),
+                    escapeshellarg($ficheiroSQL)
             );
         }
 
@@ -150,8 +150,8 @@ class DatabaseBackupService
         $conteudo = file_get_contents($ficheiro);
 
         return (
-            str_contains($conteudo, 'CREATE TABLE') ||
-            str_contains($conteudo, 'INSERT INTO')
+                str_contains($conteudo, 'CREATE TABLE') ||
+                str_contains($conteudo, 'INSERT INTO')
         );
     }
 
@@ -198,6 +198,11 @@ class DatabaseBackupService
 
         $sql = $sqlFiles[0];
 
+        // Credenciais (FALTAVAM!)
+        $host = $_ENV['DB_HOST'] ?? 'localhost';
+        $user = $_ENV['DB_USER'] ?? 'root';
+        $pass = $_ENV['DB_PASS'] ?? '';
+
         // Criar BD temporária
         $tempDB = "test_restore_" . uniqid();
 
@@ -206,14 +211,17 @@ class DatabaseBackupService
             return false;
         }
 
-        $cmdCreate = "\"{$mysql}\" -u root -e \"CREATE DATABASE {$tempDB}\"";
+        // Criar BD
+        $cmdCreate = "\"{$mysql}\" --host=\"{$host}\" --user=\"{$user}\" --password=\"{$pass}\" -e \"CREATE DATABASE {$tempDB}\"";
         exec($cmdCreate);
 
-        $cmdImport = "\"{$mysql}\" {$tempDB} < \"{$sql}\"";
+        // IMPORTAR SQL (sem < , usando SOURCE)
+        $cmdImport = "\"{$mysql}\" --host=\"{$host}\" --user=\"{$user}\" --password=\"{$pass}\" {$tempDB} --execute=\"SOURCE {$sql}\"";
         exec($cmdImport, $out, $code);
 
         // Apagar BD temporária
-        exec("\"{$mysql}\" -u root -e \"DROP DATABASE {$tempDB}\"");
+        $cmdDrop = "\"{$mysql}\" --host=\"{$host}\" --user=\"{$user}\" --password=\"{$pass}\" -e \"DROP DATABASE {$tempDB}\"";
+        exec($cmdDrop);
 
         // Limpar diretório temporário
         array_map('unlink', glob("$tempDir/*"));
@@ -328,8 +336,8 @@ class DatabaseBackupService
         $limite = strtotime("-{$dias} days");
 
         $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($baseDir, \FilesystemIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::CHILD_FIRST
+                new \RecursiveDirectoryIterator($baseDir, \FilesystemIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::CHILD_FIRST
         );
 
         foreach ($iterator as $ficheiro) {

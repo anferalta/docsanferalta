@@ -6,6 +6,7 @@ use ZipArchive;
 
 class FileBackupService
 {
+
     private string $baseDir;
     private string $sourceDir;
     private string $hashFile;
@@ -13,8 +14,7 @@ class FileBackupService
     public function __construct()
     {
         // PASTA CORRETA DOS DOCUMENTOS
-        $this->sourceDir = realpath(__DIR__ . '/../../storage/documentos')
-            ?: (__DIR__ . '/../../storage/documentos');
+        $this->sourceDir = realpath(__DIR__ . '/../../storage/documentos') ?: (__DIR__ . '/../../storage/documentos');
 
         $this->sourceDir = rtrim(str_replace('\\', '/', $this->sourceDir), '/') . '/';
 
@@ -23,8 +23,7 @@ class FileBackupService
         }
 
         // Pasta base dos backups
-        $this->baseDir = realpath(__DIR__ . '/../../backups/Ficheiros')
-            ?: (__DIR__ . '/../../backups/Ficheiros');
+        $this->baseDir = realpath(__DIR__ . '/../../backups/Ficheiros') ?: (__DIR__ . '/../../backups/Ficheiros');
 
         if (!is_dir($this->baseDir)) {
             mkdir($this->baseDir, 0777, true);
@@ -68,12 +67,13 @@ class FileBackupService
 
         // ITERAR DOCUMENTOS REAIS
         $files = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($this->sourceDir, \FilesystemIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::LEAVES_ONLY
+                new \RecursiveDirectoryIterator($this->sourceDir, \FilesystemIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::LEAVES_ONLY
         );
 
         foreach ($files as $file) {
-            if ($file->isDir()) continue;
+            if ($file->isDir())
+                continue;
 
             $filePath = str_replace('\\', '/', $file->getRealPath());
             $relative = substr($filePath, strlen($this->sourceDir));
@@ -145,7 +145,8 @@ class FileBackupService
 
     private function lerHashAnterior(string $ficheiro): ?string
     {
-        if (!file_exists($this->hashFile)) return null;
+        if (!file_exists($this->hashFile))
+            return null;
 
         $hashes = json_decode(file_get_contents($this->hashFile), true);
         return $hashes[$ficheiro] ?? null;
@@ -169,20 +170,21 @@ class FileBackupService
         $limite = strtotime("-{$dias} days");
 
         $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($baseDir, \FilesystemIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::CHILD_FIRST
+                new \RecursiveDirectoryIterator($baseDir, \FilesystemIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::CHILD_FIRST
         );
 
         foreach ($iterator as $ficheiro) {
+
+            // Apagar apenas ZIPs antigos
             if ($ficheiro->isFile() && $ficheiro->getExtension() === 'zip') {
                 if ($ficheiro->getMTime() < $limite) {
                     unlink($ficheiro->getPathname());
                 }
             }
 
-            if ($ficheiro->isDir()) {
-                @rmdir($ficheiro->getPathname());
-            }
+            // Nunca apagar diretórios automaticamente
+            // @rmdir($ficheiro->getPathname());
         }
     }
 }

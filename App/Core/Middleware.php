@@ -4,14 +4,25 @@ namespace App\Core;
 
 class Middleware
 {
+
+    /**
+     * Armazena todos os middlewares registados
+     */
     private static array $middlewares = [];
 
+    /**
+     * Registar um middleware
+     */
     public static function register(string $name, callable $callback): void
     {
         self::$middlewares[$name] = $callback;
     }
 
-    public static function run(string $name, $param = null): void
+    /**
+     * Executar um middleware
+     * Retorna SEMPRE o resultado do callback
+     */
+    public static function run(string $name, $param = null)
     {
         if (!isset(self::$middlewares[$name])) {
             throw new \Exception("Middleware '{$name}' não existe.");
@@ -20,27 +31,31 @@ class Middleware
         $callback = self::$middlewares[$name];
 
         if ($param === null) {
-            $callback();
-            return;
+            return $callback();   // ← devolve o resultado
         }
 
-        $callback($param);
+        return $callback($param); // ← devolve o resultado
     }
 
     /**
-     * Ex: "auth|perm:admin.utilizadores.ver"
+     * Executar cadeia de middlewares
+     * Ex: "auth|perm:admin.documentos.criar"
      */
-    public static function runChain(string $chain): void
+    public static function runChain(string $chain)
     {
         $parts = explode('|', $chain);
 
         foreach ($parts as $item) {
+
+            // Middleware com parâmetro
             if (str_contains($item, ':')) {
                 [$name, $param] = explode(':', $item, 2);
                 self::run($name, $param);
-            } else {
-                self::run($item);
+                continue;
             }
+
+            // Middleware simples
+            self::run($item);
         }
     }
 }

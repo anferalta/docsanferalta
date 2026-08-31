@@ -3828,3 +3828,283 @@ Array
     [comentario] => Parecer Jurídico
     [criado_em] => 2026-08-24 10:36:28
 )
+Array
+(
+    [documento_id] => 502
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => Monitorar o sistema
+    [estado] => novo
+    [criado_em] => 2026-08-29 16:47:32
+)
+Array
+(
+    [documento_id] => 502
+    [area_id] => 1
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => Monitorar o sistema.
+    [criado_em] => 2026-08-29 16:48:00
+)
+Array
+(
+    [documento_id] => 502
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 1
+    [comentario] => Monitorar o sistema.
+    [estado] => -m-n-lise
+    [criado_em] => 2026-08-29 16:48:28
+)
+Array
+(
+    [documento_id] => 502
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 1
+    [comentario] => Monitorar o sistema
+    [estado] => em_tramitacao
+    [criado_em] => 2026-08-29 17:29:37
+)
+Array
+(
+    [documento_id] => 502
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 1
+    [comentario] => Verificar tabela estados.
+    [estado] => em_tramitacao
+    [criado_em] => 2026-08-29 17:46:11
+)
+Array
+(
+    [documento_id] => 502
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 1
+    [comentario] => Verificar tabela estados.
+    [estado] => em_analise
+    [criado_em] => 2026-08-29 17:46:46
+)
+Array
+(
+    [documento_id] => 502
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 1
+    [comentario] => Testar alteração na função estado.
+    [estado] => em_tramitacao
+    [criado_em] => 2026-08-29 18:02:35
+)
+Array
+(
+    [documento_id] => 502
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 1
+    [comentario] => Testar validação estado
+    [estado] => em_tramitacao
+    [criado_em] => 2026-08-29 18:28:56
+)
+Array
+(
+    [documento_id] => 502
+    [area_id] => 8
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => teste de validação
+    [criado_em] => 2026-08-29 18:29:43
+)
+Array
+(
+    [documento_id] => 502
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 8
+    [comentario] => teste de validação
+    [estado] => em_analise
+    [criado_em] => 2026-08-29 18:30:14
+)
+Array
+(
+    [documento_id] => 503
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => teste
+    [estado] => novo
+    [criado_em] => 2026-08-29 19:06:10
+)
+Array
+(
+    [documento_id] => 503
+    [area_id] => 3
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => teste
+    [criado_em] => 2026-08-29 19:06:22
+)
+Array
+(
+    [documento_id] => 503
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 3
+    [comentario] => teste
+    [estado] => em_analise
+    [criado_em] => 2026-08-29 19:06:34
+)
+Array
+(
+    [documento_id] => 504
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => teste
+    [estado] => novo
+    [criado_em] => 2026-08-29 19:20:16
+)
+Array
+(
+    [documento_id] => 504
+    [area_id] => 3
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => teste
+    [criado_em] => 2026-08-29 19:20:27
+)
+Array
+(
+    [documento_id] => 504
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 3
+    [comentario] => teste
+    [estado] => em_analise
+    [criado_em] => 2026-08-29 19:20:44
+)
+Array
+(
+    [documento_id] => 505
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => teste
+    [estado] => novo
+    [criado_em] => 2026-08-29 19:37:10
+)
+Array
+(
+    [documento_id] => 505
+    [area_id] => 4
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => teste
+    [criado_em] => 2026-08-29 19:37:25
+)
+Array
+(
+    [documento_id] => 505
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 4
+    [comentario] => teste
+    [estado] => em_tramitacao
+    [criado_em] => 2026-08-29 19:37:38
+)
+Array
+(
+    [documento_id] => 506
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => teste
+    [estado] => novo
+    [criado_em] => 2026-08-29 19:49:59
+)
+Array
+(
+    [documento_id] => 506
+    [area_id] => 3
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => teste
+    [criado_em] => 2026-08-29 19:50:13
+)
+Array
+(
+    [documento_id] => 506
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 3
+    [comentario] => teste
+    [estado] => em_tramitacao
+    [criado_em] => 2026-08-29 19:50:32
+)
+Array
+(
+    [documento_id] => 507
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => Teste na BD
+    [estado] => novo
+    [criado_em] => 2026-08-30 18:42:33
+)
+Array
+(
+    [documento_id] => 507
+    [area_id] => 4
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => Teste na BD
+    [criado_em] => 2026-08-30 18:43:04
+)
+Array
+(
+    [documento_id] => 507
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 4
+    [comentario] => Teste na BD
+    [estado] => em_tramitacao
+    [criado_em] => 2026-08-30 18:43:59
+)
+Array
+(
+    [documento_id] => 507
+    [area_id] => 1
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => teste na DB
+    [criado_em] => 2026-08-30 19:15:22
+)
+Array
+(
+    [documento_id] => 1
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => Teste da BD
+    [estado] => novo
+    [criado_em] => 2026-08-30 21:41:14
+)
+Array
+(
+    [documento_id] => 1
+    [area_id] => 4
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => Teste da BD.
+    [criado_em] => 2026-08-30 21:42:13
+)

@@ -7,23 +7,27 @@ use App\Core\Sessao;
 use App\Core\Helpers;
 use App\Core\Auth;
 
-class LoginController extends BaseController {
+class LoginController extends BaseController
+{
 
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct();
     }
 
     /**
      * Página de login
      */
-    public function index(): void {
-        echo $this->twig->render('login/index.twig');
+    public function index(): void
+    {
+        $this->render('@site/login/index.twig');
     }
 
     /**
      * Autenticação
      */
-    public function autenticar(): void {
+    public function autenticar(): void
+    {
         $email = $_POST['email'] ?? '';
         $senha = $_POST['password'] ?? '';
 
@@ -56,7 +60,8 @@ class LoginController extends BaseController {
     /**
      * Logout
      */
-    public function logout(): void {
+    public function logout(): void
+    {
         Helpers::log("Logout efetuado");
 
         Sessao::destruir();

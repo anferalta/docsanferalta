@@ -3,137 +3,226 @@
 namespace App\Controllers;
 
 use App\Core\BaseController;
+use App\Core\Conexao;
 use App\Core\Sessao;
 use App\Core\Helpers;
-use App\Models\PasswordReset;
-use App\Models\Utilizador;
 use App\Services\EmailService;
+use App\Core\Auth;
 use App\Core\CSRF;
 
 class PasswordResetController extends BaseController
 {
 
     /**
-     * Mostrar formulário de recuperação
+     * GET /recuperar
      */
     public function solicitar()
     {
-        $csrf = CSRF::token();
+        $email = $_SESSION['email_recuperar'] ?? '';
+        unset($_SESSION['email_recuperar']);
 
-        return $this->render('site/login/recuperar.twig', [
-                    'csrf' => $csrf
+        $this->view('@site/password/recuperar.twig', [
+            'email' => $email
         ]);
     }
 
     /**
-     * Receber email e enviar link
+     * POST /recuperar
      */
     public function enviarLink()
     {
-        // Email vem do POST, não da rota
-        $email = trim(strtolower($_POST['email'] ?? ''));
+        $email = trim($_POST['email'] ?? '');
+
+        $_SESSION['email_recuperar'] = $email;
 
         if ($email === '') {
-            Sessao::flash('erro', 'Introduza um email válido.');
-            return Helpers::redirect('/recuperar');
+            $this->flash('erro', 'Indique o email associado à conta.');
+            return $this->redirect('/recuperar');
         }
 
-        $user = Utilizador::findByEmail($email);
+        $db = Conexao::getInstancia();
 
-        if ($user) {
+        // Verificar se existe utilizador
+        $stmt = $db->prepare("SELECT nome FROM utilizadores WHERE email = :email LIMIT 1");
+        $stmt->execute([':email' => $email]);
+        $user = $stmt->fetch();
 
-            // Criar token
-            $token = PasswordReset::criarToken($email);
-
-            // Enviar email
-            EmailService::enviar(
-                    $email,
-                    'Recuperação de Password',
-                    'reset_password',
-                    [
-                        'nome' => $user->nome,
-                        'link' => Helpers::baseUrl() . "/reset-password/token/$token"
-                    ]
-            );
+        // Mensagem neutra
+        if (!$user) {
+            $this->flash('sucesso', 'Se o email existir, receberá um link para recuperar a password.');
+            return $this->redirect('/recuperar');
         }
 
-        Sessao::flash('sucesso', 'Se o email existir, receberá instruções em breve.');
-        return Helpers::redirect('/login');
+        // Token seguro
+        $token = bin2hex(random_bytes(32));
+
+        // UPSERT
+        $stmt = $db->prepare("
+            INSERT INTO password_resets (email, token, criado_em)
+            VALUES (:email, :token, NOW())
+            ON DUPLICATE KEY UPDATE
+                token     = VALUES(token),
+                criado_em = NOW()
+        ");
+        $stmt->execute([
+            ':email' => $email,
+            ':token' => $token
+        ]);
+
+        // Enviar email real
+        EmailService::enviar(
+                $email,
+                'Recuperar senha',
+                'password_reset',
+                [
+                    'nome' => $user->nome ?? $email,
+                    'link' => "https://anferaltadocs.local/reset-password/token/{$token}"
+                ]
+        );
+
+        $this->flash('sucesso', 'Se o email existir, receberá um link para recuperar a password.');
+        return $this->redirect('/recuperar');
     }
 
     /**
-     * Formulário para definir nova password
+     * GET /reset-password/token/{token}
      */
-    public function formNovaPassword($token)
+    public function formNovaPassword(string $token)
     {
-        $email = PasswordReset::validarToken($token);
+        $db = Conexao::getInstancia();
 
-        if (!$email) {
-            Sessao::flash('erro', 'Link inválido ou expirado.');
-            return Helpers::redirect('/recuperar');
+        $stmt = $db->prepare("
+            SELECT email, criado_em
+            FROM password_resets
+            WHERE token = :token
+            LIMIT 1
+        ");
+        $stmt->execute([':token' => $token]);
+        $reset = $stmt->fetch();
+
+        if (!$reset) {
+            $this->flash('erro', 'Link inválido ou já utilizado.');
+            return $this->redirect('/recuperar');
         }
 
-        CSRF::regenerate(); // opcional mas recomendado
-        $csrf = CSRF::token();
+        // Expiração (60 minutos)
+        $criado = new \DateTime($reset->criado_em);
+        $agora = new \DateTime();
+        $diff = $criado->diff($agora);
 
-        return $this->render('site/login/nova_password.twig', [
+        $minutos = ($diff->days * 1440) + ($diff->h * 60) + $diff->i;
+
+        if ($minutos > 60) {
+            $this->flash('erro', 'Este link expirou. Peça um novo.');
+            return $this->redirect('/recuperar');
+        }
+
+        // Mostrar formulário
+        return $this->view('@site/password/nova_password.twig', [
                     'token' => $token,
-                    '_csrf' => $csrf
+                    'email' => $reset->email
         ]);
     }
 
     /**
-     * Guardar nova password
+     * POST /reset-password/guardar/{token}
      */
-    public function guardarNovaPassword()
+    public function guardarNovaPassword(string $token)
     {
+        // ============================
+        // CSRF
+        // ============================
         if (!CSRF::validateFromRequest()) {
-            Sessao::flash('erro', 'Token CSRF inválido.');
-            return Helpers::redirect("/reset-password/token/" . ($_POST['token'] ?? ''));
+            $this->flash('erro', 'Token CSRF inválido.');
+            return $this->redirect('/recuperar');
         }
 
-        $token = $_POST['token'] ?? '';
         $password = $_POST['password'] ?? '';
-        $confirm = $_POST['password_confirm'] ?? '';
+        $password_confirm = $_POST['password_confirm'] ?? '';
 
-        $email = PasswordReset::validarToken($token);
-
-        if (!$email) {
-            Sessao::flash('erro', 'Link inválido ou expirado.');
-            return Helpers::redirect('/recuperar');
+        // ============================
+        // Validação da password
+        // ============================
+        if ($password === '' || $password_confirm === '') {
+            $this->flash('erro', 'Preencha ambos os campos.');
+            return $this->redirect("/reset-password/token/{$token}");
         }
 
-        if ($password !== $confirm) {
-            Sessao::flash('erro', 'As passwords não coincidem.');
-            return Helpers::redirect("/reset-password/token/$token");
+        if ($password !== $password_confirm) {
+            $this->flash('erro', 'As passwords não coincidem.');
+            return $this->redirect("/reset-password/token/{$token}");
         }
 
-        if (
-                strlen($password) < 8 ||
-                !preg_match('/[A-Z]/', $password) ||
-                !preg_match('/[a-z]/', $password) ||
-                !preg_match('/[0-9]/', $password) ||
-                !preg_match('/[\W_]/', $password)
-        ) {
-            Sessao::flash('erro', 'A password deve ter pelo menos 8 caracteres, incluindo maiúsculas, minúsculas, números e símbolos.');
-            return Helpers::redirect("/reset-password/token/$token");
+        if (strlen($password) < 6) {
+            $this->flash('erro', 'A password deve ter pelo menos 6 caracteres.');
+            return $this->redirect("/reset-password/token/{$token}");
         }
 
-        $user = Utilizador::findByEmail($email);
+        $db = Conexao::getInstancia();
 
-        $user->update([
-            'password' => password_hash($password, PASSWORD_DEFAULT)
-                ], "email = :email", [':email' => $email]);
+        // ============================
+        // Validar token
+        // ============================
+        $stmt = $db->prepare("
+            SELECT email, criado_em
+            FROM password_resets
+            WHERE token = :token
+            LIMIT 1
+        ");
+        $stmt->execute([':token' => $token]);
+        $reset = $stmt->fetch();
 
-        PasswordReset::apagarToken($token);
+        if (!$reset) {
+            $this->flash('erro', 'Link inválido ou já utilizado.');
+            return $this->redirect('/recuperar');
+        }
 
-        Sessao::flash('sucesso', 'Password alterada com sucesso.');
-        return Helpers::redirect('/login');
-    }
+        // ============================
+        // Expiração (60 minutos)
+        // ============================
+        $criado = new \DateTime($reset->criado_em);
+        $agora = new \DateTime();
+        $diff = $criado->diff($agora);
 
-    public function redirecionarSemToken()
-    {
-        Sessao::flash('erro', 'Link inválido ou expirado.');
-        return Helpers::redirect('/recuperar');
+        $minutos = ($diff->days * 1440) + ($diff->h * 60) + $diff->i;
+
+        if ($minutos > 60) {
+            $this->flash('erro', 'Este link expirou.');
+            return $this->redirect('/recuperar');
+        }
+
+        // ============================
+        // Atualizar password
+        // ============================
+        $email = $reset->email;
+        $hash = password_hash($password, PASSWORD_DEFAULT);
+
+        $stmt = $db->prepare("
+            UPDATE utilizadores
+            SET password = :password
+            WHERE email = :email
+            LIMIT 1
+        ");
+        $stmt->execute([
+            ':password' => $hash,
+            ':email' => $email
+        ]);
+
+        // ============================
+        // Invalidar token
+        // ============================
+        $stmt = $db->prepare("DELETE FROM password_resets WHERE email = :email");
+        $stmt->execute([':email' => $email]);
+
+        // ============================
+        // Logout (agora sim!)
+        // ============================
+        Auth::logout();
+
+        // ============================
+        // Mensagem + redirecionamento
+        // ============================
+        $this->flash('sucesso', 'Password alterada com sucesso. Faça login.');
+        return $this->redirect('/login');
     }
 }

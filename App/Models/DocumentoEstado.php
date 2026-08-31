@@ -7,7 +7,6 @@ use App\Core\Conexao;
 
 class DocumentoEstado
 {
-
     public $id;
     public $codigo;
     public $nome;

@@ -48,4 +48,6 @@
 
     {% block scripts %}{% endblock %}
 </body>
+{% set csrf_global = csrf_token() %}
+
 </html>

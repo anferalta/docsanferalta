@@ -4,7 +4,7 @@ session_set_cookie_params([
     'lifetime' => 0,
     'path' => '/',
     'domain' => 'anferaltadocs.local',
-    'secure' => true,
+    'secure' => false,
     'httponly' => true,
     'samesite' => 'Lax'
 ]);
@@ -20,6 +20,8 @@ use App\Core\Auth;
 use App\Core\Acl;
 use App\Core\ErrorHandler;
 use App\Core\CSRF;
+use App\Core\Sessao;
+use App\Core\Helpers;
 
 // ---------------------------------------------------------
 // 🔥 ERROS E EXCEÇÕES
@@ -58,7 +60,6 @@ $dotenv->load();
 // ---------------------------------------------------------
 // 🔥 REGISTAR MIDDLEWARES
 // ---------------------------------------------------------
-
 // Middleware de autenticação
 Middleware::register('auth', function () {
     if (!Auth::check()) {
@@ -85,7 +86,15 @@ Middleware::register('perm', function ($permission = null) {
 
 // ⭐ Middleware CSRF
 Middleware::register('csrf', function () {
-    CSRF::middleware();
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (!CSRF::validateFromRequest()) {
+            Sessao::flash('erro', 'Token CSRF inválido.');
+            Helpers::redirect('/recuperar');
+            exit;
+        }
+    }
+
+    return true; // ← ESSENCIAL
 });
 
 // ---------------------------------------------------------
@@ -98,7 +107,9 @@ $router = new Router();
 RouterSingleton::set($router);
 
 // Carregar ficheiro de rotas
-require __DIR__ . '/../routes/index.php';
+foreach (glob(__DIR__ . '/../routes/*.php') as $file) {
+    require $file;
+}
 
 // ---------------------------------------------------------
 // 🔥 DESPACHAR ROTA

@@ -17,11 +17,8 @@ class AuthController extends BaseController
 
     public function login()
     {
-        CSRF::regenerate();   // força token novo
-        $csrf = CSRF::token();
-
         return $this->render('site/login/index.twig', [
-                    '_csrf' => $csrf,
+                    '_csrf' => CSRF::token(),
                     'erro' => Sessao::peek('erro'),
                     'sucesso' => Sessao::peek('sucesso'),
         ]);
@@ -30,10 +27,7 @@ class AuthController extends BaseController
     public function loginSubmit()
     {
         try {
-
-            $email = strtolower(trim($_POST['email'] ?? ''));
-            $email = preg_replace('/\s+/u', '', $email);
-
+            $email = Utilizador::normalizeEmail($_POST['email'] ?? '');
             $password = trim($_POST['password'] ?? '');
 
             $user = Utilizador::findByEmail($email);
@@ -56,13 +50,10 @@ class AuthController extends BaseController
             Auth::login($user);
             Auditoria::registar('login', $user->id);
 
-            // ⭐ MELHOR PRÁTICA:
-            // Só entra no admin se tiver a permissão admin.dashboard.ver
             if ($user->hasPermissao('admin.dashboard.ver')) {
                 return Helpers::redirect('/admin/dashboard');
             }
 
-            // Caso contrário → painel do site
             return Helpers::redirect('/dashboard');
         } catch (\Exception $e) {
             return $this->error(500, $e->getMessage());
@@ -87,22 +78,16 @@ class AuthController extends BaseController
 
     public function registar()
     {
-        $csrf = CSRF::token();
-
         return $this->render('site/login/registar.twig', [
-                    '_csrf' => $csrf
+                    '_csrf' => CSRF::token()
         ]);
     }
 
     public function registarSubmit()
     {
         try {
-
             $nome = trim($_POST['nome'] ?? '');
-            $email = strtolower(trim($_POST['email'] ?? ''));
-            $email = preg_replace('/\s+/u', '', $email);
-            $email = filter_var($email, FILTER_SANITIZE_EMAIL);
-
+            $email = Utilizador::normalizeEmail($_POST['email'] ?? '');
             $password = trim($_POST['password'] ?? '');
             $confirm = trim($_POST['password_confirm'] ?? '');
 
@@ -146,54 +131,6 @@ class AuthController extends BaseController
 
             Sessao::flash('sucesso', 'Conta criada com sucesso! Aguarde aprovação.');
             return Helpers::redirect('/login');
-        } catch (\Exception $e) {
-            return $this->error(500, $e->getMessage());
-        }
-    }
-
-    public function recuperar()
-    {
-        $csrf = CSRF::token();
-
-        return $this->render('site/login/recuperar.twig', [
-                    '_csrf' => $csrf,
-        ]);
-    }
-
-    public function recuperarSubmit()
-    {
-        try {
-
-            // ============================
-            // 1. Validar CSRF
-            // ============================
-            if (!CSRF::validateFromRequest()) {
-                Sessao::flash('erro', 'Token CSRF inválido.');
-                return Helpers::redirect('/recuperar');
-            }
-
-            // ============================
-            // 2. Normalizar email
-            // ============================
-            $email = strtolower(trim($_POST['email'] ?? ''));
-            $email = preg_replace('/\s+/u', '', $email);
-
-            // ============================
-            // 3. Validação
-            // ============================
-            $v = new Validator();
-            $v->required('email', $email, 'Email obrigatório.');
-
-            if ($v->hasErrors()) {
-                Sessao::flash('erro', $v->firstError());
-                return Helpers::redirect('/recuperar');
-            }
-
-            // ============================
-            // 4. Enviar link corretamente
-            // ============================
-            $controller = new PasswordResetController();
-            return $controller->enviarLink($email);
         } catch (\Exception $e) {
             return $this->error(500, $e->getMessage());
         }

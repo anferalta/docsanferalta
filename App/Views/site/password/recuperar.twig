@@ -1,0 +1,32 @@
+{% extends "@site/layout.twig" %}
+
+{% block title %}Recuperar Password{% endblock %}
+
+{% block content %}
+<div class="card mx-auto shadow-sm border-0 p-4" style="max-width:480px;">
+
+    <h1 class="text-center mb-4">Recuperar Password</h1>
+
+    {% if erro %}
+        <div class="alert alert-danger">{{ erro }}</div>
+    {% endif %}
+
+    {% if sucesso %}
+        <div class="alert alert-success">{{ sucesso }}</div>
+    {% endif %}
+
+    <form method="post" action="/recuperar">
+        <input type="hidden" name="_csrf" value="{{ _csrf }}">
+
+        <div class="mb-3">
+            <label for="email" class="form-label">Email associado à conta</label>
+            <input type="email" id="email" name="email" class="form-control" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">
+            Enviar link de recuperação
+        </button>
+    </form>
+
+</div>
+{% endblock %}

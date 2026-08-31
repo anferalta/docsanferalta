@@ -4,6 +4,7 @@ namespace App\Core;
 
 class Sessao
 {
+
     private static function start(): void
     {
         if (session_status() === PHP_SESSION_NONE) {
@@ -103,5 +104,21 @@ class Sessao
     {
         self::start();
         session_destroy();
+    }
+
+    public static function old(string $key)
+    {
+        if (!isset($_SESSION['_old'][$key])) {
+            return null;
+        }
+
+        $value = $_SESSION['_old'][$key];
+        unset($_SESSION['_old'][$key]);
+        return $value;
+    }
+
+    public static function flashOld(string $key, $value): void
+    {
+        $_SESSION['_old'][$key] = $value;
     }
 }

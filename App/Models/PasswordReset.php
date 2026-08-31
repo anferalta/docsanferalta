@@ -3,19 +3,24 @@
 namespace App\Models;
 
 use App\Core\Conexao;
+use App\Models\Utilizador;
 
 class PasswordReset
 {
-
+    /**
+     * Criar token de recuperação
+     */
     public static function criarToken(string $email): string
     {
-        $token = bin2hex(random_bytes(32));
+        // Normalizar email antes de gravar
+        $email = Utilizador::normalizeEmail($email);
 
+        $token = bin2hex(random_bytes(32));
         $db = Conexao::getInstancia();
 
         // Apagar tokens antigos deste email
         $db->prepare("DELETE FROM password_resets WHERE email = ?")
-                ->execute([$email]);
+           ->execute([$email]);
 
         // Inserir novo token
         $stmt = $db->prepare("
@@ -31,15 +36,18 @@ class PasswordReset
         return $token;
     }
 
+    /**
+     * Validar token e devolver email associado
+     */
     public static function validarToken(string $token): ?string
     {
         $db = Conexao::getInstancia();
 
         $stmt = $db->prepare("
-        SELECT email, criado_em
-        FROM password_resets
-        WHERE token = ?
-    ");
+            SELECT email, criado_em
+            FROM password_resets
+            WHERE token = ?
+        ");
 
         $stmt->execute([$token]);
         $row = $stmt->fetch(\PDO::FETCH_ASSOC);
@@ -52,16 +60,21 @@ class PasswordReset
         $expira = strtotime($row['criado_em']) + 3600;
 
         if (time() > $expira) {
+            self::apagarToken($token);
             return null;
         }
 
-        return $row['email'];
+        // Normalizar email antes de devolver
+        return Utilizador::normalizeEmail($row['email']);
     }
 
+    /**
+     * Apagar token
+     */
     public static function apagarToken(string $token): void
     {
         $db = Conexao::getInstancia();
         $db->prepare("DELETE FROM password_resets WHERE token = ?")
-                ->execute([$token]);
+           ->execute([$token]);
     }
 }

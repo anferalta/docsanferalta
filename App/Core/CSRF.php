@@ -4,73 +4,76 @@ namespace App\Core;
 
 class CSRF
 {
-    private const SESSION_KEY = '_csrf_token';
-    private const FIELD_NAME  = '_csrf';   // ← CORRETO
+    private const SESSION_KEY = '_csrf';
+    private const FIELD_NAME  = '_csrf';
 
-    private static function ensureSession(): void
+    /**
+     * Gera um novo token e guarda na sessão
+     */
+    public static function regenerate(): string
     {
-        if (session_status() === PHP_SESSION_NONE) {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
             session_start();
         }
+
+        $token = bin2hex(random_bytes(32));
+        $_SESSION[self::SESSION_KEY] = $token;
+
+        return $token;
     }
 
+    /**
+     * Devolve o token atual ou gera um novo se não existir
+     */
     public static function token(): string
     {
-        self::ensureSession();
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
 
-        if (empty($_SESSION[self::SESSION_KEY])) {
-            $_SESSION[self::SESSION_KEY] = bin2hex(random_bytes(32));
+        if (!isset($_SESSION[self::SESSION_KEY])) {
+            return self::regenerate();
         }
 
         return $_SESSION[self::SESSION_KEY];
     }
 
-    public static function fieldName(): string
-    {
-        return self::FIELD_NAME;
-    }
-
+    /**
+     * Valida o token vindo do request (POST)
+     */
     public static function validateFromRequest(): bool
     {
-        self::ensureSession();
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
 
-        $sessionToken = $_SESSION[self::SESSION_KEY] ?? null;
+        // GET nunca falha
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            return true;
+        }
 
-        $requestToken =
-            $_POST[self::FIELD_NAME] ??
-            $_SERVER['HTTP_X_CSRF_TOKEN'] ??
-            null;
+        $sent   = $_POST[self::FIELD_NAME] ?? null;
+        $stored = $_SESSION[self::SESSION_KEY] ?? null;
 
-        if (!$sessionToken || !$requestToken) {
+        if (!$sent || !$stored) {
             return false;
         }
 
-        return hash_equals($sessionToken, $requestToken);
+        // Comparação segura
+        return hash_equals($stored, $sent);
     }
 
-    public static function regenerate(): void
+    /**
+     * Helper para incluir o campo hidden no Twig
+     */
+    public static function field(): string
     {
-        self::ensureSession();
-        unset($_SESSION[self::SESSION_KEY]);
-        self::token();
-    }
+        $token = self::token();
 
-    public static function middleware(): void
-    {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-            if (!self::validateFromRequest()) {
-
-                \App\Models\Auditoria::registar(
-                    'CSRF_FALHOU',
-                    \App\Core\Auth::id(),
-                    'Token CSRF inválido ou ausente'
-                );
-
-                header('HTTP/1.1 419 CSRF Token Invalid');
-                echo "Token CSRF inválido.";
-                exit;
-            }
-        }
+        return sprintf(
+            '<input type="hidden" name="%s" value="%s">',
+            self::FIELD_NAME,
+            htmlspecialchars($token, ENT_QUOTES, 'UTF-8')
+        );
     }
 }

@@ -21,15 +21,13 @@ class BaseController
         // TWIG LOADER
         // ============================
         $loader = new FilesystemLoader();
+
         $loader->addPath(__DIR__ . '/../Views/site', 'site');
         $loader->addPath(__DIR__ . '/../Views/admin', 'admin');
         $loader->addPath(__DIR__ . '/../Views', '__main__');
 
-        $this->twig = new Environment($loader, [
-            'cache' => false,
-            'debug' => true
-        ]);
-
+// ❌ NÃO adicionar "Views/emails"
+// Os templates de email estão em Views/site/emails → já coberto pelo namespace @site
         // ============================
         // TWIG ENGINE
         // ============================
@@ -59,13 +57,13 @@ class BaseController
         $this->injectUser();
 
         // ============================
-        // MENU ADMIN (carregado uma vez)
+        // MENU ADMIN
         // ============================
         $menuObj = new Menu();
         $this->twig->addGlobal('menuAdmin', $menuObj->filtrarMenu($menuObj->getMenu()));
 
         // ============================
-        // NOTIFICAÇÕES (carregadas apenas se autenticado)
+        // NOTIFICAÇÕES
         // ============================
         if (Auth::check()) {
             $this->injectNotifications();
@@ -83,19 +81,25 @@ class BaseController
         ));
 
         // ============================
-        // CSRF FIELD
+        // CSRF FUNCTIONS
         // ============================
+        // Campo hidden HTML seguro
         $this->twig->addFunction(
                 new TwigFunction(
                         'csrf_field',
-                        fn() => '<input type="hidden" name="' . CSRF::fieldName() . '" value="' . CSRF::token() . '">',
+                        fn() => '<input type="hidden" name="_csrf" value="' . CSRF::token() . '">',
                         ['is_safe' => ['html']]
                 )
+        );
+
+        // Função csrf_token() usada no layout
+        $this->twig->addFunction(
+                new TwigFunction('csrf_token', fn() => CSRF::token())
         );
     }
 
     // ============================
-    // INJETAR UTILIZADOR NO TWIG
+    // INJETAR UTILIZADOR
     // ============================
     protected function injectUser(): void
     {
@@ -134,6 +138,12 @@ class BaseController
     // ============================
     protected function render(string $template, array $data = []): void
     {
+        // Token para formulários da página
+        $data['_csrf'] = CSRF::token();
+
+        // Token global para sidebar/logout
+        $this->twig->addGlobal('_csrf_global', CSRF::token());
+
         $this->injectUser();
 
         echo $this->twig->render($template, $data);

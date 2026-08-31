@@ -368,14 +368,21 @@ class BackupsAdminController extends BaseController
             return [];
         }
 
+        // Normalizar diretório base
+        $baseDir = rtrim(str_replace('\\', '/', $baseDir), '/') . '/';
+
         $iterator = new \RecursiveIteratorIterator(
                 new \RecursiveDirectoryIterator($baseDir, \FilesystemIterator::SKIP_DOTS)
         );
 
         foreach ($iterator as $ficheiro) {
             if ($ficheiro->isFile() && $ficheiro->getExtension() === 'zip') {
-                $rel = str_replace('\\', '/', $ficheiro->getPathname());
-                $rel = str_replace($baseDir, '', $rel);
+
+                // Caminho absoluto normalizado
+                $abs = str_replace('\\', '/', $ficheiro->getPathname());
+
+                // Caminho relativo correto
+                $rel = substr($abs, strlen($baseDir));
                 $rel = ltrim($rel, '/');
 
                 $lista[] = [
@@ -394,7 +401,16 @@ class BackupsAdminController extends BaseController
 
     private function decodePath(string $ficheiro): string
     {
-        return str_replace('---', '/', $ficheiro);
+        $ficheiro = str_replace('---', '/', $ficheiro);
+        $ficheiro = str_replace('\\', '/', $ficheiro);
+        $ficheiro = preg_replace('#/+#', '/', $ficheiro);
+        $ficheiro = ltrim($ficheiro, '/');
+
+        if (str_contains($ficheiro, '..')) {
+            return '';
+        }
+
+        return $ficheiro;
     }
 
     private function resolverCaminho(string $ficheiro): ?string
@@ -402,25 +418,29 @@ class BackupsAdminController extends BaseController
         $pastas = [$this->dirBD, $this->dirFiles];
 
         foreach ($pastas as $pasta) {
-            if (!is_dir($pasta)) {
+
+            $pastaNorm = rtrim(str_replace('\\', '/', $pasta), '/') . '/';
+
+            if (!is_dir($pastaNorm)) {
                 continue;
             }
 
             $iterator = new \RecursiveIteratorIterator(
-                    new \RecursiveDirectoryIterator($pasta, \FilesystemIterator::SKIP_DOTS)
+                    new \RecursiveDirectoryIterator($pastaNorm, \FilesystemIterator::SKIP_DOTS)
             );
 
             foreach ($iterator as $f) {
+
                 if (strpos($f->getPathname(), 'restore_db_') !== false) {
                     continue;
                 }
 
-                $rel = str_replace('\\', '/', $f->getPathname());
-                $rel = str_replace($pasta, '', $rel);
+                $abs = str_replace('\\', '/', $f->getPathname());
+                $rel = substr($abs, strlen($pastaNorm));
                 $rel = ltrim($rel, '/');
 
                 if ($rel === $ficheiro) {
-                    return $f->getPathname();
+                    return $abs;
                 }
             }
         }

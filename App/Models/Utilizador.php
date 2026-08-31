@@ -35,6 +35,14 @@ class Utilizador extends Model
         'aprovado_em',
     ];
 
+    public static function normalizeEmail(string $email): string
+    {
+        $email = strtolower(trim($email));
+        $email = preg_replace('/\s+/u', '', $email);
+        $email = str_replace(["\u{FEFF}", "\u{200B}"], "", $email);
+        return $email;
+    }
+
     public static function create(array $dados): int
     {
         if (!empty($dados['password'])) {
@@ -46,37 +54,49 @@ class Utilizador extends Model
 
     public static function findByEmail(string $email): ?Utilizador
     {
-        $email = strtolower(trim($email));
-        $email = preg_replace('/\s+/u', '', $email);
-        $email = str_replace("\u{FEFF}", "", $email);
+        $email = self::normalizeEmail($email);
+
+        $db = Conexao::getInstancia();
+        $stmt = $db->prepare("SELECT * FROM utilizadores");
+        $stmt->execute();
+        $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        foreach ($rows as $row) {
+            $dbEmail = self::normalizeEmail($row['email'] ?? '');
+
+            if ($dbEmail === $email) {
+                $u = new Utilizador();
+
+                foreach ($row as $key => $value) {
+                    if (property_exists($u, $key)) {
+                        $u->$key = $value;
+                    }
+                }
+
+                return $u;
+            }
+        }
+
+        return null;
+    }
+
+    public static function updatePasswordByEmail(string $email, string $password): bool
+    {
+        $email = self::normalizeEmail($email);
 
         $db = Conexao::getInstancia();
 
         $stmt = $db->prepare("
-            SELECT *
-            FROM utilizadores
-            WHERE LOWER(TRIM(REPLACE(REPLACE(email, '\u{200B}', ''), '\u{FEFF}', '')))
-                  = LOWER(TRIM(:email))
+            UPDATE utilizadores
+            SET password = :password
+            WHERE LOWER(TRIM(email)) = :email
             LIMIT 1
         ");
 
-        $stmt->execute(['email' => $email]);
-
-        $data = $stmt->fetch(\PDO::FETCH_ASSOC);
-
-        if (!$data) {
-            return null;
-        }
-
-        $u = new Utilizador();
-
-        foreach ($data as $key => $value) {
-            if (property_exists($u, $key)) {
-                $u->$key = $value;
-            }
-        }
-
-        return $u;
+        return $stmt->execute([
+            ':password' => password_hash($password, PASSWORD_DEFAULT),
+            ':email'    => $email
+        ]);
     }
 
     public function updateUser(int $id, array $dados): bool

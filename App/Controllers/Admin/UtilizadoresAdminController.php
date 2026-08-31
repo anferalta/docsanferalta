@@ -371,27 +371,38 @@ class UtilizadoresAdminController extends BaseController
 
         $db = Conexao::getInstancia();
 
+        // Buscar utilizador
         $user = \App\Models\Utilizador::find($id);
 
-        if ($user) {
-            EmailService::enviar(
-                    $user->email,
-                    'Conta bloqueada',
-                    'emails/conta_bloqueada.twig',
-                    ['nome' => $user->nome]
-            );
+        if (!$user) {
+            $this->flash('erro', 'Utilizador não encontrado.');
+            return $this->redirect('/admin/utilizadores');
         }
 
+        // Verificar se o email existe no servidor de correio
+        if (!EmailService::destinatarioExiste($user->email)) {
+            $this->flash('erro', 'O email do utilizador não existe no servidor de correio.');
+            return $this->redirect('/admin/utilizadores');
+        }
+
+        // Enviar email
+        EmailService::enviar(
+                $user->email,
+                'Conta bloqueada',
+                'conta_bloqueada',
+                ['nome' => $user->nome]
+        );
+
+        // Bloquear utilizador
         $stmt = $db->prepare("
         UPDATE utilizadores
         SET ativo = 0
         WHERE id = :id
     ");
-
         $stmt->execute([':id' => $id]);
 
         Sessao::flash('sucesso', 'Utilizador bloqueado.');
-        $this->redirect('/admin/utilizadores/ativos');
+        return $this->redirect('/admin/utilizadores/ativos');
     }
 
     public function reativar($id)

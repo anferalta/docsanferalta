@@ -52,12 +52,20 @@
                 </a>
             </li>
 
+            {# LOGOUT SEGURO — VISUALMENTE IDÊNTICO AO LINK ORIGINAL #}
             <li class="nav-item mt-4">
-                <a href="/logout"
-                   class="nav-link text-danger d-flex align-items-center gap-2">
-                    <i class="bi bi-box-arrow-right"></i>
-                    Sair
-                </a>
+
+                <form action="/logout" method="POST" class="m-0 p-0">
+                    <input type="hidden" name="_csrf" value="{{ _csrf_global }}">
+
+                    <button type="submit"
+                            class="nav-link text-danger d-flex align-items-center gap-2 border-0 bg-transparent w-100 text-start"
+                            style="cursor:pointer;">
+                        <i class="bi bi-box-arrow-right"></i>
+                        Sair
+                    </button>
+                </form>
+
             </li>
 
         </ul>
