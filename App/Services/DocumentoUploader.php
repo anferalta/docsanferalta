@@ -4,13 +4,17 @@ namespace App\Services;
 
 use App\Models\Documento;
 use App\Models\DocumentoFicheiro;
+use App\Services\PathGuardService;
+use App\Services\BackupLogger;
 
 class DocumentoUploader
 {
-    public static function processarUpload(array $post, array $files, $user): void
+    public static function processarUpload(array $post, array $files, $user): Documento
     {
+        PathGuardService::init();
+
         $titulo = trim($post['titulo']);
-        $tipo_id = $post['tipo_id'];
+        $tipo_id = intval($post['tipo_id']);
 
         $ficheiros = $files['ficheiros'];
         $total = count($ficheiros['name']);
@@ -20,17 +24,18 @@ class DocumentoUploader
         }
 
         // ============================
-        // 1. Criar o DOCUMENTO (único)
+        // 1. Criar DOCUMENTO
         // ============================
         $documento = Documento::create([
             'titulo' => $titulo,
             'tipo_id' => $tipo_id,
             'criado_por' => $user->id,
-            'estado_atual' => 'novo'
+            'estado_atual' => 'novo',
+            'criado_em' => date('Y-m-d H:i:s')
         ]);
 
         // ============================
-        // 2. Validações e limites
+        // 2. Validações
         // ============================
         $extPermitidas = [
             'pdf','doc','docx','xls','xlsx','ppt','pptx','txt',
@@ -58,20 +63,26 @@ class DocumentoUploader
         // 3. Caminho seguro
         // ============================
         $root = dirname(__DIR__, 2);
+        $baseRoot = $root . '/storage/documentos';
+
+        PathGuardService::proteger($baseRoot);
 
         $ano = date('Y');
         $mes = date('m');
         $dia = date('d');
 
-        $subpasta = "$ano/$mes/$dia";
-        $base = $root . "/storage/documentos/$subpasta/";
+        $subpasta = "$ano/$mes/$dia/";
+        $base = $baseRoot . '/' . $subpasta;
+
+        PathGuardService::proteger($base);
 
         if (!is_dir($base)) {
             mkdir($base, 0777, true);
+            file_put_contents($base . '/.keep', 'sentinel');
         }
 
         // ============================
-        // 4. Processar cada ficheiro (ANEXOS)
+        // 4. Processar ficheiros
         // ============================
         for ($i = 0; $i < $total; $i++) {
 
@@ -80,12 +91,13 @@ class DocumentoUploader
             $erro = $ficheiros['error'][$i];
             $tamanho = $ficheiros['size'][$i];
 
-            if ($erro !== UPLOAD_ERR_OK) {
-                throw new \Exception("Erro ao enviar o ficheiro: {$nomeOriginal}");
+            // IGNORAR entradas vazias
+            if ($erro !== UPLOAD_ERR_OK || empty($nomeOriginal)) {
+                continue;
             }
 
             if (!is_uploaded_file($tmp)) {
-                throw new \Exception("Ficheiro inválido: {$nomeOriginal}");
+                continue;
             }
 
             $ext = strtolower(pathinfo($nomeOriginal, PATHINFO_EXTENSION));
@@ -110,10 +122,13 @@ class DocumentoUploader
 
             $mimeReal = $finfo->file($tmp) ?: 'application/octet-stream';
 
+            // Nome seguro
             $nomeSeguro = preg_replace('/[^A-Za-z0-9_\.-]/', '_', $nomeOriginal);
             $nomeGuardado = uniqid() . '_' . $nomeSeguro;
 
             $destino = $base . $nomeGuardado;
+
+            PathGuardService::proteger($destino);
 
             if (!move_uploaded_file($tmp, $destino)) {
                 throw new \Exception("Erro ao guardar o ficheiro: {$nomeOriginal}");
@@ -130,19 +145,26 @@ class DocumentoUploader
                 ->first();
 
             if ($existe) {
+                PathGuardService::proteger($destino);
                 unlink($destino);
                 throw new \Exception("Este ficheiro já foi enviado anteriormente: {$nomeOriginal}");
             }
 
             // ============================
-            // 6. Criar ANEXO
+            // 6. Criar registo do anexo
             // ============================
             DocumentoFicheiro::create([
                 'documento_id' => $documento->id,
-                'ficheiro' => $subpasta . '/' . $nomeGuardado,
+                'ficheiro' => $nomeGuardado,        // ✔ nome correto
+                'ficheiro_original' => $nomeOriginal,
+                'caminho' => $subpasta,             // ✔ caminho correto
                 'tamanho' => $tamanho,
-                'mime' => $mimeReal
+                'mime_type' => $mimeReal,
+                'hash' => $hash,
+                'criado_em' => date('Y-m-d H:i:s')
             ]);
         }
+
+        return $documento;
     }
 }

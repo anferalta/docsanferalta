@@ -4,6 +4,8 @@ namespace App\Services;
 
 use Exception;
 use ZipArchive;
+use App\Services\PathGuardService;
+use App\Services\BackupLogger;
 
 class RestoreService
 {
@@ -16,6 +18,9 @@ class RestoreService
      */
     public function restaurarBD(string $path): void
     {
+        PathGuardService::init();
+        PathGuardService::proteger($path);
+
         if (!is_file($path)) {
             throw new Exception("Ficheiro de backup não encontrado: {$path}");
         }
@@ -23,6 +28,7 @@ class RestoreService
         // Suporte a ZIP encriptado (.zip.enc)
         if (str_ends_with($path, '.enc')) {
             $path = $this->desencriptar($path);
+            PathGuardService::proteger($path);
         }
 
         // Validar ZIP
@@ -30,15 +36,19 @@ class RestoreService
             throw new Exception("Backup inválido — ZIP corrompido.");
         }
 
-        // Pasta temporária
+        // Pasta temporária protegida
         $tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'restore_db_' . uniqid();
+        PathGuardService::proteger($tempDir);
+
         mkdir($tempDir);
+        file_put_contents($tempDir . '/.keep', 'sentinel');
 
         // Extrair ZIP
         $zip = new ZipArchive();
         if ($zip->open($path) !== true) {
             throw new Exception("Não foi possível abrir o ficheiro ZIP.");
         }
+
         $zip->extractTo($tempDir);
         $zip->close();
 
@@ -56,6 +66,8 @@ class RestoreService
 
         // Restaurar cada ficheiro SQL
         foreach ($sqlFiles as $sqlFile) {
+
+            PathGuardService::proteger($sqlFile);
 
             if (!$this->validarSQL($sqlFile)) {
                 throw new Exception("Ficheiro SQL inválido ou corrompido: {$sqlFile}");
@@ -79,7 +91,7 @@ class RestoreService
             }
         }
 
-        // Limpar pasta temporária
+        // Limpar pasta temporária protegida
         $this->limparTemp($tempDir);
     }
 
@@ -88,6 +100,9 @@ class RestoreService
      */
     public function restaurarFiles(string $path): void
     {
+        PathGuardService::init();
+        PathGuardService::proteger($path);
+
         if (!is_file($path)) {
             throw new Exception("Backup de ficheiros não encontrado: {$path}");
         }
@@ -97,6 +112,9 @@ class RestoreService
         if (!$destino) {
             throw new Exception("Diretório de destino não encontrado: uploads_publicos");
         }
+
+        // 🔒 Proteger destino
+        PathGuardService::proteger($destino);
 
         // Validar ZIP
         if (!$this->validarZip($path)) {
@@ -108,6 +126,19 @@ class RestoreService
             throw new Exception("Não foi possível abrir o ficheiro ZIP.");
         }
 
+        // 🔒 Blindagem contra traversal na extração
+        foreach (range(0, $zip->numFiles - 1) as $i) {
+            $info = $zip->statIndex($i);
+            $nome = $info['name'];
+
+            // Caminho real após extração
+            $destReal = realpath($destino . '/' . $nome);
+
+            if ($destReal !== false && !str_starts_with($destReal, $destino)) {
+                throw new Exception("Tentativa bloqueada: ZIP contém ficheiros fora da pasta segura.");
+            }
+        }
+
         $zip->extractTo($destino);
         $zip->close();
     }
@@ -117,12 +148,16 @@ class RestoreService
      */
     private function desencriptar(string $encPath): string
     {
+        PathGuardService::proteger($encPath);
+
         $password = $_ENV['BACKUP_PASSWORD'] ?? null;
         if (!$password) {
             throw new Exception("Backup encriptado mas BACKUP_PASSWORD não está definido.");
         }
 
         $zipPath = str_replace('.enc', '', $encPath);
+
+        PathGuardService::proteger($zipPath);
 
         $cmd = "openssl enc -aes-256-cbc -d -in \"$encPath\" -out \"$zipPath\" -k \"$password\"";
         exec($cmd, $out, $ret);
@@ -139,6 +174,8 @@ class RestoreService
      */
     private function validarZip(string $ficheiro): bool
     {
+        PathGuardService::proteger($ficheiro);
+
         if (!file_exists($ficheiro) || filesize($ficheiro) < 1024) {
             return false;
         }
@@ -159,6 +196,8 @@ class RestoreService
      */
     private function validarSQL(string $ficheiro): bool
     {
+        PathGuardService::proteger($ficheiro);
+
         if (!file_exists($ficheiro) || filesize($ficheiro) < 1024) {
             return false;
         }
@@ -176,9 +215,13 @@ class RestoreService
      */
     private function limparTemp(string $dir): void
     {
+        PathGuardService::proteger($dir);
+
         foreach (glob($dir . '/*') as $f) {
+            PathGuardService::proteger($f);
             @unlink($f);
         }
+
         @rmdir($dir);
     }
 
@@ -187,13 +230,11 @@ class RestoreService
      */
     private function detetarMysql(): ?string
     {
-        // 1) .env
         $envPath = $_ENV['MYSQL_PATH'] ?? null;
         if ($envPath && file_exists($envPath)) {
             return str_replace('\\', '/', $envPath);
         }
 
-        // 2) Caminhos típicos
         $possiveis = [
             'C:\\wamp\\bin\\mysql\\mysql9.1.0\\bin\\mysql.exe',
             'C:\\wamp64\\bin\\mysql\\mysql9.1.0\\bin\\mysql.exe',
@@ -208,7 +249,6 @@ class RestoreService
             }
         }
 
-        // 3) Linux
         $which = trim(shell_exec('which mysql 2>/dev/null') ?? '');
         if ($which !== '' && file_exists($which)) {
             return $which;

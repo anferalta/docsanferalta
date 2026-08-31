@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\LogSistema;
 use App\Services\EmailService;
+use App\Services\PathGuardService;
 
 class BackupLogger
 {
@@ -12,6 +13,13 @@ class BackupLogger
      */
     public static function registar(string $tipo, string $ficheiro, bool $sucesso, string $mensagem = ''): void
     {
+        PathGuardService::init();
+
+        // Blindagem do caminho recebido
+        if (is_string($ficheiro)) {
+            PathGuardService::proteger($ficheiro);
+        }
+
         $texto = $mensagem ?: "Backup {$tipo}: {$ficheiro}";
 
         // Log no sistema
@@ -36,6 +44,8 @@ class BackupLogger
      */
     private static function notificarErro(string $tipo, string $ficheiro, string $mensagem): void
     {
+        PathGuardService::proteger($ficheiro);
+
         $emails = self::destinatarios();
 
         foreach ($emails as $email) {
@@ -59,6 +69,8 @@ class BackupLogger
      */
     private static function notificarResultado(string $tipo, string $ficheiro, bool $sucesso, string $texto): void
     {
+        PathGuardService::proteger($ficheiro);
+
         $emails = self::destinatarios();
 
         foreach ($emails as $email) {

@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
+use App\Services\PathGuardService;
+use App\Services\BackupLogger;
+
 class TramitacaoFileService
 {
     /**
      * Guarda anexos de um movimento de tramitação.
-     * @param int $historicoId  ID do registo na tabela documento_tramitacao_historico
-     * @param array $files      $_FILES['anexos']
-     * @return array            Lista de ficheiros guardados (nome_guardado, nome_original)
      */
     public static function guardarAnexos(int $historicoId, array $files): array
     {
@@ -18,11 +18,30 @@ class TramitacaoFileService
             return $guardados;
         }
 
-        $root = dirname(__DIR__, 2);
-        $base = $root . "/storage/tramitacao/$historicoId/";
+        PathGuardService::init();
 
+        $root = dirname(__DIR__, 2);
+        $baseRoot = $root . "/storage/tramitacao";
+
+        // 🔒 Proteger a pasta base
+        PathGuardService::proteger($baseRoot);
+
+        // Criar pasta base se não existir
+        if (!is_dir($baseRoot)) {
+            mkdir($baseRoot, 0777, true);
+            file_put_contents($baseRoot . '/.keep', 'sentinel');
+        }
+
+        // Caminho do histórico
+        $base = $baseRoot . "/$historicoId";
+
+        // 🔒 Proteger a pasta do histórico (mesmo antes de existir)
+        PathGuardService::proteger($base);
+
+        // Criar pasta do histórico
         if (!is_dir($base)) {
             mkdir($base, 0777, true);
+            file_put_contents($base . '/.keep', 'sentinel');
         }
 
         $total = count($files['name']);
@@ -45,7 +64,10 @@ class TramitacaoFileService
             $nomeSeguro = preg_replace('/[^A-Za-z0-9_\.-]/', '_', $nomeOriginal);
             $nomeGuardado = uniqid() . '_' . $nomeSeguro;
 
-            $destino = $base . $nomeGuardado;
+            $destino = $base . '/' . $nomeGuardado;
+
+            // 🔒 Proteger o destino antes de escrever
+            PathGuardService::proteger($destino);
 
             if (!move_uploaded_file($tmp, $destino)) {
                 throw new \Exception("Erro ao guardar o ficheiro: {$nomeOriginal}");
@@ -67,7 +89,16 @@ class TramitacaoFileService
      */
     public static function resolverCaminhoSeguro(int $historicoId, string $ficheiro): string
     {
-        $root = dirname(__DIR__, 2) . '/storage/tramitacao';
+        PathGuardService::init();
+
+        $root = realpath(dirname(__DIR__, 2) . '/storage/tramitacao');
+
+        if ($root === false) {
+            throw new \Exception("Pasta base de tramitação não encontrada.");
+        }
+
+        // 🔒 Proteger a pasta base
+        PathGuardService::proteger($root);
 
         $historicoId = intval($historicoId);
         $ficheiro = basename($ficheiro);
@@ -76,12 +107,19 @@ class TramitacaoFileService
             throw new \Exception("ID inválido.");
         }
 
-        $path = "$root/$historicoId/$ficheiro";
+        $path = $root . DIRECTORY_SEPARATOR . $historicoId . DIRECTORY_SEPARATOR . $ficheiro;
 
-        if (!file_exists($path)) {
+        $real = realpath($path);
+
+        if ($real === false) {
             throw new \Exception("Ficheiro não encontrado.");
         }
 
-        return $path;
+        // 🔒 Blindagem contra traversal
+        if (!str_starts_with($real, $root)) {
+            throw new \Exception("Tentativa bloqueada: acesso fora da pasta de tramitação ({$real})");
+        }
+
+        return $real;
     }
 }

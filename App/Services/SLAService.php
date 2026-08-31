@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Documento;
 use App\Models\Notificacao;
+use App\Services\BackupLogger;
 
 class SLAService
 {
@@ -23,13 +24,55 @@ class SLAService
 
         foreach ($docs as $d) {
 
-            $inicio = new \DateTime($d->area_atual_desde);
+            // ============================
+            // 1. Validar integridade mínima
+            // ============================
+            if (empty($d->area_atual_desde) || empty($d->prazo_resposta)) {
+                BackupLogger::registar(
+                    'SLA',
+                    "DOC {$d->id}",
+                    false,
+                    "Documento com dados incompletos para SLA"
+                );
+                continue;
+            }
+
+            // ============================
+            // 2. Validar data
+            // ============================
+            try {
+                $inicio = new \DateTime($d->area_atual_desde);
+            } catch (\Exception $e) {
+                BackupLogger::registar(
+                    'SLA',
+                    "DOC {$d->id}",
+                    false,
+                    "Data inválida em area_atual_desde"
+                );
+                continue;
+            }
+
             $agora  = new \DateTime();
             $dias   = $inicio->diff($agora)->days;
 
+            // ============================
+            // 3. Validar prazo
+            // ============================
             $prazo = (int) $d->prazo_resposta;
 
-            // A expirar (prazo - 1 ou prazo)
+            if ($prazo <= 0 || $prazo > 365) {
+                BackupLogger::registar(
+                    'SLA',
+                    "DOC {$d->id}",
+                    false,
+                    "Prazo inválido: {$prazo}"
+                );
+                continue;
+            }
+
+            // ============================
+            // 4. A expirar
+            // ============================
             if ($dias == $prazo - 1 || $dias == $prazo) {
                 Notificacao::create([
                     'utilizador_id' => $d->criado_por,
@@ -41,7 +84,9 @@ class SLAService
                 ]);
             }
 
-            // Atrasado
+            // ============================
+            // 5. Atrasado
+            // ============================
             if ($dias > $prazo) {
                 Notificacao::create([
                     'utilizador_id' => $d->criado_por,

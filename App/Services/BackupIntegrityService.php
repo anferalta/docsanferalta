@@ -3,12 +3,21 @@
 namespace App\Services;
 
 use ZipArchive;
+use App\Services\PathGuardService;
+use App\Services\BackupLogger;
 
 class BackupIntegrityService
 {
     public function analisar(string $ficheiro, string $tipo): array
     {
+        PathGuardService::init();
+        PathGuardService::proteger($ficheiro);
+
         $path = $ficheiro;
+
+        if (!is_file($path)) {
+            throw new \Exception("Backup não encontrado: {$path}");
+        }
 
         $detalhes = [
             'tamanho'        => $this->tamanho($path),
@@ -23,12 +32,15 @@ class BackupIntegrityService
 
         // ------------------ DESENCRIPTAR SE NECESSÁRIO ------------------
         if ($detalhes['encriptado']) {
-            $path = $this->desencriptarTemporario($path);
+            $pathTmp = $this->desencriptarTemporario($path);
 
-            if (!$path) {
+            if (!$pathTmp) {
                 $detalhes['password_ok'] = false;
                 return $detalhes;
             }
+
+            PathGuardService::proteger($pathTmp);
+            $path = $pathTmp;
         }
 
         // ------------------ VALIDAR ZIP ------------------
@@ -53,20 +65,26 @@ class BackupIntegrityService
 
     private function tamanho(string $path): string
     {
+        PathGuardService::proteger($path);
+
         $bytes = filesize($path);
         return round($bytes / 1024 / 1024, 2) . ' MB';
     }
 
     private function permissoes(string $path): bool
     {
+        PathGuardService::proteger($path);
         return is_readable($path);
     }
 
     private function desencriptarTemporario(string $path): ?string
     {
+        PathGuardService::proteger($path);
+
         $password = getenv('BACKUP_PASSWORD');
 
         if (!$password) {
+            BackupLogger::registar('BACKUP_INTEGRITY', $path, false, "BACKUP_PASSWORD não definido");
             return null;
         }
 
@@ -79,10 +97,13 @@ class BackupIntegrityService
         );
 
         if (!$conteudo) {
+            BackupLogger::registar('BACKUP_INTEGRITY', $path, false, "Falha ao desencriptar backup");
             return null;
         }
 
         $tmp = sys_get_temp_dir() . '/backup_tmp_' . uniqid() . '.zip';
+        PathGuardService::proteger($tmp);
+
         file_put_contents($tmp, $conteudo);
 
         return $tmp;
@@ -90,6 +111,8 @@ class BackupIntegrityService
 
     private function validarSQL(string $zipPath): bool
     {
+        PathGuardService::proteger($zipPath);
+
         $zip = new ZipArchive();
         if ($zip->open($zipPath) !== true) {
             return false;
@@ -109,7 +132,7 @@ class BackupIntegrityService
         $zip->close();
 
         if (!$sql) return false;
-        if (strlen($sql) < 100) return false; // SQL demasiado pequeno
+        if (strlen($sql) < 100) return false;
         if (!str_contains($sql, 'CREATE TABLE')) return false;
 
         return true;

@@ -2,10 +2,25 @@
 
 namespace App\Services;
 
+use App\Services\PathGuardService;
+use App\Services\BackupLogger;
+
 class DocumentoValidator
 {
     public static function validarCriacao(array $post, array $files): ?string
     {
+        // Inicializar proteção global
+        PathGuardService::init();
+
+        // Proteger a pasta base dos documentos
+        $root = realpath(dirname(__DIR__, 2) . '/storage/documentos');
+        if ($root !== false) {
+            PathGuardService::proteger($root);
+        }
+
+        // ============================
+        // Validações normais
+        // ============================
         $titulo = trim($post['titulo'] ?? '');
         if ($titulo === '') {
             return 'O título é obrigatório.';
@@ -31,6 +46,18 @@ class DocumentoValidator
     // ============================================================
     public static function validarEdicao(array $post): ?string
     {
+        // Inicializar proteção global
+        PathGuardService::init();
+
+        // Proteger a pasta base dos documentos
+        $root = realpath(dirname(__DIR__, 2) . '/storage/documentos');
+        if ($root !== false) {
+            PathGuardService::proteger($root);
+        }
+
+        // ============================
+        // Validações normais
+        // ============================
         $titulo = trim($post['titulo'] ?? '');
         if ($titulo === '') {
             return 'O título é obrigatório.';

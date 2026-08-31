@@ -15,6 +15,8 @@ use App\Models\DocumentoTramitacao;
 use App\Models\DocumentoTramitacaoAnexo;
 use App\Models\DocumentoFicheiro;   // <-- ESTA LINHA RESOLVE O ERRO
 use App\Models\Utilizador;
+use App\Services\PathGuardService;
+use App\Services\BackupLogger;
 use PDO;
 
 class DocumentosAdminController extends BaseController
@@ -406,6 +408,8 @@ WHERE 1=1
 
     public function verFicheiro($ano, $mes, $dia, $ficheiro)
     {
+        PathGuardService::init();
+
         try {
             $path = \App\Services\DocumentoFileService::resolverCaminhoSeguro(
                     $ano, $mes, $dia, $ficheiro
@@ -416,13 +420,29 @@ WHERE 1=1
             return;
         }
 
+        // Blindagem contra traversal
+        PathGuardService::proteger($path);
+
+        $real = realpath($path);
+        if ($real === false) {
+            http_response_code(404);
+            exit("Ficheiro não encontrado.");
+        }
+
+        $root = realpath(__DIR__ . '/../../../storage/documentos');
+        if (!str_starts_with($real, $root)) {
+            BackupLogger::registar('ABRIR', $real, false, "Traversal detectado");
+            http_response_code(403);
+            exit("Acesso negado.");
+        }
+
         $nome = basename($ficheiro);
 
-        header("Content-Type: " . mime_content_type($path));
-        header("Content-Length: " . filesize($path));
+        header("Content-Type: " . mime_content_type($real));
+        header("Content-Length: " . filesize($real));
         header("Content-Disposition: inline; filename=\"$nome\"");
 
-        readfile($path);
+        readfile($real);
         exit;
     }
 
@@ -442,6 +462,8 @@ WHERE 1=1
 
     public static function substituirFicheiro(Documento $documento, array $ficheiro, $user): void
     {
+        PathGuardService::init();
+
         $tmp = $ficheiro['tmp_name'];
         $nomeOriginal = $ficheiro['name'];
         $tamanho = $ficheiro['size'];
@@ -455,50 +477,52 @@ WHERE 1=1
             throw new \Exception("Ficheiro inválido: {$nomeOriginal}");
         }
 
-        // ============================
-        // 1. Construção segura da pasta
-        // ============================
+        // Extensões permitidas
+        $permitidas = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'txt', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'rar', '7z'];
+        $ext = strtolower(pathinfo($nomeOriginal, PATHINFO_EXTENSION));
+
+        if (!in_array($ext, $permitidas)) {
+            throw new \Exception("Extensão não permitida: {$nomeOriginal}");
+        }
+
+        // Caminho seguro
         $root = dirname(__DIR__, 2);
+        PathGuardService::proteger($root);
 
         $ano = date('Y');
         $mes = date('m');
         $dia = date('d');
 
-        if (!$ano || !$mes || !$dia) {
-            throw new \Exception("Erro interno: data inválida ($ano/$mes/$dia).");
-        }
-
         $subpasta = "$ano/$mes/$dia";
         $base = $root . "/storage/documentos/$subpasta/";
 
+        PathGuardService::proteger($base);
+
         if (!is_dir($base)) {
             mkdir($base, 0777, true);
+            file_put_contents($base . '/.keep', 'sentinel');
         }
 
-        // ============================
-        // 2. Guardar novo ficheiro
-        // ============================
+        // Guardar novo ficheiro
         $nomeSeguro = preg_replace('/[^A-Za-z0-9_\.-]/', '_', $nomeOriginal);
         $nomeGuardado = uniqid() . '_' . $nomeSeguro;
 
         $destino = $base . $nomeGuardado;
+        PathGuardService::proteger($destino);
 
         if (!move_uploaded_file($tmp, $destino)) {
             throw new \Exception("Erro ao guardar o ficheiro: {$nomeOriginal}");
         }
 
-        // ============================
-        // 3. Apagar ficheiro antigo
-        // ============================
+        // Apagar ficheiro antigo
         $antigo = $root . '/storage/documentos/' . $documento->caminho . $documento->ficheiro;
+        PathGuardService::proteger($antigo);
 
         if (file_exists($antigo)) {
             unlink($antigo);
         }
 
-        // ============================
-        // 4. Atualizar BD
-        // ============================
+        // Atualizar BD
         $documento->ficheiro = $nomeGuardado;
         $documento->ficheiro_original = $nomeOriginal;
         $documento->caminho = $subpasta . '/';
@@ -529,6 +553,8 @@ WHERE 1=1
 
     public function apagar($id)
     {
+        PathGuardService::init();
+
         $user = Auth::user();
         if (!$user) {
             http_response_code(403);
@@ -542,22 +568,23 @@ WHERE 1=1
             exit("Ficheiro não encontrado.");
         }
 
-        // Segurança: garantir que pertence ao documento
         if (!is_numeric($ficheiro->documento_id)) {
             http_response_code(400);
             exit("Ficheiro inválido.");
         }
 
-        // Caminho físico
         $root = realpath(__DIR__ . '/../../../');
-        $path = $root . '/storage/documentos/' . $ficheiro->caminho . $ficheiro->ficheiro;
+        PathGuardService::proteger($root);
 
-        // Apagar ficheiro físico
-        if (file_exists($path)) {
-            unlink($path);
+        $path = $root . '/storage/documentos/' . $ficheiro->caminho . $ficheiro->ficheiro;
+        PathGuardService::proteger($path);
+
+        $real = realpath($path);
+
+        if ($real && str_starts_with($real, $root) && file_exists($real)) {
+            unlink($real);
         }
 
-        // Apagar da BD
         DocumentoFicheiro::delete($id);
 
         Sessao::flash('sucesso', 'Ficheiro apagado com sucesso.');
@@ -616,6 +643,8 @@ WHERE 1=1
 
     public function download($id)
     {
+        PathGuardService::init();
+
         $documento = Documento::find($id);
 
         if (!$documento) {
@@ -623,20 +652,32 @@ WHERE 1=1
             return $this->redirect('/admin/documentos');
         }
 
-        $caminho = rtrim($documento->caminho, '/') . '/' . $documento->ficheiro;
+        $root = dirname(__DIR__, 3);
+        PathGuardService::proteger($root);
 
-        if (!file_exists($caminho)) {
+        $caminho = $root . '/storage/documentos/' . $documento->caminho . $documento->ficheiro;
+        PathGuardService::proteger($caminho);
+
+        $real = realpath($caminho);
+
+        if ($real === false || !file_exists($real)) {
             http_response_code(404);
             exit("Ficheiro não encontrado.");
         }
 
-        $ficheiro = basename($caminho);
+        if (!str_starts_with($real, $root)) {
+            BackupLogger::registar('DOWNLOAD', $real, false, "Traversal detectado");
+            http_response_code(403);
+            exit("Acesso negado.");
+        }
+
+        $ficheiro = basename($real);
 
         header("Content-Type: application/octet-stream");
         header("Content-Disposition: attachment; filename=\"$ficheiro\"");
-        header("Content-Length: " . filesize($caminho));
+        header("Content-Length: " . filesize($real));
 
-        readfile($caminho);
+        readfile($real);
         exit;
     }
 
@@ -664,6 +705,8 @@ WHERE 1=1
 
     public function downloadMultiple()
     {
+        PathGuardService::init();
+
         $user = Auth::user();
 
         if (empty($_POST['docs']) || !is_array($_POST['docs'])) {
@@ -671,19 +714,30 @@ WHERE 1=1
             return $this->redirect('/admin/documentos');
         }
 
+        // Sanitizar IDs
+        $ids = array_map('intval', $_POST['docs']);
+
         try {
-            $zipPath = \App\Services\DocumentoZipService::criarZip($_POST['docs'], $user);
+            $zipPath = \App\Services\DocumentoZipService::criarZip($ids, $user);
         } catch (\Exception $e) {
             Sessao::flash('erro', $e->getMessage());
             return $this->redirect('/admin/documentos');
         }
 
-        header("Content-Type: application/zip");
-        header("Content-Disposition: attachment; filename=\"" . basename($zipPath) . "\"");
-        header("Content-Length: " . filesize($zipPath));
+        PathGuardService::proteger($zipPath);
 
-        readfile($zipPath);
-        unlink($zipPath);
+        $real = realpath($zipPath);
+        if ($real === false || !file_exists($real)) {
+            Sessao::flash('erro', 'Erro ao gerar o ZIP.');
+            return $this->redirect('/admin/documentos');
+        }
+
+        header("Content-Type: application/zip");
+        header("Content-Disposition: attachment; filename=\"" . basename($real) . "\"");
+        header("Content-Length: " . filesize($real));
+
+        readfile($real);
+        unlink($real);
         exit;
     }
 
@@ -732,6 +786,11 @@ WHERE 1=1
 
     public function verAnexo($historicoId, $ficheiro)
     {
+        PathGuardService::init();
+
+        // Sanitizar nome de ficheiro
+        $ficheiro = basename($ficheiro);
+
         $anexo = DocumentoTramitacaoAnexo::query(
                         "SELECT * FROM documento_tramitacao_anexos WHERE tramitacao_id = :hid AND ficheiro = :fic LIMIT 1",
                         ['hid' => $historicoId, 'fic' => $ficheiro]
@@ -743,20 +802,32 @@ WHERE 1=1
         }
 
         $caminho = $anexo->caminhoAbsoluto();
+        PathGuardService::proteger($caminho);
 
-        if (!file_exists($caminho)) {
+        $real = realpath($caminho);
+        if ($real === false || !file_exists($real)) {
             http_response_code(404);
             return $this->render('@admin/errors/404.twig');
         }
 
+        // Blindagem contra traversal
+        $root = realpath(__DIR__ . '/../../../storage/tramitacao');
+        if ($root === false || !str_starts_with($real, $root)) {
+            BackupLogger::registar('VER_ANEXO', $real, false, "Traversal detectado");
+            http_response_code(403);
+            return $this->render('@admin/errors/403.twig');
+        }
+
         header('Content-Type: ' . $anexo->mime_type);
-        header('Content-Length: ' . filesize($caminho));
-        readfile($caminho);
+        header('Content-Length: ' . filesize($real));
+        readfile($real);
         exit;
     }
 
     public function downloadAnexo($id)
     {
+        PathGuardService::init();
+
         $anexo = DocumentoFicheiro::find($id);
 
         if (!$anexo) {
@@ -764,25 +835,40 @@ WHERE 1=1
             exit("Anexo não encontrado.");
         }
 
-        $caminho = dirname(__DIR__, 3) . '/storage/documentos/' . $anexo->ficheiro;
+        $root = dirname(__DIR__, 3);
+        PathGuardService::proteger($root);
 
-        if (!file_exists($caminho)) {
+        // usar caminho completo guardado no modelo, se existir
+        $caminho = $root . '/storage/documentos/' . $anexo->caminho . $anexo->ficheiro;
+        PathGuardService::proteger($caminho);
+
+        $real = realpath($caminho);
+
+        if ($real === false || !file_exists($real)) {
             http_response_code(404);
             exit("Ficheiro não encontrado.");
         }
 
-        $ficheiro = basename($caminho);
+        if (!str_starts_with($real, $root)) {
+            BackupLogger::registar('DOWNLOAD_ANEXO', $real, false, "Traversal detectado");
+            http_response_code(403);
+            exit("Acesso negado.");
+        }
+
+        $ficheiro = basename($real);
 
         header("Content-Type: application/octet-stream");
         header("Content-Disposition: attachment; filename=\"$ficheiro\"");
-        header("Content-Length: " . filesize($caminho));
+        header("Content-Length: " . filesize($real));
 
-        readfile($caminho);
+        readfile($real);
         exit;
     }
 
     public function abrir($idAnexo)
     {
+        PathGuardService::init();
+
         $user = Auth::user();
         if (!$user) {
             return $this->redirect('/login');
@@ -808,48 +894,59 @@ WHERE 1=1
         }
 
         $root = realpath(__DIR__ . '/../../../');
+        PathGuardService::proteger($root);
 
         if ($tipo === 'tramitacao') {
-            $path = $root . '/public/uploads/tramitacao/' . $anexo->tramitacao_id . '/' . $anexo->ficheiro;
+            $path = $root . '/public/uploads/tramitacao/' . intval($anexo->tramitacao_id) . '/' . basename($anexo->ficheiro);
         } else {
-            $path = $root . '/storage/documentos/' . $anexo->caminho . $anexo->ficheiro;
+            $path = $root . '/storage/documentos/' . $anexo->caminho . basename($anexo->ficheiro);
         }
 
-        if (!file_exists($path)) {
+        // Blindagem contra traversal
+        $real = realpath($path);
+        if ($real === false || !str_starts_with($real, $root)) {
+            BackupLogger::registar('ABRIR', $path, false, "Tentativa de acesso indevido");
+            http_response_code(403);
+            exit("Acesso negado.");
+        }
+
+        PathGuardService::proteger($real);
+
+        if (!file_exists($real)) {
             http_response_code(404);
             exit("Ficheiro não encontrado.");
         }
 
-        $mime = mime_content_type($path);
+        $mime = mime_content_type($real);
         $nome = basename($anexo->ficheiro);
 
         $inline = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'txt', 'webp'];
-        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $ext = strtolower(pathinfo($real, PATHINFO_EXTENSION));
 
         if (in_array($ext, $inline)) {
             header("Content-Type: {$mime}");
             header("Content-Disposition: inline; filename=\"{$nome}\"");
-            header("Content-Length: " . filesize($path));
-            readfile($path);
+            header("Content-Length: " . filesize($real));
+            readfile($real);
             exit;
         }
 
         header("Content-Type: application/octet-stream");
         header("Content-Disposition: attachment; filename=\"{$nome}\"");
-        header("Content-Length: " . filesize($path));
-        readfile($path);
+        header("Content-Length: " . filesize($real));
+        readfile($real);
         exit;
     }
 
     public function abrirAnexo($id)
     {
-        // Validar ID
+        PathGuardService::init();
+
         if (!$id || !is_numeric($id)) {
             http_response_code(404);
             return $this->render('@admin/errors/404.twig');
         }
 
-        // Buscar o anexo
         $anexo = DocumentoFicheiro::find($id);
 
         if (!$anexo) {
@@ -857,19 +954,28 @@ WHERE 1=1
             return $this->render('@admin/errors/404.twig');
         }
 
-        // Caminho físico correto
         $caminho = $anexo->caminhoAbsoluto();
+        PathGuardService::proteger($caminho);
 
-        if (!file_exists($caminho)) {
+        $real = realpath($caminho);
+
+        if ($real === false || !file_exists($real)) {
             http_response_code(404);
             return $this->render('@admin/errors/404.twig');
         }
 
-        // MIME
-        header('Content-Type: ' . $anexo->mime_type);
-        header('Content-Length: ' . filesize($caminho));
+        // Blindagem contra traversal
+        $root = realpath(__DIR__ . '/../../../storage/documentos');
+        if (!str_starts_with($real, $root)) {
+            BackupLogger::registar('ABRIR_ANEXO', $real, false, "Traversal detectado");
+            http_response_code(403);
+            exit("Acesso negado.");
+        }
 
-        readfile($caminho);
+        header('Content-Type: ' . $anexo->mime_type);
+        header('Content-Length: ' . filesize($real));
+
+        readfile($real);
         exit;
     }
 
@@ -954,6 +1060,8 @@ WHERE 1=1
 
     public function upload($id)
     {
+        PathGuardService::init();
+
         $user = Auth::user();
         if (!$user) {
             http_response_code(403);
@@ -966,7 +1074,10 @@ WHERE 1=1
         }
 
         $root = realpath(__DIR__ . '/../../../');
+        PathGuardService::proteger($root);
+
         $base = $root . '/storage/documentos/';
+        PathGuardService::proteger($base);
 
         $ano = date('Y');
         $mes = date('m');
@@ -975,8 +1086,11 @@ WHERE 1=1
         $subpasta = "$ano/$mes/$dia/";
         $destinoFinal = $base . $subpasta;
 
+        PathGuardService::proteger($destinoFinal);
+
         if (!is_dir($destinoFinal)) {
             mkdir($destinoFinal, 0777, true);
+            file_put_contents($destinoFinal . '/.keep', 'sentinel');
         }
 
         foreach ($_FILES['ficheiros']['tmp_name'] as $i => $tmp) {
@@ -989,12 +1103,26 @@ WHERE 1=1
                 continue;
             }
 
+            // Blindagem contra uploads maliciosos
+            $ext = strtolower(pathinfo($nomeOriginal, PATHINFO_EXTENSION));
+            $permitidas = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'txt', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'rar', '7z'];
+
+            if (!in_array($ext, $permitidas)) {
+                BackupLogger::registar('UPLOAD', $nomeOriginal, false, "Extensão não permitida");
+                continue;
+            }
+
             $nomeSeguro = preg_replace('/[^A-Za-z0-9_\.-]/', '_', $nomeOriginal);
             $nomeGuardado = uniqid() . '_' . $nomeSeguro;
 
             $destino = $destinoFinal . $nomeGuardado;
 
-            move_uploaded_file($tmp, $destino);
+            PathGuardService::proteger($destino);
+
+            if (!move_uploaded_file($tmp, $destino)) {
+                BackupLogger::registar('UPLOAD', $destino, false, "Falha ao mover ficheiro");
+                continue;
+            }
 
             DocumentoFicheiro::create([
                 'documento_id' => $id,

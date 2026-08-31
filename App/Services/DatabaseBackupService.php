@@ -333,23 +333,30 @@ class DatabaseBackupService
      */
     private function limparAntigos(string $baseDir, int $dias): void
     {
+        // Inicializar proteção
+        \App\Services\PathGuardService::init();
+
         $limite = strtotime("-{$dias} days");
 
         $iterator = new \RecursiveIteratorIterator(
                 new \RecursiveDirectoryIterator($baseDir, \FilesystemIterator::SKIP_DOTS),
-                \RecursiveIteratorIterator::CHILD_FIRST
+                \RecursiveIteratorIterator::SELF_FIRST
         );
 
         foreach ($iterator as $ficheiro) {
-            if ($ficheiro->isFile() && $ficheiro->getExtension() === 'zip') {
+
+            // Proteger qualquer caminho antes de tentar apagar
+            \App\Services\PathGuardService::proteger($ficheiro->getPathname());
+
+            // Apagar apenas ficheiros ZIP antigos
+            if ($ficheiro->isFile() && strtolower($ficheiro->getExtension()) === 'zip') {
                 if ($ficheiro->getMTime() < $limite) {
                     unlink($ficheiro->getPathname());
                 }
             }
 
-            if ($ficheiro->isDir()) {
-                @rmdir($ficheiro->getPathname());
-            }
+            // Nunca apagar diretórios
+            // Nunca usar rmdir()
         }
     }
 

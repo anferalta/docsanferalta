@@ -3,36 +3,51 @@
 namespace App\Services;
 
 use ZipArchive;
+use App\Services\PathGuardService;
+use App\Services\BackupLogger;
 
 class FileBackupService
 {
-
     private string $baseDir;
     private string $sourceDir;
     private string $hashFile;
 
     public function __construct()
     {
+        PathGuardService::init();
+
         // PASTA CORRETA DOS DOCUMENTOS
-        $this->sourceDir = realpath(__DIR__ . '/../../storage/documentos') ?: (__DIR__ . '/../../storage/documentos');
+        $this->sourceDir = realpath(__DIR__ . '/../../storage/documentos') 
+            ?: (__DIR__ . '/../../storage/documentos');
 
         $this->sourceDir = rtrim(str_replace('\\', '/', $this->sourceDir), '/') . '/';
+
+        // 🔒 Proteger pasta de origem
+        PathGuardService::proteger($this->sourceDir);
 
         if (!is_dir($this->sourceDir)) {
             throw new \Exception("A pasta de origem para backup não existe: {$this->sourceDir}");
         }
 
         // Pasta base dos backups
-        $this->baseDir = realpath(__DIR__ . '/../../backups/Ficheiros') ?: (__DIR__ . '/../../backups/Ficheiros');
+        $this->baseDir = realpath(__DIR__ . '/../../backups/Ficheiros') 
+            ?: (__DIR__ . '/../../backups/Ficheiros');
+
+        // 🔒 Proteger pasta de destino
+        PathGuardService::proteger($this->baseDir);
 
         if (!is_dir($this->baseDir)) {
             mkdir($this->baseDir, 0777, true);
+            file_put_contents($this->baseDir . '/.keep', 'sentinel');
         }
 
         $this->baseDir = rtrim(str_replace('\\', '/', $this->baseDir), '/') . '/';
 
         // Ficheiro de hashes para backup incremental
         $this->hashFile = __DIR__ . '/../../backups/hashes_files.json';
+
+        // 🔒 Proteger ficheiro de hashes
+        PathGuardService::proteger($this->hashFile);
     }
 
     public function criar(): string
@@ -48,8 +63,12 @@ class FileBackupService
 
         $dir = "{$this->baseDir}{$ano}/{$mes}/";
 
+        // 🔒 Proteger diretório antes de criar
+        PathGuardService::proteger($dir);
+
         if (!is_dir($dir)) {
             mkdir($dir, 0777, true);
+            file_put_contents($dir . '/.keep', 'sentinel');
         }
 
         $dir = rtrim(str_replace('\\', '/', realpath($dir)), '/') . '/';
@@ -57,6 +76,9 @@ class FileBackupService
         // Nome do ZIP
         $nome = 'backup_files_' . date('Y-m-d_H-i-s') . '.zip';
         $zipPath = $dir . $nome;
+
+        // 🔒 Proteger ZIP antes de criar
+        PathGuardService::proteger($zipPath);
 
         $zip = new ZipArchive();
         if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
@@ -67,19 +89,25 @@ class FileBackupService
 
         // ITERAR DOCUMENTOS REAIS
         $files = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($this->sourceDir, \FilesystemIterator::SKIP_DOTS),
-                \RecursiveIteratorIterator::LEAVES_ONLY
+            new \RecursiveDirectoryIterator($this->sourceDir, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::LEAVES_ONLY
         );
 
         foreach ($files as $file) {
-            if ($file->isDir())
+
+            if ($file->isDir()) {
                 continue;
+            }
 
             $filePath = str_replace('\\', '/', $file->getRealPath());
             $relative = substr($filePath, strlen($this->sourceDir));
 
+            // 🔒 Proteger ficheiro antes de ler
+            PathGuardService::proteger($filePath);
+
             // Ignorar ficheiros corrompidos ou vazios
             if (!is_readable($filePath) || filesize($filePath) === 0) {
+                BackupLogger::registar('BACKUP', $filePath, false, "Ficheiro ignorado (corrompido ou vazio)");
                 continue;
             }
 
@@ -104,12 +132,14 @@ class FileBackupService
 
         // Proteger contra ZIP vazio
         if ($totalAdicionados === 0) {
+            PathGuardService::proteger($zipPath);
             unlink($zipPath);
             throw new \Exception("Nenhum ficheiro novo ou alterado para backup.");
         }
 
         // Verificar integridade do ZIP
         if (!$this->validarZip($zipPath)) {
+            PathGuardService::proteger($zipPath);
             unlink($zipPath);
             throw new \Exception("Backup inválido — ZIP corrompido.");
         }
@@ -128,6 +158,8 @@ class FileBackupService
 
     private function validarZip(string $ficheiro): bool
     {
+        PathGuardService::proteger($ficheiro);
+
         if (!file_exists($ficheiro) || filesize($ficheiro) < 1024) {
             return false;
         }
@@ -145,8 +177,11 @@ class FileBackupService
 
     private function lerHashAnterior(string $ficheiro): ?string
     {
-        if (!file_exists($this->hashFile))
+        PathGuardService::proteger($this->hashFile);
+
+        if (!file_exists($this->hashFile)) {
             return null;
+        }
 
         $hashes = json_decode(file_get_contents($this->hashFile), true);
         return $hashes[$ficheiro] ?? null;
@@ -154,6 +189,8 @@ class FileBackupService
 
     private function guardarHash(string $ficheiro, string $hash): void
     {
+        PathGuardService::proteger($this->hashFile);
+
         $hashes = [];
 
         if (file_exists($this->hashFile)) {
@@ -167,24 +204,30 @@ class FileBackupService
 
     private function limparAntigos(string $baseDir, int $dias): void
     {
+        PathGuardService::proteger($baseDir);
+
         $limite = strtotime("-{$dias} days");
 
         $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($baseDir, \FilesystemIterator::SKIP_DOTS),
-                \RecursiveIteratorIterator::CHILD_FIRST
+            new \RecursiveDirectoryIterator($baseDir, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
         );
 
         foreach ($iterator as $ficheiro) {
 
+            $path = $ficheiro->getPathname();
+
+            // 🔒 Proteger antes de apagar
+            PathGuardService::proteger($path);
+
             // Apagar apenas ZIPs antigos
-            if ($ficheiro->isFile() && $ficheiro->getExtension() === 'zip') {
+            if ($ficheiro->isFile() && strtolower($ficheiro->getExtension()) === 'zip') {
                 if ($ficheiro->getMTime() < $limite) {
-                    unlink($ficheiro->getPathname());
+                    unlink($path);
                 }
             }
 
             // Nunca apagar diretórios automaticamente
-            // @rmdir($ficheiro->getPathname());
         }
     }
 }

@@ -15,6 +15,7 @@ use App\Models\DocumentoTramitacaoAnexo;
 use App\Models\Notificacao;
 use App\Models\DocumentoTipo;
 use App\Models\Utilizador;
+use App\Services\PathGuardService;
 use App\Services\DocumentoExistsValidator;
 use App\Services\AreaExistsValidator;
 use App\Services\UtilizadorExistsValidator;
@@ -37,29 +38,39 @@ class TramitacaoAdminController extends BaseController
 
     private function guardarAnexos(int $tramitacao_id): void
     {
+        PathGuardService::init();
+
         try {
 
             if (empty($_FILES['anexos']['name'][0])) {
                 return;
             }
 
-            $baseDir = ROOT_PATH . '/public/uploads/tramitacao/' . $tramitacao_id . '/';
+            $baseDir = ROOT_PATH . '/public/uploads/tramitacao/' . intval($tramitacao_id) . '/';
 
-            if (!is_dir($baseDir) && !mkdir($baseDir, 0775, true)) {
-                throw new \Exception("Não foi possível criar o diretório de anexos.");
+            // Blindagem da pasta base
+            PathGuardService::proteger($baseDir);
+
+            if (!is_dir($baseDir)) {
+                mkdir($baseDir, 0775, true);
+                file_put_contents($baseDir . '/.keep', 'sentinel');
             }
 
             foreach ($_FILES['anexos']['name'] as $i => $nomeOriginal) {
 
-                if (!is_uploaded_file($_FILES['anexos']['tmp_name'][$i])) {
+                $tmp = $_FILES['anexos']['tmp_name'][$i];
+                $size = $_FILES['anexos']['size'][$i];
+                $error = $_FILES['anexos']['error'][$i];
+
+                if ($error !== UPLOAD_ERR_OK || !is_uploaded_file($tmp)) {
                     continue;
                 }
 
-                $tmp = $_FILES['anexos']['tmp_name'][$i];
+                // Blindagem de nome
                 $nomeSeguro = preg_replace('/[^a-zA-Z0-9_\.-]/', '_', basename($nomeOriginal));
                 $nomeGuardado = uniqid('anx_', true) . '_' . $nomeSeguro;
 
-                // Validação de MIME
+                // MIME permitido
                 $mime = mime_content_type($tmp);
                 $permitidos = [
                     'application/pdf',
@@ -73,23 +84,28 @@ class TramitacaoAdminController extends BaseController
                     throw new \Exception("Tipo de ficheiro não permitido: {$mime}");
                 }
 
-                // Validação de tamanho (máx. 20MB)
-                if ($_FILES['anexos']['size'][$i] > 20 * 1024 * 1024) {
+                // Tamanho máximo
+                if ($size > 20 * 1024 * 1024) {
                     throw new \Exception("O ficheiro excede o tamanho máximo permitido (20MB).");
                 }
 
-                if (move_uploaded_file($tmp, $baseDir . $nomeGuardado)) {
-                    DocumentoTramitacaoAnexo::create([
-                        'tramitacao_id' => $tramitacao_id,
-                        'ficheiro' => $nomeGuardado,
-                        'nome_original' => $nomeOriginal,
-                    ]);
-                } else {
+                $destino = $baseDir . $nomeGuardado;
+
+                // Blindagem do destino
+                PathGuardService::proteger($destino);
+
+                if (!move_uploaded_file($tmp, $destino)) {
                     throw new \Exception("Falha ao guardar o ficheiro.");
                 }
+
+                DocumentoTramitacaoAnexo::create([
+                    'tramitacao_id' => $tramitacao_id,
+                    'ficheiro' => $nomeGuardado,
+                    'nome_original' => $nomeOriginal,
+                ]);
             }
         } catch (\Exception $e) {
-            // Erro interno → página 500
+            BackupLogger::registar('TRAMITACAO_UPLOAD', 'anexo', false, $e->getMessage());
             $this->error(500, $e->getMessage());
         }
     }
@@ -295,7 +311,10 @@ class TramitacaoAdminController extends BaseController
             $documento = \App\Services\DocumentoExistsValidator::validarOuFalhar($documento_id);
 
             // VALIDAR ESTADO
-            $estado = trim($_POST['estado'] ?? '');
+            $estado = strtolower(trim($_POST['estado'] ?? ''));
+            $estado = str_replace(['á', 'à', 'ã', 'â'], 'a', $estado);
+            $estado = preg_replace('/[^a-z_]/', '', $estado);
+
             $estado = \App\Services\EstadoService::validarOuFalhar($estado);
 
             $comentario = trim($_POST['comentario'] ?? '');
@@ -389,6 +408,8 @@ class TramitacaoAdminController extends BaseController
 
     public function abrirAnexo($id)
     {
+        PathGuardService::init();
+
         try {
 
             $ficheiro = DocumentoFicheiro::find($id);
@@ -397,38 +418,53 @@ class TramitacaoAdminController extends BaseController
                 return $this->error(404, "O anexo solicitado não existe.");
             }
 
-            // Caminho correto para a tua estrutura
-            $path = __DIR__ . '/../../../storage/documentos/' . $ficheiro->ficheiro;
+            // Caminho correto e seguro
+            $caminho = $ficheiro->caminhoAbsoluto();
+            PathGuardService::proteger($caminho);
 
-            // Se o ficheiro foi removido da BD mas ainda existe o registo
-            if ($ficheiro->removido_em ?? false) {
+            $real = realpath($caminho);
+
+            if ($real === false || !file_exists($real)) {
+                return $this->error(404, "O ficheiro não existe no disco.");
+            }
+
+            // Blindagem contra traversal
+            $root = realpath(__DIR__ . '/../../../storage/documentos');
+            if ($root === false || !str_starts_with($real, $root)) {
+                BackupLogger::registar('ABRIR_ANEXO', $real, false, "Traversal detectado");
+                return $this->error(403, "Acesso negado.");
+            }
+
+            // Ficheiro removido logicamente
+            if (!empty($ficheiro->removido_em)) {
                 return $this->error(410, "Este anexo foi removido.", [
                             'back_url' => "/admin/tramitacao/{$ficheiro->documento_id}"
                 ]);
             }
 
-            if (!file_exists($path)) {
-                return $this->error(404, "O ficheiro não existe no disco.");
-            }
-
-            $mime = $ficheiro->mime ?? mime_content_type($path);
+            // MIME seguro
+            $mime = $ficheiro->mime_type ?? mime_content_type($real);
 
             header("Content-Type: {$mime}");
 
             // Inline para PDF e imagens
-            if (in_array($mime, [
-                        'application/pdf',
-                        'image/jpeg',
-                        'image/png',
-                        'image/gif',
-                        'image/webp'
-                    ])) {
+            $inline = [
+                'application/pdf',
+                'image/jpeg',
+                'image/png',
+                'image/gif',
+                'image/webp'
+            ];
+
+            if (in_array($mime, $inline)) {
                 header("Content-Disposition: inline; filename=\"{$ficheiro->ficheiro_original}\"");
             } else {
                 header("Content-Disposition: attachment; filename=\"{$ficheiro->ficheiro_original}\"");
             }
 
-            readfile($path);
+            header("Content-Length: " . filesize($real));
+
+            readfile($real);
             exit;
         } catch (\Exception $e) {
             return $this->error(500, $e->getMessage());

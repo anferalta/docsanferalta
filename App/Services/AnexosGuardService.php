@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Services\BackupLogger;
+use App\Services\PathGuardService;
 
 class AnexosGuardService
 {
@@ -12,11 +13,19 @@ class AnexosGuardService
     public function __construct()
     {
         $root = dirname(__DIR__, 2);
+
         $this->baseDir = $root . '/storage/documentos';
         $this->logFile = $root . '/storage/logs/anexos_guard.log';
 
+        // Inicializar proteção global
+        PathGuardService::init();
+
+        // Proteger a pasta base
+        PathGuardService::proteger($this->baseDir);
+
         if (!is_dir($this->baseDir)) {
             mkdir($this->baseDir, 0777, true);
+            file_put_contents($this->baseDir . '/.keep', 'sentinel');
         }
     }
 
@@ -40,6 +49,9 @@ class AnexosGuardService
      */
     private function protegerPasta(string $dir): void
     {
+        // Blindagem absoluta
+        PathGuardService::proteger($dir);
+
         if (!is_dir($dir)) {
             $this->log("Pasta não existia, criada: {$dir}");
             mkdir($dir, 0777, true);
@@ -66,6 +78,9 @@ class AnexosGuardService
      */
     public function validarIntegridade(string $path): bool
     {
+        // Blindagem absoluta
+        PathGuardService::proteger($path);
+
         if (!file_exists($path)) {
             $this->log("Ficheiro desapareceu: {$path}");
             BackupLogger::registar('ANEXOS', $path, false, "Ficheiro desaparecido: {$path}");
