@@ -4108,3 +4108,33 @@ Array
     [comentario] => Teste da BD.
     [criado_em] => 2026-08-30 21:42:13
 )
+Array
+(
+    [documento_id] => 1
+    [utilizador_id] => 3
+    [acao] => COMENTARIO
+    [area_id] => 
+    [comentario] => Teste a BD
+    [estado] => novo
+    [criado_em] => 2026-09-01 11:32:52
+)
+Array
+(
+    [documento_id] => 1
+    [area_id] => 4
+    [utilizador_id] => 3
+    [acao] => ENCAMINHADO
+    [estado] => em_tramitacao
+    [comentario] => Teste a BD.
+    [criado_em] => 2026-09-01 11:33:15
+)
+Array
+(
+    [documento_id] => 1
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 4
+    [comentario] => Teste a BD.
+    [estado] => analise
+    [criado_em] => 2026-09-01 11:33:37
+)
