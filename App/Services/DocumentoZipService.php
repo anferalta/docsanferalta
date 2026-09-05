@@ -38,9 +38,6 @@ class DocumentoZipService
         $zipName = 'documentos_' . $user->id . '_' . date('Ymd_His') . '.zip';
         $zipPath = $tmpDir . $zipName;
 
-        // Proteger o ZIP antes de criar
-        PathGuardService::proteger($zipPath);
-
         $zip = new ZipArchive();
         if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             throw new \Exception('Não foi possível criar o ficheiro ZIP.');

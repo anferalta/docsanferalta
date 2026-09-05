@@ -7,6 +7,7 @@ use App\Services\BackupLogger;
 
 class TramitacaoFileService
 {
+
     /**
      * Guarda anexos de um movimento de tramitação.
      */
@@ -23,14 +24,13 @@ class TramitacaoFileService
         $root = dirname(__DIR__, 2);
         $baseRoot = $root . "/storage/tramitacao";
 
-        // 🔒 Proteger a pasta base
-        PathGuardService::proteger($baseRoot);
-
-        // Criar pasta base se não existir
         if (!is_dir($baseRoot)) {
             mkdir($baseRoot, 0777, true);
             file_put_contents($baseRoot . '/.keep', 'sentinel');
         }
+
+        // proteção só para leitura
+        PathGuardService::proteger($baseRoot);
 
         // Caminho do histórico
         $base = $baseRoot . "/$historicoId";
@@ -65,10 +65,7 @@ class TramitacaoFileService
             $nomeGuardado = uniqid() . '_' . $nomeSeguro;
 
             $destino = $base . '/' . $nomeGuardado;
-
-            // 🔒 Proteger o destino antes de escrever
-            PathGuardService::proteger($destino);
-
+            
             if (!move_uploaded_file($tmp, $destino)) {
                 throw new \Exception("Erro ao guardar o ficheiro: {$nomeOriginal}");
             }

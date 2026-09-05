@@ -4,76 +4,53 @@ namespace App\Core;
 
 class CSRF
 {
-    private const SESSION_KEY = '_csrf';
-    private const FIELD_NAME  = '_csrf';
+    private const SESSION_KEY = '_csrf_token';
 
-    /**
-     * Gera um novo token e guarda na sessão
-     */
-    public static function regenerate(): string
+    private static function ensureSession(): void
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
             session_start();
         }
-
-        $token = bin2hex(random_bytes(32));
-        $_SESSION[self::SESSION_KEY] = $token;
-
-        return $token;
     }
 
-    /**
-     * Devolve o token atual ou gera um novo se não existir
-     */
+    // Garantir que o token existe ANTES do controller
+    public static function ensureTokenExists(): void
+    {
+        self::ensureSession();
+
+        if (empty($_SESSION[self::SESSION_KEY])) {
+            $_SESSION[self::SESSION_KEY] = bin2hex(random_bytes(32));
+        }
+    }
+
+    // Obter token atual (sem regenerar)
     public static function token(): string
     {
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            session_start();
-        }
-
-        if (!isset($_SESSION[self::SESSION_KEY])) {
-            return self::regenerate();
-        }
-
+        self::ensureTokenExists();
         return $_SESSION[self::SESSION_KEY];
     }
 
-    /**
-     * Valida o token vindo do request (POST)
-     */
+    // Validar token enviado pelo cliente
     public static function validateFromRequest(): bool
     {
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            session_start();
-        }
+        self::ensureSession();
 
-        // GET nunca falha
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            return true;
-        }
+        $clientToken =
+            $_POST['_csrf'] ??
+            $_SERVER['HTTP_X_CSRF_TOKEN'] ??
+            null;
 
-        $sent   = $_POST[self::FIELD_NAME] ?? null;
-        $stored = $_SESSION[self::SESSION_KEY] ?? null;
-
-        if (!$sent || !$stored) {
+        if (!$clientToken) {
             return false;
         }
 
-        // Comparação segura
-        return hash_equals($stored, $sent);
+        return hash_equals($_SESSION[self::SESSION_KEY], $clientToken);
     }
 
-    /**
-     * Helper para incluir o campo hidden no Twig
-     */
-    public static function field(): string
+    // Rotacionar token após POST válido
+    public static function rotate(): void
     {
-        $token = self::token();
-
-        return sprintf(
-            '<input type="hidden" name="%s" value="%s">',
-            self::FIELD_NAME,
-            htmlspecialchars($token, ENT_QUOTES, 'UTF-8')
-        );
+        self::ensureSession();
+        $_SESSION[self::SESSION_KEY] = bin2hex(random_bytes(32));
     }
 }

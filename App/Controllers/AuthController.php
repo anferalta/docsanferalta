@@ -37,6 +37,12 @@ class AuthController extends BaseController
                 return Helpers::redirect('/login');
             }
 
+            // ANTI‑FIXATION — ADICIONAR AQUI
+            session_regenerate_id(true);
+
+            Auth::login($user);
+            Auditoria::registar('login', $user->id);
+
             if ($user->ativo == 0 && $user->aprovado_em === null) {
                 Sessao::flash('erro', 'A sua conta está pendente de aprovação.');
                 return Helpers::redirect('/login');
@@ -70,6 +76,24 @@ class AuthController extends BaseController
             }
 
             Auth::logout();
+
+// DESTRUIÇÃO TOTAL DA SESSÃO
+            session_unset();
+            session_destroy();
+
+            if (ini_get('session.use_cookies')) {
+                $params = session_get_cookie_params();
+                setcookie(
+                        session_name(),
+                        '',
+                        time() - 3600,
+                        $params['path'],
+                        $params['domain'],
+                        $params['secure'],
+                        $params['httponly']
+                );
+            }
+
             return Helpers::redirect('/login');
         } catch (\Exception $e) {
             return $this->error(500, $e->getMessage());

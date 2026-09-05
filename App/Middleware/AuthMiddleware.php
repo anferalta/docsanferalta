@@ -3,14 +3,13 @@
 namespace App\Middleware;
 
 use App\Core\Auth;
-use App\Core\Sessao;
 use App\Core\Redirect;
 
 class AuthMiddleware
 {
     public function handle(): bool
     {
-        Sessao::start(); // obrigatório
+        // Sessão já está iniciada no index.php → não chamar Sessao::start()
 
         if (!Auth::check()) {
             Redirect::to('/login');

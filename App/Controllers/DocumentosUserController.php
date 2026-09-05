@@ -74,11 +74,10 @@ class DocumentosUserController extends BaseController
         }
 
         $tipos = DocumentoTipo::all();
-        $csrf = CSRF::token();
 
         return $this->render('@site/documentos/criar.twig', [
                     'tipos' => $tipos,
-                    '_csrf' => $csrf
+                    '_csrf' => CSRF::token() // token já garantido pelo middleware
         ]);
     }
 
