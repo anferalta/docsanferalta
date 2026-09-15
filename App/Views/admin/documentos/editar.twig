@@ -107,6 +107,8 @@
                                     <i class="fa fa-file-word text-info fa-lg me-2"></i>
                                 {% elseif ext in ['xls','xlsx'] %}
                                     <i class="fa fa-file-excel text-success fa-lg me-2"></i>
+                                {% elseif ext in ['ppt','pptx'] %}
+                                    <i class="fa fa-file-powerpoint text-danger fa-lg me-2"></i>
                                 {% elseif ext == 'txt' %}
                                     <i class="fa fa-file-alt text-muted fa-lg me-2"></i>
                                 {% elseif ext in ['zip','rar'] %}
@@ -290,38 +292,72 @@ document.addEventListener('DOMContentLoaded', function () {
     previewModal.addEventListener('show.bs.modal', function (event) {
 
         const button = event.relatedTarget;
-        const fileUrl = button.getAttribute('data-url');
-        const ext = button.getAttribute('data-ext').toLowerCase();
+
+        const ext = button.getAttribute('data-ext');
+        const abrirUrl = button.getAttribute('data-url');
+
+        const absoluteUrl = "https://anferalta.com" + abrirUrl;
 
         previewContainer.innerHTML = '<p class="text-muted">A carregar preview...</p>';
 
-        // PDF, TXT, Imagens → abrir diretamente
-        if (['pdf','txt','jpg','jpeg','png','gif','webp'].includes(ext)) {
-
-            if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
-                previewContainer.innerHTML =
-                    `<img src="${fileUrl}" class="img-fluid" style="max-height: 70vh;">`;
-            } else {
-                previewContainer.innerHTML =
-                    `<iframe src="${fileUrl}" style="width:100%; height:70vh;" frameborder="0"></iframe>`;
-            }
-
+        if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
+            previewContainer.innerHTML =
+                `<img src="${absoluteUrl}" class="img-fluid rounded border">`;
+            return;
         }
 
-        // Word / Excel → Office Viewer
-        else if (['doc','docx','xls','xlsx'].includes(ext)) {
+        if (ext === 'pdf') {
+            previewContainer.innerHTML =
+                `<iframe src="${absoluteUrl}" width="100%" height="600px" class="border rounded"></iframe>`;
+            return;
+        }
 
-            const encoded = encodeURIComponent(window.location.origin + fileUrl);
+        if (ext === 'txt') {
+            previewContainer.innerHTML =
+                `<iframe src="${absoluteUrl}" width="100%" height="600px" class="border rounded"></iframe>`;
+            return;
+        }
+
+        if (['doc','docx'].includes(ext)) {
+            const officeUrl =
+                "https://view.officeapps.live.com/op/view.aspx?src=" +
+                encodeURIComponent(absoluteUrl);
 
             previewContainer.innerHTML =
-                `<iframe src="https://view.officeapps.live.com/op/view.aspx?src=${encoded}"
-                         style="width:100%; height:70vh;" frameborder="0"></iframe>`;
+                `<iframe src="${officeUrl}" width="100%" height="600px" class="border rounded"></iframe>`;
+            return;
         }
 
-        else {
+        if (['xls','xlsx'].includes(ext)) {
+            const officeUrl =
+                "https://view.officeapps.live.com/op/view.aspx?src=" +
+                encodeURIComponent(absoluteUrl);
+
             previewContainer.innerHTML =
-                `<p class="text-danger">Preview não disponível para este tipo de ficheiro.</p>`;
+                `<iframe src="${officeUrl}" width="100%" height="600px" class="border rounded"></iframe>`;
+            return;
         }
+
+        if (['ppt','pptx'].includes(ext)) {
+            const officeUrl =
+                "https://view.officeapps.live.com/op/view.aspx?src=" +
+                encodeURIComponent(absoluteUrl);
+
+            previewContainer.innerHTML =
+                `<iframe src="${officeUrl}" width="100%" height="600px" class="border rounded"></iframe>`;
+            return;
+        }
+
+        if (ext === 'odt') {
+            previewContainer.innerHTML =
+                `<p class="text-muted">Este ficheiro ODT não pode ser pré-visualizado. Faça download para abrir.</p>
+                 <a href="${absoluteUrl}" class="btn btn-primary" download>Download</a>`;
+            return;
+        }
+
+        previewContainer.innerHTML =
+            `<p class="text-muted">Preview não disponível para este tipo de ficheiro.</p>
+             <a href="${absoluteUrl}" class="btn btn-primary" download>Download</a>`;
     });
 
 });

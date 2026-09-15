@@ -1,0 +1,58 @@
+<div class="p-3">
+    <h5 class="mb-3">{{ nome }}</h5>
+
+    {% if mime starts with 'image/' %}
+        <img src="{{ caminho }}" class="img-fluid rounded border">
+
+    {% elseif mime == 'application/pdf' %}
+        <iframe src="{{ caminho }}" width="100%" height="600px" class="border rounded"></iframe>
+
+    {% elseif mime starts with 'text/' %}
+        <iframe src="{{ caminho }}" width="100%" height="600px" class="border rounded"></iframe>
+
+    {# ----------------------------- #
+       WORD: DOCX + DOC
+       ----------------------------- #}
+    {% elseif mime in [
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/msword'
+    ] %}
+        <iframe 
+            src="https://view.officeapps.live.com/op/view.aspx?src={{ ('https://anferalta.com' ~ caminho)|url_encode }}" 
+            width="100%" height="600px" 
+            class="border rounded">
+        </iframe>
+
+    {# ----------------------------- #
+       EXCEL: XLSX
+       ----------------------------- #}
+    {% elseif mime == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' %}
+        <iframe 
+            src="https://view.officeapps.live.com/op/view.aspx?src={{ ('https://anferalta.com' ~ caminho)|url_encode }}" 
+            width="100%" height="600px" 
+            class="border rounded">
+        </iframe>
+
+    {# ----------------------------- #
+       POWERPOINT: PPTX
+       ----------------------------- #}
+    {% elseif mime == 'application/vnd.openxmlformats-officedocument.presentationml.presentation' %}
+        <iframe 
+            src="https://view.officeapps.live.com/op/view.aspx?src={{ ('https://anferalta.com' ~ caminho)|url_encode }}" 
+            width="100%" height="600px" 
+            class="border rounded">
+        </iframe>
+
+    {# ----------------------------- #
+       ODT (LibreOffice Writer)
+       Office Viewer NÃO suporta
+       ----------------------------- #}
+    {% elseif mime == 'application/vnd.oasis.opendocument.text' %}
+        <p class="text-muted">Este ficheiro ODT não pode ser pré-visualizado. Faça download para abrir.</p>
+        <a href="{{ caminho }}" class="btn btn-primary" download>Download</a>
+
+    {% else %}
+        <p class="text-muted">Este tipo de ficheiro não pode ser pré-visualizado.</p>
+        <a href="{{ caminho }}" class="btn btn-primary" download>Download</a>
+    {% endif %}
+</div>

@@ -275,34 +275,34 @@
 
                                         {% set podeApagar = false %}
 
-{# 1. Admin pode apagar tudo #}
-{% if auth.user and auth.user.isAdmin() %}
-    {% set podeApagar = true %}
-{% endif %}
+                                        {# 1. Admin pode apagar tudo #}
+                                        {% if auth.user and auth.user.isAdmin() %}
+                                            {% set podeApagar = true %}
+                                        {% endif %}
 
-{# 2. ACL permite apagar #}
-{% if isGranted is defined and isGranted('admin.documentos.apagar') %}
-    {% set podeApagar = true %}
-{% endif %}
+                                        {# 2. ACL permite apagar #}
+                                        {% if isGranted is defined and isGranted('admin.documentos.apagar') %}
+                                            {% set podeApagar = true %}
+                                        {% endif %}
 
-{# 3. Dono do documento pode apagar #}
-{% if auth.user and auth.user.id == doc.criado_por %}
-    {% set podeApagar = true %}
-{% endif %}
+                                        {# 3. Dono do documento pode apagar #}
+                                        {% if auth.user and auth.user.id == doc.criado_por %}
+                                            {% set podeApagar = true %}
+                                        {% endif %}
 
-{% if podeApagar %}
-    <form action="/admin/documentos/eliminar/{{ doc.id }}"
-          method="post"
-          class="d-inline"
-          onsubmit="return confirm('Eliminar documento?')">
+                                        {% if podeApagar %}
+                                            <form action="/admin/documentos/eliminar/{{ doc.id }}"
+                                                  method="post"
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Eliminar documento?')">
 
-        {{ csrf_field() }}
+                                                {{ csrf_field() }}
 
-        <button class="btn btn-sm btn-danger">
-            <i class="fa fa-trash"></i> Apagar
-        </button>
-    </form>
-{% endif %}
+                                                <button class="btn btn-sm btn-danger">
+                                                    <i class="fa fa-trash"></i> Apagar
+                                                </button>
+                                            </form>
+                                        {% endif %}
 
 
                                     </div>
@@ -403,73 +403,84 @@
     <script src="/assets/js/documentos/index.js?v={{ random() }}"></script>
 
     <script>
-                                                          document.addEventListener("DOMContentLoaded", () => {
+                                                      document.addEventListener("DOMContentLoaded", () => {
 
-                                                              // Remove listeners antigos que bloqueavam a paginação
-                                                              document.querySelectorAll(".pagination a.page-link").forEach(a => {
-                                                                  const clone = a.cloneNode(true);
-                                                                  a.parentNode.replaceChild(clone, a);
-                                                              });
-
-                                                              // ============================
-                                                              // PREVIEW INLINE
-                                                              // ============================
-                                                              const previewModalEl = document.getElementById('previewModal');
-                                                              const previewModal = previewModalEl ? new bootstrap.Modal(previewModalEl) : null;
-                                                              const previewContainer = document.getElementById('previewContainer');
-
-                                                              document.querySelectorAll('.btn-preview-inline').forEach(btn => {
-                                                                  btn.addEventListener('click', () => {
-                                                                      if (!previewModal || !previewContainer)
-                                                                          return;
-
-                                                                      const anexoId = btn.getAttribute('data-anexo-id');
-                                                                      const nome = btn.getAttribute('data-nome') || '';
-                                                                      const ext = nome.split('.').pop().toLowerCase();
-                                                                      const url = '/admin/documentos/anexo/abrir/' + anexoId;
-
-                                                                      previewContainer.innerHTML = '<span class="text-muted">A carregar preview...</span>';
-
-                                                                      let html = '';
-
-                                                                      if (ext === 'pdf') {
-                                                                          html = '<iframe src="' + url + '" class="w-100" style="height: 600px; border: none;"></iframe>';
-                                                                      } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
-                                                                          html = '<img src="' + url + '" class="img-fluid" alt="Preview">';
-                                                                      } else if (ext === 'txt') {
-                                                                          html = '<iframe src="' + url + '" class="w-100" style="height: 400px; border: none;"></iframe>';
-                                                                      } else {
-                                                                          html = '<div class="text-center text-muted">Preview não disponível para este tipo de ficheiro.</div>';
-                                                                      }
-
-                                                                      previewContainer.innerHTML = html;
-                                                                      previewModal.show();
-                                                                  });
-                                                              });
-
-                                                              // ============================
-                                                              // MODAL DETALHES
-                                                              // ============================
-                                                              const detalhesModalEl = document.getElementById('detalhesModal');
-                                                              const detalhesModal = detalhesModalEl ? new bootstrap.Modal(detalhesModalEl) : null;
-
-                                                              document.querySelectorAll('.btn-ver-detalhes').forEach(btn => {
-                                                                  btn.addEventListener('click', () => {
-                                                                      if (!detalhesModal)
-                                                                          return;
-
-                                                                      document.getElementById('detDocTitulo').textContent = btn.getAttribute('data-titulo') || '';
-                                                                      document.getElementById('detDocTipo').textContent = btn.getAttribute('data-tipo') || '';
-                                                                      document.getElementById('detDocEstado').textContent = btn.getAttribute('data-estado') || '';
-                                                                      document.getElementById('detDocArea').textContent = btn.getAttribute('data-area') || '';
-                                                                      document.getElementById('detDocCriado').textContent = btn.getAttribute('data-criado') || '';
-                                                                      document.getElementById('detDocCriador').textContent = btn.getAttribute('data-criador') || '';
-
-                                                                      detalhesModal.show();
-                                                                  });
-                                                              });
-
+                                                          // Remove listeners antigos que bloqueavam a paginação
+                                                          document.querySelectorAll(".pagination a.page-link").forEach(a => {
+                                                              const clone = a.cloneNode(true);
+                                                              a.parentNode.replaceChild(clone, a);
                                                           });
+                                                          // ============================
+                                                          // PREVIEW INLINE (CORRIGIDO E EXPANDIDO)
+                                                          // ============================
+                                                          const previewModalEl = document.getElementById('previewModal');
+                                                          const previewModal = previewModalEl ? new bootstrap.Modal(previewModalEl) : null;
+                                                          const previewContainer = document.getElementById('previewContainer');
+                                                          document.querySelectorAll('.btn-preview-inline').forEach(btn => {
+                                                              btn.addEventListener('click', () => {
+                                                                  if (!previewModal || !previewContainer)
+                                                                      return;
+                                                                  const nome = btn.getAttribute('data-nome') || '';
+                                                                  const caminho = btn.getAttribute('data-caminho') || '';
+                                                                  const ficheiro = btn.getAttribute('data-ficheiro') || '';
+                                                                  const ext = nome.split('.').pop().toLowerCase();
+                                                                  // URL físico real (o mesmo que funciona no módulo User)
+                                                                  const absoluteUrl =
+                                                                          "https://anferalta.com/storage/documentos/" +
+                                                                          caminho + ficheiro;
+                                                                  previewContainer.innerHTML = '<span class="text-muted">A carregar preview...</span>';
+                                                                  let html = '';
+                                                                  if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+                                                                      html = '<img src="' + absoluteUrl + '" class="img-fluid">';
+                                                                  } else if (ext === 'pdf') {
+                                                                      html = '<iframe src="' + absoluteUrl + '" class="w-100" style="height:600px;border:none;"></iframe>';
+                                                                  } else if (ext === 'txt') {
+                                                                      html = '<iframe src="' + absoluteUrl + '" class="w-100" style="height:400px;border:none;"></iframe>';
+                                                                  } else if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext)) {
+                                                                      const officeUrl =
+                                                                              "https://view.officeapps.live.com/op/view.aspx?src=" +
+                                                                              encodeURIComponent(absoluteUrl);
+                                                                      html = '<iframe src="' + officeUrl + '" class="w-100" style="height:600px;border:none;"></iframe>';
+                                                                  } else if (ext === 'odt') {
+                                                                      html = `
+                <div class="text-center text-muted">
+                    Este ficheiro ODT não pode ser pré-visualizado.
+                    <br><br>
+                    <a href="${absoluteUrl}" class="btn btn-primary" download>Download</a>
+                </div>`;
+                                                                  } else {
+                                                                      html = `
+                <div class="text-center text-muted">
+                    Preview não disponível para este tipo de ficheiro.
+                    <br><br>
+                    <a href="${absoluteUrl}" class="btn btn-primary" download>Download</a>
+                </div>`;
+                                                                  }
+
+                                                                  previewContainer.innerHTML = html;
+                                                                  previewModal.show();
+                                                              });
+                                                          });
+                                                      });
+                                                      // ============================
+                                                      // MODAL DETALHES
+                                                      // ============================
+                                                      const detalhesModalEl = document.getElementById('detalhesModal');
+                                                      const detalhesModal = detalhesModalEl ? new bootstrap.Modal(detalhesModalEl) : null;
+                                                      document.querySelectorAll('.btn-ver-detalhes').forEach(btn => {
+                                                          btn.addEventListener('click', () => {
+                                                              if (!detalhesModal)
+                                                                  return;
+                                                              document.getElementById('detDocTitulo').textContent = btn.getAttribute('data-titulo') || '';
+                                                              document.getElementById('detDocTipo').textContent = btn.getAttribute('data-tipo') || '';
+                                                              document.getElementById('detDocEstado').textContent = btn.getAttribute('data-estado') || '';
+                                                              document.getElementById('detDocArea').textContent = btn.getAttribute('data-area') || '';
+                                                              document.getElementById('detDocCriado').textContent = btn.getAttribute('data-criado') || '';
+                                                              document.getElementById('detDocCriador').textContent = btn.getAttribute('data-criador') || '';
+                                                              detalhesModal.show();
+                                                          });
+                                                      });
+
     </script>
 
     <style>
@@ -608,3 +619,4 @@
     </style>
 
 {% endblock %}
+

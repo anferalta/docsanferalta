@@ -56,6 +56,8 @@ $router->get('/documentos/download/{id:\d+}', 'DocumentosUserController@download
 // Abrir documento
 $router->get('/documentos/abrir/{id:\d+}', 'DocumentosUserController@abrir');
 
+$router->get('/documentos/preview/{id:\d+}', 'DocumentosUserController@preview');
+
 // ============================================================
 // ROTAS ADMIN (PROTEGIDAS POR AUTH)
 // ============================================================

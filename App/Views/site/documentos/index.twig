@@ -4,10 +4,10 @@
 
 {% block content %}
 
-<h3 class="mb-4">Os Meus Documentos</h3>
+    <h3 class="mb-4">Os Meus Documentos</h3>
 
-{# Mapa de cores para TODOS os estados reais da BD #}
-{% set estadoCores = {
+    {# Mapa de cores para TODOS os estados reais da BD #}
+    {% set estadoCores = {
     'novo': 'primary',
     'pendente': 'warning',
     'analise': 'info',
@@ -17,78 +17,112 @@
     'devolvido': 'danger'
 } %}
 
-<table class="table table-striped align-middle">
-    <thead>
-        <tr>
-            <th>Título</th>
-            <th>Tipo</th>
-            <th>Estado</th>
-            <th>Área Atual</th>
-            <th>Criado em</th>
-            <th>Anexos</th>
-        </tr>
-    </thead>
-
-    <tbody>
-        {% for d in documentos %}
-            {% set anexos = d.anexos() %}
-            {% set estado = d.estado_atual %}
-            {% set cor = estadoCores[estado] ?? 'secondary' %}
-
+    <table class="table table-striped align-middle">
+        <thead>
             <tr>
-                <td>{{ d.titulo }}</td>
-
-                <td>{{ d.tipo_nome ?: '-' }}</td>
-
-                <td>
-                    <span class="badge bg-{{ cor }}">
-                        {{ estado|replace({'_':' '})|capitalize }}
-                    </span>
-                </td>
-
-                <td>{{ d.area_nome ?: '-' }}</td>
-
-                <td>{{ d.criado_em_formatado() }}</td>
-
-                <td>
-                    <span class="badge bg-primary">{{ anexos|length }} ficheiro(s)</span>
-
-                    {% if anexos %}
-                        <ul class="mt-2 ps-3">
-                            {% for a in anexos %}
-                                {% set nome = a.nome()|split('/')|last %}
-
-                                <li class="mb-2">
-                                    <i class="fa fa-file me-1"></i>
-
-                                    <a href="/documentos/anexo/abrir/{{ a.id }}" class="btn btn-sm btn-outline-primary" target="_blank">
-                                        <i class="fa fa-eye"></i> Ver
-                                    </a>
-
-                                    <a href="/documentos/download/{{ a.id }}" class="btn btn-sm btn-outline-secondary">
-                                        <i class="fa fa-download"></i> Download
-                                    </a>
-
-                                    <span class="ms-2">{{ nome }}</span>
-
-                                    <small class="text-muted">
-                                        ({{ (a.tamanho / 1024)|number_format(1) }} KB)
-                                    </small>
-                                </li>
-
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </td>
+                <th>Título</th>
+                <th>Tipo</th>
+                <th>Estado</th>
+                <th>Área Atual</th>
+                <th>Criado em</th>
+                <th>Anexos</th>
             </tr>
-        {% else %}
-            <tr>
-                <td colspan="6" class="text-center text-muted">
-                    Nenhum documento encontrado.
-                </td>
-            </tr>
-        {% endfor %}
-    </tbody>
-</table>
+        </thead>
+
+        <tbody>
+            {% for d in documentos %}
+                {% set anexos = d.anexos() %}
+                {% set estado = d.estado_atual %}
+                {% set cor = estadoCores[estado] ?? 'secondary' %}
+
+                <tr>
+                    <td>{{ d.titulo }}</td>
+
+                    <td>{{ d.tipo_nome ?: '-' }}</td>
+
+                    <td>
+                        <span class="badge bg-{{ cor }}">
+                            {{ estado|replace({'_':' '})|capitalize }}
+                        </span>
+                    </td>
+
+                    <td>{{ d.area_nome ?: '-' }}</td>
+
+                    <td>{{ d.criado_em_formatado() }}</td>
+
+                    <td>
+                        <span class="badge bg-primary">{{ anexos|length }} ficheiro(s)</span>
+
+                        {% if anexos %}
+                            <ul class="mt-2 ps-3">
+                                {% for a in anexos %}
+                                    {% set nome = a.nome()|split('/')|last %}
+
+                                    <li class="mb-2">
+                                        <i class="fa fa-file me-1"></i>
+
+                                        <a href="/documentos/preview/{{ a.id }}" 
+                                           class="btn btn-sm btn-outline-success" 
+                                           data-bs-toggle="modal" 
+                                           data-bs-target="#previewModal">
+                                            <i class="fa fa-eye"></i> Preview
+                                        </a>
+
+                                        <a href="/documentos/anexo/abrir/{{ a.id }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                            <i class="fa fa-eye"></i> Ver
+                                        </a>
+
+                                        <a href="/documentos/download/{{ a.id }}" class="btn btn-sm btn-outline-secondary">
+                                            <i class="fa fa-download"></i> Download
+                                        </a>
+
+                                        <span class="ms-2">{{ nome }}</span>
+
+                                        <small class="text-muted">
+                                            ({{ (a.tamanho / 1024)|number_format(1) }} KB)
+                                        </small>
+                                    </li>
+
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted">
+                        Nenhum documento encontrado.
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="modal fade" id="previewModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-body" id="previewContent">
+                    <div class="text-center p-5 text-muted">
+                        A carregar preview...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('click', function (e) {
+            if (e.target.closest('[data-bs-target="#previewModal"]')) {
+                const url = e.target.closest('a').href;
+                const container = document.getElementById('previewContent');
+                container.innerHTML = '<div class="text-center p-5 text-muted">A carregar...</div>';
+
+                fetch(url)
+                        .then(r => r.text())
+                        .then(html => container.innerHTML = html)
+                        .catch(() => container.innerHTML = '<p class="text-danger p-3">Erro ao carregar preview.</p>');
+            }
+        });
+    </script>
 
 {% endblock %}

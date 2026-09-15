@@ -74,10 +74,11 @@ class DocumentosUserController extends BaseController
         }
 
         $tipos = DocumentoTipo::all();
+        $csrf = CSRF::token();
 
         return $this->render('@site/documentos/criar.twig', [
                     'tipos' => $tipos,
-                    '_csrf' => CSRF::token() // token já garantido pelo middleware
+                    '_csrf' => $csrf
         ]);
     }
 
@@ -287,7 +288,7 @@ class DocumentosUserController extends BaseController
         }
 
         $root = realpath(__DIR__ . '/../../');
-        $path = $root . '/storage/documentos/' . $anexo->ficheiro;
+        $path = $root . '/storage/documentos/' . $anexo->caminho . $anexo->ficheiro;
 
         if (!file_exists($path)) {
             http_response_code(404);
@@ -299,5 +300,45 @@ class DocumentosUserController extends BaseController
         header("Content-Length: " . filesize($path));
         readfile($path);
         exit;
+    }
+
+    public function preview($idAnexo)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return $this->redirect('/login');
+        }
+
+        $anexo = DocumentoFicheiro::find($idAnexo);
+
+        if (!$anexo) {
+            http_response_code(404);
+            exit("Anexo não encontrado.");
+        }
+
+        // Garantir que pertence ao utilizador
+        $documento = Documento::find($anexo->documento_id);
+
+        if (!$documento || $documento->criado_por != $user->id) {
+            http_response_code(403);
+            exit("Acesso não autorizado.");
+        }
+
+        $root = realpath(__DIR__ . '/../../');
+        $path = $root . '/storage/documentos/' . $anexo->caminho . $anexo->ficheiro;
+
+        if (!file_exists($path)) {
+            http_response_code(404);
+            exit("Ficheiro não encontrado.");
+        }
+
+        $mime = mime_content_type($path);
+        $nome = basename($anexo->ficheiro);
+
+        return $this->render('@site/documentos/preview.twig', [
+                    'mime' => $mime,
+                    'nome' => $nome,
+                    'caminho' => '/storage/documentos/' . $anexo->caminho . $anexo->ficheiro
+        ]);
     }
 }
