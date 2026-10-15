@@ -3,67 +3,89 @@
 namespace App\Services;
 
 use App\Services\PathGuardService;
-use App\Services\BackupLogger;
 
 class DocumentoValidator
 {
+    /**
+     * Validação da criação de documentos
+     */
     public static function validarCriacao(array $post, array $files): ?string
     {
-        // Inicializar proteção global
         PathGuardService::init();
+        PathGuardService::proteger(STORAGE_DOCUMENTOS);
 
-        // Proteger a pasta base dos documentos
-        $root = realpath(dirname(__DIR__, 2) . '/storage/documentos');
-        if ($root !== false) {
-            PathGuardService::proteger($root);
-        }
-
-        // ============================
-        // Validações normais
-        // ============================
+        // -----------------------------
+        // Título
+        // -----------------------------
         $titulo = trim($post['titulo'] ?? '');
         if ($titulo === '') {
             return 'O título é obrigatório.';
         }
 
-        if (empty($post['tipo_id'])) {
+        // -----------------------------
+        // Tipo de documento
+        // -----------------------------
+        if (empty($post['tipo_id']) || intval($post['tipo_id']) <= 0) {
             return 'Selecione o tipo de documento.';
         }
 
-        if (!isset($files['ficheiros']) || empty($files['ficheiros']['name'][0])) {
+        // -----------------------------
+        // Ficheiros
+        // -----------------------------
+        if (!isset($files['ficheiros']) || !isset($files['ficheiros']['name'])) {
             return 'Nenhum ficheiro enviado.';
         }
 
-        if (count($files['ficheiros']['name']) > 10) {
+        $nomes = $files['ficheiros']['name'];
+
+        // Garantir que é array
+        if (!is_array($nomes)) {
+            return 'Nenhum ficheiro enviado.';
+        }
+
+        // Verificar se existe pelo menos 1 ficheiro válido
+        $temFicheiroValido = false;
+
+        foreach ($nomes as $nome) {
+            if (!empty($nome)) {
+                $temFicheiroValido = true;
+                break;
+            }
+        }
+
+        if (!$temFicheiroValido) {
+            return 'Nenhum ficheiro enviado.';
+        }
+
+        // Limite máximo
+        if (count($nomes) > 10) {
             return 'Máximo de 10 ficheiros por envio.';
         }
 
         return null;
     }
 
-    // ============================================================
-    //  VALIDAÇÃO DA EDIÇÃO DO DOCUMENTO
-    // ============================================================
+    /**
+     * Validação da edição de documentos
+     */
     public static function validarEdicao(array $post): ?string
     {
-        // Inicializar proteção global
         PathGuardService::init();
 
-        // Proteger a pasta base dos documentos
-        $root = realpath(dirname(__DIR__, 2) . '/storage/documentos');
-        if ($root !== false) {
-            PathGuardService::proteger($root);
-        }
+        PathGuardService::proteger(STORAGE_DOCUMENTOS);
 
-        // ============================
-        // Validações normais
-        // ============================
+        // -----------------------------
+        // Título
+        // -----------------------------
         $titulo = trim($post['titulo'] ?? '');
         if ($titulo === '') {
             return 'O título é obrigatório.';
         }
 
-        if (empty($post['tipo_id'])) {
+        // -----------------------------
+        // Tipo de documento
+        // -----------------------------
+        if (empty($post['tipo_id']) || intval($post['tipo_id']) <= 0) {
             return 'Selecione o tipo de documento.';
         }
 

@@ -20,21 +20,23 @@
 }
 
 /* ===========================================================
-   2) SIDEBAR — FINAL PREMIUM + RESPONSIVO + COLLAPSE
+   2) SIDEBAR — PREMIUM ANFERALTA
 =========================================================== */
 
 .sidebar {
-    width: 260px;
-    background: #1f2937;
+    width: 240px;
+    background: var(--brand-dark);
     color: #fff;
     padding: 20px 0;
     height: 100vh;
     position: fixed;
+    left: 0;
+    top: 0;
     overflow-y: auto;
     transition: all .25s ease;
+    z-index: 3000;
 }
 
-/* Logo */
 .sidebar .logo {
     font-size: 1.3rem;
     font-weight: 700;
@@ -42,14 +44,12 @@
     border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
-/* Menu container */
 .sidebar-nav ul {
     list-style: none;
     margin: 0;
     padding: 0;
 }
 
-/* Header */
 .menu-header {
     padding: 15px 20px 5px 20px;
     font-size: 0.75rem;
@@ -59,12 +59,10 @@
     letter-spacing: .5px;
 }
 
-/* Items */
 .menu-item {
     list-style: none;
 }
 
-/* Links */
 .menu-link {
     display: flex;
     align-items: center;
@@ -74,6 +72,7 @@
     font-weight: 500;
     transition: all .2s ease;
     border-radius: 6px;
+    position: relative;
 }
 
 .menu-link:hover {
@@ -81,25 +80,28 @@
     color: #fff;
 }
 
-/* Ícones */
 .menu-link i {
     font-size: 1.2rem;
     margin-right: 12px;
 }
 
-/* Active */
 .menu-item.active > .menu-link {
-    background: #0d6efd;
+    background: var(--brand-primary);
     color: #fff;
     font-weight: 700;
 }
 
-/* Badge */
 .menu-link .badge {
-    margin-left: auto;
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
     background: #ffc107;
     color: #000;
-    font-weight: 700;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: 0.75rem;
 }
 
 /* ===========================================================
@@ -149,7 +151,7 @@
 }
 
 /* ===========================================================
-   4) SIDEBAR COLLAPSED (DESKTOP)
+   4) SIDEBAR COLLAPSED
 =========================================================== */
 
 .sidebar-collapsed .sidebar {
@@ -175,13 +177,12 @@
 }
 
 /* ===========================================================
-   5) RESPONSIVIDADE (MOBILE/TABLET)
+   5) RESPONSIVIDADE
 =========================================================== */
 
 @media (max-width: 992px) {
-
     .sidebar {
-        left: -260px;
+        left: -240px;
     }
 
     .sidebar-open .sidebar {
@@ -197,13 +198,33 @@
     }
 }
 
-/* ===========================================================
-   6) FIX: CONTENT-AREA NÃO SOBREPOR A SIDEBAR (DESKTOP)
-=========================================================== */
+@media (max-width: 768px) {
+    .page-content {
+        padding: 12px;
+    }
 
-@media (min-width: 993px) {
-    body:not(.sidebar-collapsed) .content-area {
-        margin-left: 260px;
+    .card {
+        border-radius: 8px;
+    }
+
+    .nav-tabs-clean .nav-link {
+        padding: 8px 10px;
+        font-size: 0.85rem;
+    }
+
+    .timeline-scroll {
+        max-height: 55vh;
+    }
+
+    .timeline-item {
+        padding-left: 32px;
+        margin-bottom: 22px;
+    }
+
+    .timeline-icon {
+        width: 30px;
+        height: 30px;
+        left: -18px;
     }
 }
 
@@ -217,7 +238,7 @@
     border-bottom: 1px solid #e5e7eb;
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 1000 !important;
 }
 
 .page-title {
@@ -294,8 +315,43 @@
 }
 
 /* ===========================================================
-   8) TIMELINE ENTERPRISE
+   8) TIMELINE ENTERPRISE — OTIMIZADA
 =========================================================== */
+
+.timeline-scroll {
+    max-height: 65vh;
+    overflow-y: auto;
+    padding-right: 10px;
+    scrollbar-width: thin;
+}
+
+.timeline-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.timeline-scroll::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.timeline-minimap {
+    position: relative;
+    height: 60px;
+    background: #e5e7eb;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.timeline-minimap-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(37,99,235,0.35);
+    border-radius: 8px;
+    pointer-events: none;
+}
 
 .timeline {
     position: relative;
@@ -350,13 +406,13 @@
 }
 
 .btn-primary {
-    background: #0d6efd;
-    border-color: #0d6efd;
+    background: var(--brand-primary);
+    border-color: var(--brand-primary);
 }
 
 .btn-primary:hover {
-    background: #0b5ed7;
-    border-color: #0a58ca;
+    background: var(--brand-primary-light);
+    border-color: var(--brand-primary-light);
 }
 
 .btn-warning {
@@ -409,57 +465,18 @@
     color: #fff !important;
 }
 
-.badge-pendente {
-    background-color: #0d6efd !important;
-}
-.badge-em_tramitacao {
-    background-color: #ffc107 !important;
-    color: #212529 !important;
-}
-.badge-em_analise {
-    background-color: #17a2b8 !important;
-}
-.badge-concluido {
-    background-color: #198754 !important;
-}
-.badge-arquivado {
-    background-color: #343a40 !important;
-}
-.badge-novo {
-    background-color: #6f42c1 !important;
-}
-.badge-devolvido {
-    background-color: #dc3545 !important;
-}
+.badge-pendente { background-color: #0d6efd !important; }
+.badge-em_tramitacao { background-color: #ffc107 !important; color: #212529 !important; }
+.badge-em_analise { background-color: #17a2b8 !important; }
+.badge-concluido { background-color: #198754 !important; }
+.badge-arquivado { background-color: #343a40 !important; }
+.badge-novo { background-color: #6f42c1 !important; }
+.badge-devolvido { background-color: #dc3545 !important; }
 
-.dropdown-menu {
-    z-index: 9999 !important;
-}
-.topbar {
-    z-index: 2000 !important;
-}
-.menu-link {
-    position: relative;
-    display: block;
-}
+/* ===========================================================
+   13) ANEXOS
+=========================================================== */
 
-.menu-link .badge {
-    position: absolute;
-    right: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: #ffc107;
-    color: #000;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 8px;
-    font-size: 0.75rem;
-}
-.badge-analise {
-    background-color: #17a2b8; /* azul */
-    color: #fff;
-}
-/* Lista de anexos */
 .anexos-lista {
     list-style: none;
     padding-left: 0;
@@ -496,4 +513,134 @@
     border-radius: 8px;
     font-size: 0.75rem;
     font-weight: 600;
+}
+
+/* ===========================================================
+   14) PALETA ANFERALTA
+=========================================================== */
+
+:root {
+    --brand-primary: #1ABC9C;
+    --brand-primary-light: #48C9B0;
+    --brand-dark: #2C3E50;
+    --brand-gray: #95A5A6;
+    --brand-bg-light: #F7F7F7;
+}
+
+@media (min-width: 993px) {
+    .content-area {
+        margin-left: 240px;
+    }
+}
+
+/* ===========================================================
+   15) ABAS PREMIUM
+=========================================================== */
+
+.nav-tabs-clean .nav-link {
+    padding: 10px 18px;
+    font-weight: 500;
+    border-radius: 6px 6px 0 0;
+}
+
+.nav-tabs-clean .nav-link.active {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-bottom-color: transparent;
+}
+
+/* ===========================================================
+   16) FILTROS TRAMITAÇÃO
+=========================================================== */
+
+.filtro-card {
+    border-radius: 10px;
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #e1e4e8;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* ===========================================================
+   17) DARK MODE
+=========================================================== */
+
+body.dark-mode {
+    background: #111827;
+    color: #e5e7eb;
+}
+
+body.dark-mode .content-area {
+    background: #111827;
+}
+
+body.dark-mode .topbar {
+    background: #1f2937;
+    border-bottom-color: #374151;
+}
+
+body.dark-mode .sidebar {
+    background: #020617;
+}
+
+body.dark-mode .card,
+body.dark-mode .timeline-content {
+    background: #1f2937;
+    border-color: #374151;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}
+
+body.dark-mode .nav-tabs-clean .nav-link.active {
+    background: #111827;
+    border-color: #374151;
+    border-bottom-color: transparent;
+}
+
+body.dark-mode .nav-tabs-clean .nav-link {
+    color: #e5e7eb;
+}
+
+body.dark-mode .badge-estado {
+    filter: brightness(1.1);
+}
+
+/* ===========================================================
+   18) TEMAS (AZUL / VERDE / CINZA)
+=========================================================== */
+
+body.theme-blue {
+    --brand-primary: #0d6efd;
+    --brand-primary-light: #3b82f6;
+    --brand-dark: #1f2937;
+}
+
+body.theme-green {
+    --brand-primary: #16a34a;
+    --brand-primary-light: #22c55e;
+    --brand-dark: #064e3b;
+}
+
+body.theme-gray {
+    --brand-primary: #6b7280;
+    --brand-primary-light: #9ca3af;
+    --brand-dark: #111827;
+}
+
+/* ===========================================================
+   19) ANIMAÇÕES SUAVES
+=========================================================== */
+
+* {
+    transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+}
+
+.card,
+.timeline-content {
+    transition: box-shadow .2s ease, transform .1s ease;
+}
+
+.card:hover,
+.timeline-content:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.12);
 }

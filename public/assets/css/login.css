@@ -158,3 +158,11 @@ body.login-body {
 .table td, .table th {
     vertical-align: middle;
 }
+
+:root {
+    --brand-primary: #1ABC9C;
+    --brand-primary-light: #48C9B0;
+    --brand-dark: #2C3E50;
+    --brand-gray: #95A5A6;
+    --brand-bg-light: #F7F7F7;
+}

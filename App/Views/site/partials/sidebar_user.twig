@@ -1,71 +1,56 @@
-<div id="sidebar-wrapper"
-     style="
-     width: 240px;
-     position: fixed;
-     top: 0;
-     left: 0;
-     height: 100vh;
-     z-index: 1030;
-     ">
+<div id="sidebar-wrapper">
+    <div id="sidebar" class="sidebar">
 
-    <div id="sidebar"
-         class="d-flex flex-column flex-shrink-0 p-3 bg-dark text-white"
-         style="
-         width: 240px;
-         height: 100%;
-         overflow-y: auto;
-         ">
-
-        <a href="{{ url('/dashboard') }}"
-           class="d-flex align-items-center mb-4 text-white text-decoration-none">
-            <span class="fs-4 fw-bold">O Meu Painel</span>
+        <a href="{{ url('/dashboard') }}" class="logo d-flex align-items-center px-3 py-3">
+            <img src="/assets/logo/anferalta-compact.png" alt="Anferalta" height="40">
         </a>
 
-        <div class="mb-4 ps-1">
-            <span class="text-white-50">Utilizador:</span><br>
-            <strong>{{ auth.user.nome }}</strong>
+        <div class="px-3 mb-4">
+            <div class="d-flex align-items-center gap-3">
+                <img src="/assets/img/avatar.png" class="rounded-circle avatar-user">
+
+                <div class="d-flex flex-column">
+                    <span class="text-white-50" style="font-size:0.75rem;">Utilizador</span>
+                    <strong style="font-family:Inter; font-size:0.95rem;">
+                        {{ auth.user.nome }}
+                    </strong>
+                </div>
+            </div>
         </div>
 
-        <ul class="nav nav-pills flex-column mb-auto">
+        <hr class="border-light opacity-25 my-2">
 
-            <li class="nav-item mb-2">
-                <a href="{{ url('/dashboard') }}"
-                   class="nav-link text-white d-flex align-items-center gap-2">
+        <ul class="sidebar-nav">
+
+            <li class="menu-item">
+                <a href="{{ url('/dashboard') }}" class="menu-link">
                     <i class="bi bi-speedometer2"></i>
-                    Dashboard
+                    <span>Dashboard</span>
                 </a>
             </li>
 
-            <li class="nav-item mb-2">
-                <a href="{{ url('/documentos') }}"
-                   class="nav-link text-white d-flex align-items-center gap-2">
+            <li class="menu-item">
+                <a href="{{ url('/documentos') }}" class="menu-link">
                     <i class="bi bi-folder"></i>
-                    Os Meus Documentos
+                    <span>Os Meus Documentos</span>
                 </a>
             </li>
 
-            <li class="nav-item mb-2">
-                <a href="{{ url('/documentos/criar') }}"
-                   class="nav-link text-white d-flex align-items-center gap-2">
+            <li class="menu-item">
+                <a href="{{ url('/documentos/criar') }}" class="menu-link">
                     <i class="bi bi-plus-circle"></i>
-                    Criar Documento
+                    <span>Criar Documento</span>
                 </a>
             </li>
 
-            {# LOGOUT SEGURO — VISUALMENTE IDÊNTICO AO LINK ORIGINAL #}
-            <li class="nav-item mt-4">
-
+            <li class="menu-item mt-4">
                 <form action="/logout" method="POST" class="m-0 p-0">
                     <input type="hidden" name="_csrf" value="{{ _csrf_global }}">
-
-                    <button type="submit"
-                            class="nav-link text-danger d-flex align-items-center gap-2 border-0 bg-transparent w-100 text-start"
-                            style="cursor:pointer;">
+                    <button type="submit" class="menu-link text-danger border-0 bg-transparent w-100 text-start">
                         <i class="bi bi-box-arrow-right"></i>
-                        Sair
+                        <span>Sair</span>
                     </button>
                 </form>
-
             </li>
 
         </ul>

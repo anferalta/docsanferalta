@@ -1,0 +1,59 @@
+{% extends "@admin/layout_preview.twig" %}
+
+{% block content %}
+
+{# ============================================================
+   PREVIEW DE FICHEIROS DO DOCUMENTO
+   Variáveis recebidas:
+   - ext → extensão (pdf, docx, jpg, etc)
+   - caminho → URL absoluta gerada pelo controller preview()
+   - office → URL do Office Viewer (quando aplicável)
+============================================================ #}
+
+{# 1) Office Viewer para DOCX, XLSX, PPTX #}
+{% if office is defined %}
+    <iframe src="{{ office }}" 
+            width="100%" 
+            height="100%" 
+            class="border-0">
+    </iframe>
+
+{# 2) PDF inline #}
+{% elseif ext == 'pdf' %}
+    <embed src="{{ caminho }}" type="application/pdf" class="w-100 h-100 border-0">
+
+{# 3) Imagens inline #}
+{% elseif ext in ['jpg','jpeg','png','gif','webp'] %}
+    <img src="{{ caminho }}" class="img-fluid w-100 h-auto" style="max-height:100vh; object-fit:contain;">
+
+{# 4) TXT inline #}
+{% elseif ext == 'txt' %}
+    <iframe src="{{ caminho }}" class="w-100 h-100 border-0"></iframe>
+
+{# 5) Office sem Office Viewer (fallback) #}
+{% elseif ext in ['doc','docx','xls','xlsx','ppt','pptx'] %}
+    <div class="fallback-card text-center">
+        <h5 class="mb-3">Pré-visualização indisponível</h5>
+        <p>Este tipo de ficheiro ({{ ext }}) não pode ser pré-visualizado no navegador.</p>
+        <a href="{{ caminho }}" class="btn-download" download>📄 Download do ficheiro</a>
+    </div>
+
+{# 6) ODT #}
+{% elseif ext == 'odt' %}
+    <div class="fallback-card text-center">
+        <h5 class="mb-3">Pré-visualização indisponível</h5>
+        <p>Este ficheiro ODT não pode ser pré-visualizado.</p>
+        <a href="{{ caminho }}" class="btn-download" download>📄 Download do ficheiro</a>
+    </div>
+
+{# 7) Outros formatos #}
+{% else %}
+    <div class="fallback-card text-center">
+        <h5 class="mb-3">Preview não disponível</h5>
+        <p>Este tipo de ficheiro não possui pré-visualização.</p>
+        <a href="{{ caminho }}" class="btn-download" download>📄 Download do ficheiro</a>
+    </div>
+
+{% endif %}
+
+{% endblock %}

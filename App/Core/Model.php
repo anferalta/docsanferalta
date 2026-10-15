@@ -3,14 +3,25 @@
 namespace App\Core;
 
 use PDO;
+use Exception;
 
 abstract class Model
 {
-    public ?string $nome = null;        // nome do tipo
-    public ?string $tipo_nome = null;   // alias opcional
-    
+    /** Tabela e chave primária */
     protected string $table;
     protected string $primaryKey = 'id';
+
+    /** Atributos dinâmicos */
+    protected array $attributes = [];
+
+    /** Casts automáticos estilo Laravel */
+    protected array $casts = [
+        'id' => 'int',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
+
+    /** Query builder */
     protected array $wheres = [];
     protected array $bindings = [];
     protected ?string $order = null;
@@ -20,11 +31,72 @@ abstract class Model
     protected array $groupBy = [];
     protected array $having = [];
 
-    public function __construct()
+    /** ---------------------------------------------------------
+     *  CONSTRUTOR — com type casting automático
+     * --------------------------------------------------------- */
+    public function __construct(array $attributes = [])
     {
-        
+        foreach ($attributes as $key => $value) {
+
+            // Se existir cast definido, aplica-o
+            if (isset($this->casts[$key])) {
+                $value = $this->castValue($value, $this->casts[$key]);
+            }
+
+            // Guardar no array interno
+            $this->attributes[$key] = $value;
+
+            // Se existir propriedade pública, sincroniza
+            if (property_exists($this, $key)) {
+                $this->$key = $value;
+            }
+        }
     }
 
+    /** ---------------------------------------------------------
+     *  SET ATTRIBUTE — com casting automático
+     * --------------------------------------------------------- */
+    public function setAttribute(string $key, $value): void
+    {
+        if (isset($this->casts[$key])) {
+            $value = $this->castValue($value, $this->casts[$key]);
+        }
+
+        $this->attributes[$key] = $value;
+
+        // Se existir propriedade pública, sincroniza
+        if (property_exists($this, $key)) {
+            $this->$key = $value;
+        }
+    }
+
+    /** ---------------------------------------------------------
+     *  GET ATTRIBUTE
+     * --------------------------------------------------------- */
+    public function getAttribute(string $key)
+    {
+        return $this->attributes[$key] ?? null;
+    }
+
+    /** ---------------------------------------------------------
+     *  CAST VALUE — estilo Laravel
+     * --------------------------------------------------------- */
+    protected function castValue($value, string $type)
+    {
+        if ($value === null) return null;
+
+        return match ($type) {
+            'int' => (int)$value,
+            'float' => (float)$value,
+            'bool' => (bool)$value,
+            'datetime' => date('Y-m-d H:i:s', strtotime($value)),
+            default => $value,
+        };
+    }
+
+    /** ---------------------------------------------------------
+     *  QUERY BUILDER
+     * --------------------------------------------------------- */
     public static function query(): static
     {
         return new static();
@@ -35,36 +107,37 @@ abstract class Model
         return static::query()->get();
     }
 
-    /**
-     * FIND CORRIGIDO — CARREGA OBJETO COMPLETO
-     */
+    /** ---------------------------------------------------------
+     *  FIND — com casting automático
+     * --------------------------------------------------------- */
     public static function find($id): ?static
     {
-
         $instance = new static();
-
         $db = Conexao::getInstancia();
 
-        $stmt = $db->prepare("SELECT * FROM {$instance->table} WHERE {$instance->primaryKey} = :id LIMIT 1");
-        $stmt->execute(['id' => $id]);
+        $stmt = $db->prepare("
+        SELECT * FROM {$instance->table}
+        WHERE {$instance->primaryKey} = :id
+        LIMIT 1
+    ");
 
+        $stmt->execute(['id' => $id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$row) {
-            return null;
-        }
+        if (!$row) return null;
 
         $obj = new static();
 
         foreach ($row as $key => $value) {
-            if (property_exists($obj, $key)) {
-                $obj->$key = $value;
-            }
+            $obj->setAttribute($key, $value);
         }
 
         return $obj;
     }
 
+    /** ---------------------------------------------------------
+     *  WHERE
+     * --------------------------------------------------------- */
     public function where(string $column, string $operator, $value): static
     {
         $this->wheres[] = "$column $operator ?";
@@ -78,6 +151,9 @@ abstract class Model
         return $this;
     }
 
+    /** ---------------------------------------------------------
+     *  ORDER / LIMIT / OFFSET
+     * --------------------------------------------------------- */
     public function orderBy(string $column, string $direction = 'ASC'): static
     {
         $this->order = "$column $direction";
@@ -96,6 +172,9 @@ abstract class Model
         return $this;
     }
 
+    /** ---------------------------------------------------------
+     *  JOINS
+     * --------------------------------------------------------- */
     public function join(string $table, string $left, string $operator, string $right): static
     {
         $this->joins[] = "JOIN $table ON $left $operator $right";
@@ -108,6 +187,9 @@ abstract class Model
         return $this;
     }
 
+    /** ---------------------------------------------------------
+     *  GROUP / HAVING
+     * --------------------------------------------------------- */
     public function groupBy(string $column): static
     {
         $this->groupBy[] = $column;
@@ -120,27 +202,30 @@ abstract class Model
         return $this;
     }
 
+    /** ---------------------------------------------------------
+     *  GET — devolve array de objetos Model
+     * --------------------------------------------------------- */
     public function get(): array
     {
         $sql = "SELECT * FROM {$this->table}";
 
-        if (!empty($this->joins)) {
+        if ($this->joins) {
             $sql .= " " . implode(" ", $this->joins);
         }
 
-        if (!empty($this->wheres)) {
+        if ($this->wheres) {
             $sql .= " WHERE " . implode(" AND ", $this->wheres);
         }
 
-        if (!empty($this->groupBy)) {
+        if ($this->groupBy) {
             $sql .= " GROUP BY " . implode(", ", $this->groupBy);
         }
 
-        if (!empty($this->having)) {
+        if ($this->having) {
             $sql .= " HAVING " . implode(" AND ", $this->having);
         }
 
-        if (!empty($this->order)) {
+        if ($this->order) {
             $sql .= " ORDER BY {$this->order}";
         }
 
@@ -159,42 +244,32 @@ abstract class Model
         }
 
         $stmt->execute();
-
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $this->reset();
 
-        if (empty($rows)) {
-            return [];
-        }
-
-        $objects = [];
-
-        foreach ($rows as $row) {
+        return array_map(function ($row) {
             $obj = new static();
             foreach ($row as $key => $value) {
-                if (property_exists($obj, $key)) {
-                    $obj->$key = $value;
-                }
+                $obj->setAttribute($key, $value);
             }
-            $objects[] = $obj;
-        }
-
-        return $objects;
+            return $obj;
+        }, $rows);
     }
 
+    /** ---------------------------------------------------------
+     *  FIRST
+     * --------------------------------------------------------- */
     public function first(): ?static
     {
         $this->limit(1);
         $results = $this->get();
-
-        if (empty($results)) {
-            return null;
-        }
-
-        return $results[0];
+        return $results[0] ?? null;
     }
 
+    /** ---------------------------------------------------------
+     *  INSERT
+     * --------------------------------------------------------- */
     public function insert(array $data): int
     {
         $columns = array_keys($data);
@@ -211,10 +286,12 @@ abstract class Model
 
     public static function create(array $data): int
     {
-        $instance = new static();
-        return $instance->insert($data);
+        return (new static())->insert($data);
     }
 
+    /** ---------------------------------------------------------
+     *  UPDATE — versão segura
+     * --------------------------------------------------------- */
     public function update(array $data, string $where, array $bindings = []): bool
     {
         $set = implode(", ", array_map(fn($c) => "$c = :$c", array_keys($data)));
@@ -225,10 +302,20 @@ abstract class Model
         return $stmt->execute(array_merge($data, $bindings));
     }
 
-    public function delete($id)
+    /** ---------------------------------------------------------
+     *  DELETE — versão profissional
+     * --------------------------------------------------------- */
+    public function delete($id = null): bool
     {
+        $id = $id ?? $this->id;
+
+        if (!$id) {
+            throw new Exception("ID inválido para delete()");
+        }
+
         $db = Conexao::getInstancia();
 
+        // Auditoria
         $stmt = $db->prepare("SELECT * FROM {$this->table} WHERE id = :id");
         $stmt->execute(['id' => $id]);
         $dados = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -237,33 +324,41 @@ abstract class Model
             \App\Services\Auditoria::registarEliminacao($this->table, $id, $dados);
         }
 
+        // Delete
         $stmt = $db->prepare("DELETE FROM {$this->table} WHERE id = :id");
-        $stmt->execute(['id' => $id]);
+        return $stmt->execute(['id' => $id]);
     }
 
-    /**
-     * MÉTODO count() RESTAURADO
-     */
+    /** ---------------------------------------------------------
+     *  COUNT
+     * --------------------------------------------------------- */
     public static function count(): int
     {
         $instance = new static();
-        $db = Conexao::getInstancia();
-
-        $stmt = $db->query("SELECT COUNT(*) FROM {$instance->table}");
+        $stmt = Conexao::getInstancia()->query("SELECT COUNT(*) FROM {$instance->table}");
         return (int) $stmt->fetchColumn();
     }
 
     public static function countWhere(string $condicao, array $bindings = []): int
     {
         $instance = new static();
-        $sql = "SELECT COUNT(*) FROM {$instance->table} WHERE {$condicao}";
-
-        $stmt = Conexao::getInstancia()->prepare($sql);
+        $stmt = Conexao::getInstancia()->prepare("SELECT COUNT(*) FROM {$instance->table} WHERE {$condicao}");
         $stmt->execute($bindings);
-
         return (int) $stmt->fetchColumn();
     }
 
+    public static function deleteWhere(string $column, $value): bool
+    {
+        $instance = new static();
+        $db = Conexao::getInstancia();
+
+        $stmt = $db->prepare("DELETE FROM {$instance->table} WHERE {$column} = :v");
+        return $stmt->execute(['v' => $value]);
+    }
+
+    /** ---------------------------------------------------------
+     *  RESET QUERY BUILDER
+     * --------------------------------------------------------- */
     protected function reset(): void
     {
         $this->wheres = [];

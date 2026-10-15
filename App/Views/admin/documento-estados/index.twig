@@ -1,14 +1,14 @@
 {% extends "@admin/layout.twig" %}
 
 {% block page_title %}
-    <i class="fa fa-flag"></i> Estados de Documento
+    <i class="fa fa-flag"></i> Estados
 {% endblock %}
 
 {% block content %}
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0">Estados de Documento</h4>
-    <a href="/admin/documento-estados/criar" class="btn btn-primary">
+    <h4 class="mb-0">Estados</h4>
+    <a href="/admin/estados/criar" class="btn btn-primary">
         <i class="fa fa-plus"></i> Novo Estado
     </a>
 </div>
@@ -20,6 +20,9 @@
                 <tr>
                     <th style="width: 80px;">ID</th>
                     <th>Nome</th>
+                    <th>Código</th>
+                    <th>Cor</th>
+                    <th>Ordem</th>
                     <th class="text-end" style="width: 200px;">Ações</th>
                 </tr>
             </thead>
@@ -27,7 +30,7 @@
 
             {% if estados is empty %}
                 <tr>
-                    <td colspan="3" class="text-center py-4 text-muted">
+                    <td colspan="6" class="text-center py-4 text-muted">
                         Nenhum estado encontrado.
                     </td>
                 </tr>
@@ -36,27 +39,24 @@
                     <tr>
                         <td>{{ estado.id }}</td>
                         <td>{{ estado.nome }}</td>
+                        <td>{{ estado.codigo }}</td>
+                        <td>
+                            <span class="badge bg-{{ estado.cor }}">{{ estado.cor }}</span>
+                        </td>
+                        <td>{{ estado.ordem }}</td>
 
                         <td class="text-end">
-
-                            <a href="/admin/documento-estados/editar/{{ estado.id }}"
-                               class="btn btn-sm btn-warning">
+                            <a href="/admin/estados/editar/{{ estado.id }}" class="btn btn-sm btn-warning">
                                 <i class="fa fa-pencil"></i> Editar
                             </a>
 
-                            <form method="POST"
-                                  action="/admin/documento-estados/apagar/{{ estado.id }}"
-                                  class="d-inline">
-
+                            <form method="POST" action="/admin/estados/apagar/{{ estado.id }}" class="d-inline">
                                 <input type="hidden" name="_csrf" value="{{ _csrf }}">
-
-                                <button type="submit"
-                                        class="btn btn-sm btn-danger"
+                                <button type="submit" class="btn btn-sm btn-danger"
                                         onclick="return confirm('Eliminar este estado?')">
                                     <i class="bi bi-trash"></i> Apagar
                                 </button>
                             </form>
-
                         </td>
                     </tr>
                 {% endfor %}

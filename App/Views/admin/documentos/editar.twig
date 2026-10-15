@@ -10,8 +10,12 @@
     <!-- BREADCRUMB -->
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/admin/tramitacao">Tramitação</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Documento #{{ documento.id }}</li>
+            <li class="breadcrumb-item">
+                <a href="/admin/tramitacao">Tramitação</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+                Documento #{{ documento.id }}
+            </li>
         </ol>
     </nav>
 
@@ -20,236 +24,178 @@
         <h4 class="mb-0">
             <i class="fa fa-file-text me-2"></i> Documento: {{ documento.titulo }}
         </h4>
-
         <a href="/admin/tramitacao" class="btn btn-secondary">
             <i class="fa fa-arrow-left me-1"></i> Voltar
         </a>
     </div>
 
-    <!-- CARTÃO DO DOCUMENTO -->
-    <div class="card mb-4">
-        <div class="card-body">
+    <!-- ABAS -->
+    <ul class="nav nav-tabs mb-4">
 
-            <div class="row">
-                <div class="col-md-6">
+        <li class="nav-item">
+            <a class="nav-link {{ tab == 'dados' ? 'active' : '' }}"
+               href="/admin/documentos/editar/{{ documento.id }}?tab=dados">
+                Dados
+            </a>
+        </li>
 
-                    <p><strong>Tipo:</strong>
-                        {% if documento.tipo_nome %}
-                            {{ documento.tipo_nome }}
-                        {% else %}
-                            <span class="text-muted">Não definido</span>
-                        {% endif %}
-                    </p>
+        <li class="nav-item">
+            <a class="nav-link {{ tab == 'ficheiros' ? 'active' : '' }}"
+               href="/admin/documentos/editar/{{ documento.id }}?tab=ficheiros">
+                Ficheiros
+            </a>
+        </li>
 
-                    <p>
-                        <strong>Estado atual:</strong>
-                        <span class="badge-estado badge-{{ documento.estado_atual }}">
-                            {{ documento.estado_atual|replace({'_':' '})|upper }}
-                        </span>
-                    </p>
+        <li class="nav-item">
+            <a class="nav-link {{ tab == 'tramitacao' ? 'active' : '' }}"
+               href="/admin/documentos/editar/{{ documento.id }}?tab=tramitacao">
+                Tramitação
+            </a>
+        </li>
+
+    </ul>
+
+    <!-- CONTEÚDO DAS ABAS -->
+    <div class="tab-content">
+
+        {% if tab == 'dados' %}
+            <!-- CARTÃO DO DOCUMENTO -->
+            <div class="card mb-4">
+                <div class="card-body">
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Tipo:</strong>
+                                {% if documento.tipo_nome %}
+                                    {{ documento.tipo_nome }}
+                                {% else %}
+                                    <span class="text-muted">Não definido</span>
+                                {% endif %}
+                            </p>
+
+                            <p><strong>Estado atual:</strong>
+                                <span class="badge-estado badge-{{ documento.estado_atual }}">
+                                    {{ documento.estado_atual|replace({'_':' '})|upper }}
+                                </span>
+                            </p>
+                        </div>
+
+                        <div class="col-md-6">
+                            <p><strong>Área atual:</strong>
+                                {% if documento.area_nome %}
+                                    {{ documento.area_nome }}
+                                {% else %}
+                                    <span class="text-muted">Sem área definida</span>
+                                {% endif %}
+                            </p>
+
+                            <p><strong>Criado por:</strong>
+                                {% if documento.criador_nome %}
+                                    {{ documento.criador_nome }}
+                                {% else %}
+                                    <span class="text-muted">Desconhecido</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        {% endif %}
+
+        {% if tab == 'ficheiros' %}
+            <!-- LISTA DE FICHEIROS -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fa fa-paperclip me-2"></i> Ficheiros Anexados</h5>
                 </div>
 
-                <div class="col-md-6">
+                <div class="card-body">
 
-                    <p><strong>Área atual:</strong>
-                        {% if documento.area_nome %}
-                            {{ documento.area_nome }}
-                        {% else %}
-                            <span class="text-muted">Sem área definida</span>
-                        {% endif %}
-                    </p>
+                    {% if ficheiros|length > 0 %}
+                        <ul class="list-group">
 
-                    <p><strong>Criado por:</strong>
-                        {% if documento.criador_nome %}
-                            {{ documento.criador_nome }}
-                        {% else %}
-                            <span class="text-muted">Desconhecido</span>
-                        {% endif %}
-                    </p>
+                            {% for f in ficheiros %}
+                                {% set ext = f.ficheiro_original|lower|split('.')|last %}
+                                {% set url = "/admin/documentos/anexo/abrir/" ~ f.id %}
+
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+
+                                    <div class="d-flex align-items-center">
+
+                                        {% if ext == 'pdf' %}
+                                            <i class="fa fa-file-pdf text-danger fa-lg me-2"></i>
+                                        {% elseif ext in ['jpg','jpeg','png','gif','webp'] %}
+                                            <i class="fa fa-file-image text-primary fa-lg me-2"></i>
+                                        {% elseif ext in ['doc','docx'] %}
+                                            <i class="fa fa-file-word text-info fa-lg me-2"></i>
+                                        {% elseif ext in ['xls','xlsx'] %}
+                                            <i class="fa fa-file-excel text-success fa-lg me-2"></i>
+                                        {% elseif ext in ['ppt','pptx'] %}
+                                            <i class="fa fa-file-powerpoint text-danger fa-lg me-2"></i>
+                                        {% elseif ext == 'txt' %}
+                                            <i class="fa fa-file-alt text-muted fa-lg me-2"></i>
+                                        {% elseif ext in ['zip','rar'] %}
+                                            <i class="fa fa-file-archive text-warning fa-lg me-2"></i>
+                                        {% else %}
+                                            <i class="fa fa-file fa-lg me-2"></i>
+                                        {% endif %}
+
+                                        <span>{{ f.ficheiro_original }}</span>
+                                    </div>
+
+                                    <div class="d-flex gap-2">
+
+                                        <button type="button"
+        				   class="btn btn-sm btn-outline-secondary btn-preview-inline"
+        				   data-bs-toggle="modal"
+        				   data-bs-target="#previewModal"
+  				           data-url="{{ url }}"
+    				           data-ext="{{ ext }}">
+   					 <i class="fa fa-eye me-1"></i> Preview
+					</button>
+
+                                        <a href="{{ url }}" target="_blank" class="btn btn-sm btn-primary">
+                                            <i class="fa fa-download me-1"></i> Abrir
+                                        </a>
+
+                                    </div>
+
+                                </li>
+                            {% endfor %}
+
+                        </ul>
+                    {% else %}
+                        <p class="text-muted">Este documento não tem ficheiros anexados.</p>
+                    {% endif %}
 
                 </div>
             </div>
+        {% endif %}
 
-            {% if ficheiros|length > 0 %}
-                <a href="/admin/documentos/anexo/abrir/{{ ficheiros[0].id }}"
-                   target="_blank"
-                   class="btn btn-outline-primary mt-2">
-                    <i class="fa fa-file me-1"></i> Ver Documento
-                </a>
-            {% endif %}
+        {% if tab == 'tramitacao' %}
+            {% include "@admin/documentos/tabs/tramitacao.twig" %}
+        {% endif %}
 
-        </div>
     </div>
 
-    <!-- LISTA DE FICHEIROS -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="fa fa-paperclip me-2"></i> Ficheiros Anexados</h5>
-        </div>
-
-        <div class="card-body">
-
-            {% if ficheiros|length > 0 %}
-                <ul class="list-group">
-
-                    {% for f in ficheiros %}
-                        {% set ext = f.ficheiro_original|lower|split('.')|last %}
-
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-
-                            <div class="d-flex align-items-center">
-
-                                {% if ext == 'pdf' %}
-                                    <i class="fa fa-file-pdf text-danger fa-lg me-2"></i>
-                                {% elseif ext in ['jpg','jpeg','png','gif','webp'] %}
-                                    <i class="fa fa-file-image text-primary fa-lg me-2"></i>
-                                {% elseif ext in ['doc','docx'] %}
-                                    <i class="fa fa-file-word text-info fa-lg me-2"></i>
-                                {% elseif ext in ['xls','xlsx'] %}
-                                    <i class="fa fa-file-excel text-success fa-lg me-2"></i>
-                                {% elseif ext in ['ppt','pptx'] %}
-                                    <i class="fa fa-file-powerpoint text-danger fa-lg me-2"></i>
-                                {% elseif ext == 'txt' %}
-                                    <i class="fa fa-file-alt text-muted fa-lg me-2"></i>
-                                {% elseif ext in ['zip','rar'] %}
-                                    <i class="fa fa-file-archive text-warning fa-lg me-2"></i>
-                                {% else %}
-                                    <i class="fa fa-file fa-lg me-2"></i>
-                                {% endif %}
-
-                                <span>{{ f.ficheiro_original }}</span>
-                            </div>
-
-                            <div class="d-flex gap-2">
-
-                                <!-- PREVIEW INLINE -->
-                                <button class="btn btn-sm btn-outline-secondary"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#previewModal"
-                                        data-url="/admin/documentos/anexo/abrir/{{ f.id }}"
-                                        data-ext="{{ ext }}">
-                                    <i class="fa fa-eye me-1"></i> Preview
-                                </button>
-
-                                <!-- ABRIR NORMAL -->
-                                <a href="/admin/documentos/anexo/abrir/{{ f.id }}"
-                                   target="_blank"
-                                   class="btn btn-sm btn-primary">
-                                    <i class="fa fa-download me-1"></i> Abrir
-                                </a>
-
-                            </div>
-
-                        </li>
-                    {% endfor %}
-
-                </ul>
-            {% else %}
-                <p class="text-muted">Este documento não tem ficheiros anexados.</p>
-            {% endif %}
-
-        </div>
-    </div>
-
-    <!-- HISTÓRICO -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="fa fa-history me-2"></i> Histórico de Tramitação</h5>
-        </div>
-
-        <div class="card-body">
-
-            {% if historico is empty %}
-                <p class="text-muted">Ainda não existem movimentos neste documento.</p>
-            {% else %}
-
-                <div class="timeline">
-
-                    {% for h in historico %}
-                        <div class="timeline-item">
-
-                            <div class="timeline-icon bg-primary text-white">
-                                {% if h.acao == 'ENCAMINHADO' %}
-                                    <i class="fa fa-random"></i>
-                                {% elseif h.acao == 'COMENTARIO' %}
-                                    <i class="fa fa-comment"></i>
-                                {% elseif h.acao == 'ESTADO' %}
-                                    <i class="fa fa-flag"></i>
-                                {% else %}
-                                    <i class="fa fa-circle"></i>
-                                {% endif %}
-                            </div>
-
-                            <div class="timeline-content">
-
-                                <h6 class="mb-1">
-                                    {{ h.utilizador_nome }}
-                                    <small class="text-muted">— {{ h.criado_em|date("d/m/Y H:i") }}</small>
-                                </h6>
-
-                                <p class="mb-1">
-                                    {% if h.acao == 'ENCAMINHADO' %}
-                                        Documento encaminhado para <strong>{{ h.area_nome }}</strong>.
-                                    {% elseif h.acao == 'COMENTARIO' %}
-                                        Comentário adicionado.
-                                    {% elseif h.acao == 'ESTADO' %}
-                                        Estado alterado para
-                                        <span class="badge-estado badge-{{ h.estado_codigo }}">
-                                            {{ h.estado_nome|upper }}
-                                        </span>.
-                                    {% endif %}
-                                </p>
-
-                                {% if h.comentario %}
-                                    <div class="alert alert-secondary py-2 px-3 mb-2">
-                                        {{ h.comentario }}
-                                    </div>
-                                {% endif %}
-
-                                {% if h.anexos is defined and h.anexos %}
-                                    <div class="mt-2">
-                                        <strong>Anexos:</strong>
-                                        <ul class="list-unstyled ms-2">
-                                            {% for a in h.anexos %}
-                                                <li>
-                                                    <a href="/admin/tramitacao/anexo/{{ h.id }}/{{ a.ficheiro }}"
-                                                       target="_blank">
-                                                        <i class="fa fa-paperclip me-1"></i> {{ a.nome_original }}
-                                                    </a>
-                                                </li>
-                                            {% endfor %}
-                                        </ul>
-                                    </div>
-                                {% endif %}
-
-                            </div>
-                        </div>
-                    {% endfor %}
-
-                </div>
-
-            {% endif %}
-
-        </div>
-    </div>
-
-    <!-- BOTÕES -->
+    <!-- BOTÕES DE AÇÃO -->
     <div class="d-flex gap-2 mb-4">
 
         {% if user.hasPermissao('admin.tramitacao.encaminhar') %}
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalTramitar">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalTramitar">
                 <i class="fa fa-random me-1"></i> Encaminhar
             </button>
         {% endif %}
 
         {% if user.hasPermissao('admin.tramitacao.comentar') %}
-            <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modalComentar">
+            <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modalComentar">
                 <i class="fa fa-comment me-1"></i> Comentar
             </button>
         {% endif %}
 
         {% if user.hasPermissao('admin.tramitacao.estado') %}
-            <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalEstado">
+            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalEstado">
                 <i class="fa fa-flag me-1"></i> Alterar Estado
             </button>
         {% endif %}
@@ -292,72 +238,50 @@ document.addEventListener('DOMContentLoaded', function () {
     previewModal.addEventListener('show.bs.modal', function (event) {
 
         const button = event.relatedTarget;
-
-        const ext = button.getAttribute('data-ext');
-        const abrirUrl = button.getAttribute('data-url');
-
-        const absoluteUrl = "https://anferalta.com" + abrirUrl;
+        const url = button.getAttribute('data-url');
+        const ext = button.getAttribute('data-ext')?.toLowerCase();
 
         previewContainer.innerHTML = '<p class="text-muted">A carregar preview...</p>';
 
+        if (!ext) {
+            previewContainer.innerHTML = `
+                <div class="p-5 text-center">
+                    <p>Tipo de ficheiro desconhecido.</p>
+                    <a href="${url}" class="btn btn-primary" download>Download</a>
+                </div>`;
+            return;
+        }
+
         if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
-            previewContainer.innerHTML =
-                `<img src="${absoluteUrl}" class="img-fluid rounded border">`;
+            previewContainer.innerHTML = `<img src="${url}" class="img-fluid rounded border">`;
             return;
         }
 
         if (ext === 'pdf') {
-            previewContainer.innerHTML =
-                `<iframe src="${absoluteUrl}" width="100%" height="600px" class="border rounded"></iframe>`;
+            previewContainer.innerHTML = `<embed src="${url}" type="application/pdf" width="100%" height="80vh">`;
             return;
         }
 
         if (ext === 'txt') {
-            previewContainer.innerHTML =
-                `<iframe src="${absoluteUrl}" width="100%" height="600px" class="border rounded"></iframe>`;
+            previewContainer.innerHTML = `<iframe src="${url}" width="100%" height="80vh" class="border rounded"></iframe>`;
             return;
         }
 
-        if (['doc','docx'].includes(ext)) {
+        if (['doc','docx','xls','xlsx','ppt','pptx'].includes(ext)) {
             const officeUrl =
                 "https://view.officeapps.live.com/op/view.aspx?src=" +
-                encodeURIComponent(absoluteUrl);
+                encodeURIComponent(url);
 
-            previewContainer.innerHTML =
-                `<iframe src="${officeUrl}" width="100%" height="600px" class="border rounded"></iframe>`;
+            previewContainer.innerHTML = `
+                <iframe src="${officeUrl}" width="100%" height="80vh" class="border rounded"></iframe>`;
             return;
         }
 
-        if (['xls','xlsx'].includes(ext)) {
-            const officeUrl =
-                "https://view.officeapps.live.com/op/view.aspx?src=" +
-                encodeURIComponent(absoluteUrl);
-
-            previewContainer.innerHTML =
-                `<iframe src="${officeUrl}" width="100%" height="600px" class="border rounded"></iframe>`;
-            return;
-        }
-
-        if (['ppt','pptx'].includes(ext)) {
-            const officeUrl =
-                "https://view.officeapps.live.com/op/view.aspx?src=" +
-                encodeURIComponent(absoluteUrl);
-
-            previewContainer.innerHTML =
-                `<iframe src="${officeUrl}" width="100%" height="600px" class="border rounded"></iframe>`;
-            return;
-        }
-
-        if (ext === 'odt') {
-            previewContainer.innerHTML =
-                `<p class="text-muted">Este ficheiro ODT não pode ser pré-visualizado. Faça download para abrir.</p>
-                 <a href="${absoluteUrl}" class="btn btn-primary" download>Download</a>`;
-            return;
-        }
-
-        previewContainer.innerHTML =
-            `<p class="text-muted">Preview não disponível para este tipo de ficheiro.</p>
-             <a href="${absoluteUrl}" class="btn btn-primary" download>Download</a>`;
+        previewContainer.innerHTML = `
+            <div class="p-5 text-center">
+                <p>Preview não disponível.</p>
+                <a href="${url}" class="btn btn-primary" download>Download</a>
+            </div>`;
     });
 
 });

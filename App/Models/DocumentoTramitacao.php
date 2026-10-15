@@ -132,22 +132,44 @@ class DocumentoTramitacao
         $db = Conexao::getInstancia();
 
         $stmt = $db->prepare("
-        SELECT 
-            t.*,
-            u.nome AS utilizador_nome,
-            a.nome AS area_nome,
-            e.nome AS estado_nome,
-            e.codigo AS estado_codigo
-        FROM documento_tramitacao t
-        LEFT JOIN utilizadores u ON u.id = t.utilizador_id
-        LEFT JOIN documento_areas a ON a.id = t.area_id
-        LEFT JOIN documento_estados e 
-            ON e.codigo COLLATE utf8mb4_unicode_ci = t.estado COLLATE utf8mb4_unicode_ci
-        WHERE t.documento_id = ?
-        ORDER BY t.criado_em DESC
+        SELECT *
+        FROM documento_tramitacao
+        WHERE documento_id = ?
+        ORDER BY criado_em ASC
     ");
 
         $stmt->execute([$id]);
-        return $stmt->fetchAll(PDO::FETCH_OBJ);
+        $registos = $stmt->fetchAll(PDO::FETCH_OBJ);
+
+        // Enriquecer cada registo com os dados que o controller e o template esperam
+        foreach ($registos as $h) {
+
+            // Área
+            $h->area = DocumentoArea::find($h->area_id);
+
+            // Utilizador
+            $h->utilizador = Utilizador::find($h->utilizador_id);
+
+            // Estado
+            if (!empty($h->estado)) {
+                $estado = DocumentoEstado::findByCodigo($h->estado);
+
+                if ($estado) {
+                    $h->estado_nome   = $estado->nome;
+                    $h->estado_codigo = $estado->codigo;
+                } else {
+                    $h->estado_nome   = strtoupper(str_replace('_', ' ', $h->estado));
+                    $h->estado_codigo = $h->estado;
+                }
+            } else {
+                $h->estado_nome   = null;
+                $h->estado_codigo = null;
+            }
+
+            // Anexos
+            $h->anexos = DocumentoTramitacaoAnexo::anexosPorHistorico($h->id);
+        }
+
+        return $registos;
     }
 }

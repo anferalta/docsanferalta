@@ -13,44 +13,40 @@ class FileBackupService
     private string $hashFile;
 
     public function __construct()
-    {
-        PathGuardService::init();
+{
+    PathGuardService::init();
 
-        // PASTA CORRETA DOS DOCUMENTOS
-        $this->sourceDir = realpath(__DIR__ . '/../../storage/documentos') 
-            ?: (__DIR__ . '/../../storage/documentos');
+    // PASTA CORRETA DOS DOCUMENTOS (storage pública)
+    $this->sourceDir = $_SERVER['DOCUMENT_ROOT'] . '/storage/documentos';
 
-        $this->sourceDir = rtrim(str_replace('\\', '/', $this->sourceDir), '/') . '/';
+    $this->sourceDir = rtrim(str_replace('\\', '/', $this->sourceDir), '/') . '/';
 
-        // 🔒 Proteger pasta de origem
-        PathGuardService::proteger($this->sourceDir);
+    // 🔒 Proteger pasta de origem
+    PathGuardService::proteger($this->sourceDir);
 
-        if (!is_dir($this->sourceDir)) {
-            throw new \Exception("A pasta de origem para backup não existe: {$this->sourceDir}");
-        }
-
-        // Pasta base dos backups
-        $this->baseDir = realpath(__DIR__ . '/../../backups/Ficheiros') 
-            ?: (__DIR__ . '/../../backups/Ficheiros');
-
-        // 🔒 Proteger pasta de destino
-        PathGuardService::proteger($this->baseDir);
-
-        if (!is_dir($this->baseDir)) {
-            mkdir($this->baseDir, 0777, true);
-            file_put_contents($this->baseDir . '/.keep', 'sentinel');
-        }
-
-        $this->baseDir = rtrim(str_replace('\\', '/', $this->baseDir), '/') . '/';
-
-        // Ficheiro de hashes para backup incremental
-        $this->hashFile = __DIR__ . '/../../backups/hashes_files.json';
-
-        // 🔒 Proteger ficheiro de hashes
-        PathGuardService::proteger($this->hashFile);
+    if (!is_dir($this->sourceDir)) {
+        throw new \Exception("A pasta de origem para backup não existe: {$this->sourceDir}");
     }
 
-    public function criar(): string
+    // Pasta base dos backups (mantém em anferaltadocs/backups)
+    $this->baseDir = realpath(__DIR__ . '/../../backups/Ficheiros') 
+        ?: (__DIR__ . '/../../backups/Ficheiros');
+
+    PathGuardService::proteger($this->baseDir);
+
+    if (!is_dir($this->baseDir)) {
+        mkdir($this->baseDir, 0777, true);
+        file_put_contents($this->baseDir . '/.keep', 'sentinel');
+    }
+
+    $this->baseDir = rtrim(str_replace('\\', '/', $this->baseDir), '/') . '/';
+
+    $this->hashFile = __DIR__ . '/../../backups/hashes_files.json';
+
+    PathGuardService::proteger($this->hashFile);
+}
+
+	public function criar(): string
     {
         // Verificar espaço mínimo (200 MB)
         if (!$this->temEspaco(200)) {

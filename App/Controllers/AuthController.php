@@ -18,9 +18,9 @@ class AuthController extends BaseController
     public function login()
     {
         return $this->render('site/login/index.twig', [
-                    '_csrf' => CSRF::token(),
-                    'erro' => Sessao::peek('erro'),
-                    'sucesso' => Sessao::peek('sucesso'),
+            '_csrf' => CSRF::token(),
+            'erro' => Sessao::peek('erro'),
+            'sucesso' => Sessao::peek('sucesso'),
         ]);
     }
 
@@ -79,7 +79,7 @@ class AuthController extends BaseController
     public function registar()
     {
         return $this->render('site/login/registar.twig', [
-                    '_csrf' => CSRF::token()
+            '_csrf' => CSRF::token()
         ]);
     }
 
@@ -120,13 +120,13 @@ class AuthController extends BaseController
             }
 
             EmailService::enviar(
-                    $email,
-                    'Conta criada — aguarda aprovação',
-                    'utilizador_criado.twig',
-                    [
-                        'nome' => $nome,
-                        'link' => 'A sua conta aguarda aprovação do administrador.'
-                    ]
+                $email,
+                'Conta criada — aguarda aprovação',
+                'utilizador_criado.twig',
+                [
+                    'nome' => $nome,
+                    'link' => 'A sua conta aguarda aprovação do administrador.'
+                ]
             );
 
             Sessao::flash('sucesso', 'Conta criada com sucesso! Aguarde aprovação.');

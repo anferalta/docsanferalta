@@ -4,17 +4,37 @@ namespace App\Services;
 
 use Exception;
 use ZipArchive;
+use PDO;
 use App\Services\PathGuardService;
 use App\Services\BackupLogger;
+use App\Services\DatabaseBackupService;
 
 class RestoreService
 {
-    private string $mysqlUser = 'root';
-    private string $mysqlPass = '';
-    private string $mysqlDB   = 'anferaltadocs';
+    private PDO $pdo;
+
+    public function __construct()
+    {
+        $host = $_ENV['DB_HOST'];
+        $db   = $_ENV['DB_NAME'];
+        $user = $_ENV['DB_USER'];
+        $pass = $_ENV['DB_PASS'];
+
+        $dsn = "mysql:host={$host};dbname={$db};charset=utf8mb4";
+
+        $this->pdo = new PDO($dsn, $user, $pass, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+        ]);
+    }
 
     /**
-     * Restaurar Base de Dados
+     * RESTAURO SEGURO DA BASE DE DADOS
+     * - Cria backup automático antes
+     * - Extrai ZIP para pasta temporária
+     * - Lê backup.sql
+     * - Divide em comandos seguros
+     * - Executa apenas INSERT/UPDATE/DELETE
+     * - INSERT → INSERT IGNORE
      */
     public function restaurarBD(string $path): void
     {
@@ -25,179 +45,104 @@ class RestoreService
             throw new Exception("Ficheiro de backup não encontrado: {$path}");
         }
 
-        // Suporte a ZIP encriptado (.zip.enc)
-        if (str_ends_with($path, '.enc')) {
-            $path = $this->desencriptar($path);
-            PathGuardService::proteger($path);
-        }
+        // 1️⃣ Backup automático antes do restauro
+        $backupAntes = (new DatabaseBackupService())->criar();
+        BackupLogger::registar('BD', $backupAntes, true, "Backup automático antes do restauro.");
 
-        // Validar ZIP
-        if (!$this->validarZip($path)) {
-            throw new Exception("Backup inválido — ZIP corrompido.");
-        }
+        // 2️⃣ Extrair ZIP para pasta temporária
+        $tempDir = STORAGE_TEMP . '/restore_db_' . uniqid();
+        mkdir($tempDir, 0777, true);
 
-        // Pasta temporária protegida
-        $tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'restore_db_' . uniqid();
         PathGuardService::proteger($tempDir);
 
-        mkdir($tempDir);
-        file_put_contents($tempDir . '/.keep', 'sentinel');
-
-        // Extrair ZIP
         $zip = new ZipArchive();
         if ($zip->open($path) !== true) {
-            throw new Exception("Não foi possível abrir o ficheiro ZIP.");
+            throw new Exception("Não foi possível abrir o ZIP.");
         }
 
         $zip->extractTo($tempDir);
         $zip->close();
 
-        // Encontrar ficheiros .sql
+        // 3️⃣ Encontrar backup.sql
         $sqlFiles = glob($tempDir . '/*.sql');
         if (empty($sqlFiles)) {
-            throw new Exception("Nenhum ficheiro .sql encontrado dentro do backup.");
+            throw new Exception("Nenhum ficheiro SQL encontrado no backup.");
         }
 
-        // Detetar mysql.exe
-        $mysqlPath = $this->detetarMysql();
-        if (!$mysqlPath) {
-            throw new Exception("mysql.exe não encontrado no sistema.");
+        $sqlFile = $sqlFiles[0];
+        PathGuardService::proteger($sqlFile);
+
+        // 4️⃣ Validar SQL
+        if (!$this->validarSQL($sqlFile)) {
+            throw new Exception("SQL inválido ou corrompido.");
         }
 
-        // Restaurar cada ficheiro SQL
-        foreach ($sqlFiles as $sqlFile) {
+        // 5️⃣ Ler conteúdo SQL
+        $conteudo = file_get_contents($sqlFile);
 
-            PathGuardService::proteger($sqlFile);
+        // 6️⃣ Dividir em comandos seguros
+        $comandos = $this->dividirSQL($conteudo);
 
-            if (!$this->validarSQL($sqlFile)) {
-                throw new Exception("Ficheiro SQL inválido ou corrompido: {$sqlFile}");
-            }
+        // 7️⃣ Executar comandos via PDO
+        foreach ($comandos as $cmd) {
+            if (trim($cmd) === '') continue;
 
-            $pass = $this->mysqlPass === '' ? '' : '-p"' . $this->mysqlPass . '"';
-
-            $cmd = sprintf(
-                '"%s" -u%s %s %s < "%s"',
-                $mysqlPath,
-                $this->mysqlUser,
-                $pass,
-                $this->mysqlDB,
-                $sqlFile
-            );
-
-            exec($cmd, $out, $ret);
-
-            if ($ret !== 0) {
-                throw new Exception("Erro ao restaurar SQL: {$sqlFile}");
+            try {
+                $this->pdo->exec($cmd);
+            } catch (Exception $e) {
+                throw new Exception("Erro ao executar comando SQL: " . $e->getMessage());
             }
         }
 
-        // Limpar pasta temporária protegida
-        $this->limparTemp($tempDir);
+        // Marcar que houve restauro
+        $_SESSION['restauro_bd_feito'] = true;
+
+        // 8️⃣ Limpar pasta temporária
+        foreach (glob($tempDir . '/*') as $f) {
+            @unlink($f);
+        }
+        @rmdir($tempDir);
     }
 
     /**
-     * Restaurar ficheiros
+     * Divide SQL em comandos seguros
      */
-    public function restaurarFiles(string $path): void
+    private function dividirSQL(string $sql): array
     {
-        PathGuardService::init();
-        PathGuardService::proteger($path);
+        $sql = str_replace("\r", "\n", $sql);
 
-        if (!is_file($path)) {
-            throw new Exception("Backup de ficheiros não encontrado: {$path}");
-        }
+        $comandos = preg_split('/;\s*\n/', $sql);
+        $final = [];
 
-        $destino = realpath(__DIR__ . '/../../public/uploads_publicos');
+        foreach ($comandos as $cmd) {
+            $cmd = trim($cmd);
+            if ($cmd === '') continue;
 
-        if (!$destino) {
-            throw new Exception("Diretório de destino não encontrado: uploads_publicos");
-        }
+            // Ignorar comandos de estrutura
+            if (preg_match('/^(CREATE|DROP|ALTER|LOCK|UNLOCK|SET)\s/i', $cmd)) {
+                continue;
+            }
 
-        // 🔒 Proteger destino
-        PathGuardService::proteger($destino);
+            // Apenas comandos de dados
+            if (preg_match('/^(INSERT|UPDATE|DELETE)\s/i', $cmd)) {
 
-        // Validar ZIP
-        if (!$this->validarZip($path)) {
-            throw new Exception("Backup inválido — ZIP corrompido.");
-        }
+                // INSERT IGNORE
+                if (preg_match('/^INSERT\s+/i', $cmd)) {
+                    $cmd = preg_replace('/^INSERT\s+/i', 'INSERT IGNORE ', $cmd);
+                }
 
-        $zip = new ZipArchive();
-        if ($zip->open($path) !== true) {
-            throw new Exception("Não foi possível abrir o ficheiro ZIP.");
-        }
-
-        // 🔒 Blindagem contra traversal na extração
-        foreach (range(0, $zip->numFiles - 1) as $i) {
-            $info = $zip->statIndex($i);
-            $nome = $info['name'];
-
-            // Caminho real após extração
-            $destReal = realpath($destino . '/' . $nome);
-
-            if ($destReal !== false && !str_starts_with($destReal, $destino)) {
-                throw new Exception("Tentativa bloqueada: ZIP contém ficheiros fora da pasta segura.");
+                $final[] = $cmd;
             }
         }
 
-        $zip->extractTo($destino);
-        $zip->close();
+        return $final;
     }
 
     /**
-     * Desencriptar ZIP (.enc)
-     */
-    private function desencriptar(string $encPath): string
-    {
-        PathGuardService::proteger($encPath);
-
-        $password = $_ENV['BACKUP_PASSWORD'] ?? null;
-        if (!$password) {
-            throw new Exception("Backup encriptado mas BACKUP_PASSWORD não está definido.");
-        }
-
-        $zipPath = str_replace('.enc', '', $encPath);
-
-        PathGuardService::proteger($zipPath);
-
-        $cmd = "openssl enc -aes-256-cbc -d -in \"$encPath\" -out \"$zipPath\" -k \"$password\"";
-        exec($cmd, $out, $ret);
-
-        if ($ret !== 0 || !file_exists($zipPath)) {
-            throw new Exception("Falha ao desencriptar o backup.");
-        }
-
-        return $zipPath;
-    }
-
-    /**
-     * Validar ZIP
-     */
-    private function validarZip(string $ficheiro): bool
-    {
-        PathGuardService::proteger($ficheiro);
-
-        if (!file_exists($ficheiro) || filesize($ficheiro) < 1024) {
-            return false;
-        }
-
-        $zip = new ZipArchive();
-        if ($zip->open($ficheiro) !== true) {
-            return false;
-        }
-
-        $ok = $zip->numFiles > 0;
-        $zip->close();
-
-        return $ok;
-    }
-
-    /**
-     * Validar SQL
+     * Validação básica do SQL
      */
     private function validarSQL(string $ficheiro): bool
     {
-        PathGuardService::proteger($ficheiro);
-
         if (!file_exists($ficheiro) || filesize($ficheiro) < 1024) {
             return false;
         }
@@ -211,49 +156,32 @@ class RestoreService
     }
 
     /**
-     * Limpar pasta temporária
+     * RESTAURO DE FICHEIROS
+     * - Extrai ZIP para STORAGE_PUBLIC_UPLOADS
      */
-    private function limparTemp(string $dir): void
+    public function restaurarFiles(string $path): void
     {
-        PathGuardService::proteger($dir);
+        PathGuardService::init();
+        PathGuardService::proteger($path);
 
-        foreach (glob($dir . '/*') as $f) {
-            PathGuardService::proteger($f);
-            @unlink($f);
+        if (!is_file($path)) {
+            throw new Exception("Backup de ficheiros não encontrado: {$path}");
         }
 
-        @rmdir($dir);
-    }
+        $destino = STORAGE_PUBLIC_UPLOADS;
 
-    /**
-     * DETETAR mysql.exe automaticamente
-     */
-    private function detetarMysql(): ?string
-    {
-        $envPath = $_ENV['MYSQL_PATH'] ?? null;
-        if ($envPath && file_exists($envPath)) {
-            return str_replace('\\', '/', $envPath);
+        if (!is_dir($destino)) {
+            mkdir($destino, 0777, true);
         }
 
-        $possiveis = [
-            'C:\\wamp\\bin\\mysql\\mysql9.1.0\\bin\\mysql.exe',
-            'C:\\wamp64\\bin\\mysql\\mysql9.1.0\\bin\\mysql.exe',
-            'C:\\wamp\\bin\\mysql\\mysql8.0.31\\bin\\mysql.exe',
-            'C:\\wamp64\\bin\\mysql\\mysql8.0.31\\bin\\mysql.exe',
-            'C:\\xampp\\mysql\\bin\\mysql.exe',
-        ];
+        PathGuardService::proteger($destino);
 
-        foreach ($possiveis as $p) {
-            if (file_exists($p)) {
-                return str_replace('\\', '/', $p);
-            }
+        $zip = new ZipArchive();
+        if ($zip->open($path) !== true) {
+            throw new Exception("Não foi possível abrir o ZIP.");
         }
 
-        $which = trim(shell_exec('which mysql 2>/dev/null') ?? '');
-        if ($which !== '' && file_exists($which)) {
-            return $which;
-        }
-
-        return null;
+        $zip->extractTo($destino);
+        $zip->close();
     }
 }

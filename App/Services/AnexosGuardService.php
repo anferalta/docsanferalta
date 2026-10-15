@@ -7,26 +7,25 @@ use App\Services\PathGuardService;
 
 class AnexosGuardService
 {
-
     private string $baseDir;
     private string $logFile;
 
     public function __construct()
     {
-        $root = dirname(__DIR__, 2);
-
-        $this->baseDir = $root . '/storage/documentos';
-        $this->logFile = $root . '/storage/logs/anexos_guard.log';
+        // Usar paths centralizados (melhores práticas)
+        $this->baseDir = STORAGE_DOCUMENTOS;
+        $this->logFile = STORAGE_LOGS . '/anexos_guard.log';
 
         // Inicializar proteção global
         PathGuardService::init();
 
+        // Garantir que a pasta base existe
         if (!is_dir($this->baseDir)) {
             mkdir($this->baseDir, 0777, true);
             file_put_contents($this->baseDir . '/.keep', 'sentinel');
         }
 
-        // proteção só para leitura futura
+        // Proteger a pasta base
         PathGuardService::proteger($this->baseDir);
     }
 

@@ -17,10 +17,23 @@ use App\Models\DocumentoFicheiro;   // <-- ESTA LINHA RESOLVE O ERRO
 use App\Models\Utilizador;
 use App\Services\PathGuardService;
 use App\Services\BackupLogger;
+use App\Models\DocumentosArquivados;
 use PDO;
 
 class DocumentosAdminController extends BaseController
 {
+
+    private string $root;
+    private string $storageDocs;
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        // Caminho correto e unificado
+        $this->root = $_SERVER['DOCUMENT_ROOT'];
+        $this->storageDocs = $this->root . '/storage/documentos/';
+    }
 
     private function autorizar(string $permissao)
     {
@@ -62,8 +75,8 @@ class DocumentosAdminController extends BaseController
 
         // PERFIS QUE PODEM VER TODOS OS DOCUMENTOS
         $podeVerTodos = (
-                in_array($perfil, ['admin', 'gestor', 'supervisor']) ||
-                $acl->has('admin.documentos.ver_todos')
+            in_array($perfil, ['admin', 'gestor', 'supervisor']) ||
+            $acl->has('admin.documentos.ver_todos')
         );
 
         // ============================
@@ -198,14 +211,14 @@ WHERE 1=1
         // 9. Renderizar
         // ============================
         return $this->render('@admin/documentos/index.twig', [
-                    'documentos' => $documentos,
-                    'tipos' => $tipos,
-                    'areas' => $areas,
-                    'utilizadores' => $utilizadores,
-                    'estado_atual' => $estado_atual,
-                    'area_atual_id' => $area_atual_id,
-                    'paginacao' => $paginacao,
-                    'acl' => $acl, // <-- ADICIONADO
+            'documentos' => $documentos,
+            'tipos' => $tipos,
+            'areas' => $areas,
+            'utilizadores' => $utilizadores,
+            'estado_atual' => $estado_atual,
+            'area_atual_id' => $area_atual_id,
+            'paginacao' => $paginacao,
+            'acl' => $acl, // <-- ADICIONADO
         ]);
     }
 
@@ -216,7 +229,7 @@ WHERE 1=1
         $tipos = DocumentoTipo::all();
 
         return $this->render('@admin/documentos/criar.twig', [
-                    'tipos' => $tipos
+            'tipos' => $tipos
         ]);
     }
 
@@ -249,7 +262,7 @@ WHERE 1=1
             'area_atual_id' => $areaInicial,
             'area_atual_desde' => date('Y-m-d H:i:s'),
             'estado_atual' => 'novo'
-                ], "id = {$documento->id}");
+        ], "id = {$documento->id}");
 
         Sessao::flash('sucesso', 'Documentos carregados com sucesso.');
         return $this->redirect('/admin/documentos');
@@ -335,15 +348,15 @@ WHERE 1=1
         $estados = DocumentoEstado::all();
 
         return $this->view('@admin/documentos/editar.twig', [
-                    'documento' => $documento,
-                    'area' => $area,
-                    'tipo' => $tipo,
-                    'criador' => $criador,
-                    'ficheiros' => $ficheiros,
-                    'historico' => $historico,
-                    'areas' => $areas,
-                    'estados' => $estados,
-                    'tab' => $tab
+            'documento' => $documento,
+            'area' => $area,
+            'tipo' => $tipo,
+            'criador' => $criador,
+            'ficheiros' => $ficheiros,
+            'historico' => $historico,
+            'areas' => $areas,
+            'estados' => $estados,
+            'tab' => $tab
         ]);
     }
 
@@ -384,12 +397,12 @@ WHERE 1=1
 
         // Atualizar título e tipo
         $documento->update(
-                [
-                    'titulo' => trim($_POST['titulo']),
-                    'tipo_id' => $_POST['tipo_id']
-                ],
-                "id = :id",
-                ['id' => $documento->id]
+            [
+                'titulo' => trim($_POST['titulo']),
+                'tipo_id' => $_POST['tipo_id']
+            ],
+            "id = :id",
+            ['id' => $documento->id]
         );
 
         // Substituir ficheiro (opcional)
@@ -406,42 +419,81 @@ WHERE 1=1
         return $this->redirect('/admin/documentos');
     }
 
-    public function verFicheiro($ano, $mes, $dia, $ficheiro)
+    public function preview($idAnexo)
     {
         PathGuardService::init();
 
-        try {
-            $path = \App\Services\DocumentoFileService::resolverCaminhoSeguro(
-                    $ano, $mes, $dia, $ficheiro
-            );
-        } catch (\Exception $e) {
+        if (!$idAnexo || !is_numeric($idAnexo)) {
             http_response_code(404);
-            echo "Ficheiro não encontrado.";
-            return;
+            exit("Anexo inválido.");
         }
 
-        // Blindagem contra traversal
-        PathGuardService::proteger($path);
+        $anexo = DocumentoFicheiro::find($idAnexo);
 
-        $real = realpath($path);
-        if ($real === false) {
+        if (!$anexo) {
+            http_response_code(404);
+            exit("Anexo não encontrado.");
+        }
+
+        $path = rtrim(STORAGE_DOCUMENTOS, '/') . '/' . trim($anexo->caminho, '/') . '/' . $anexo->ficheiro;
+
+        if (!file_exists($path)) {
             http_response_code(404);
             exit("Ficheiro não encontrado.");
         }
 
-        $root = realpath(__DIR__ . '/../../../storage/documentos');
-        if (!str_starts_with($real, $root)) {
-            BackupLogger::registar('ABRIR', $real, false, "Traversal detectado");
-            http_response_code(403);
-            exit("Acesso negado.");
+        $ext = strtolower(pathinfo($anexo->ficheiro, PATHINFO_EXTENSION));
+
+        // URL público para Office Viewer
+        $publicUrl = "https://anferalta.com/public/documentos/" . $idAnexo;
+
+        // Office Viewer
+        $officeUrl = "https://view.officeapps.live.com/op/view.aspx?src=" . urlencode($publicUrl);
+
+        return $this->render('@admin/documentos/preview.twig', [
+            'nome'    => $anexo->ficheiro,
+            'ext'     => $ext,
+            'caminho' => "/admin/documentos/anexo/abrir/" . $idAnexo,
+            'office'  => $officeUrl
+        ]);
+    }
+
+    public function verFicheiro($id)
+    {
+        PathGuardService::init();
+
+        $anexo = DocumentoFicheiro::find($id);
+
+        if (!$anexo) {
+            http_response_code(404);
+            exit("Ficheiro não encontrado.");
         }
 
-        $nome = basename($ficheiro);
+        $real = STORAGE_DOCUMENTOS . '/' . trim($anexo->caminho, '/') . '/' . $anexo->ficheiro;
 
-        header("Content-Type: " . mime_content_type($real));
+        if (!file_exists($real)) {
+            http_response_code(404);
+            exit("Ficheiro não encontrado.");
+        }
+
+        $ext  = strtolower(pathinfo($real, PATHINFO_EXTENSION));
+        $mime = mime_content_type($real);
+
+        // Inline permitido
+        $inline = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'txt'];
+
+        if (in_array($ext, $inline)) {
+            header("Content-Type: $mime");
+            header("Content-Disposition: inline; filename=\"" . $anexo->ficheiro . "\"");
+            header("Content-Length: " . filesize($real));
+            readfile($real);
+            exit;
+        }
+
+        // Outros → download (DOCX incluído)
+        header("Content-Type: $mime");
+        header("Content-Disposition: attachment; filename=\"" . $anexo->ficheiro . "\"");
         header("Content-Length: " . filesize($real));
-        header("Content-Disposition: inline; filename=\"$nome\"");
-
         readfile($real);
         exit;
     }
@@ -477,7 +529,6 @@ WHERE 1=1
             throw new \Exception("Ficheiro inválido: {$nomeOriginal}");
         }
 
-        // Extensões permitidas
         $permitidas = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'txt', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'rar', '7z'];
         $ext = strtolower(pathinfo($nomeOriginal, PATHINFO_EXTENSION));
 
@@ -485,16 +536,13 @@ WHERE 1=1
             throw new \Exception("Extensão não permitida: {$nomeOriginal}");
         }
 
-        // Caminho seguro
-        $root = dirname(__DIR__, 2);
-        PathGuardService::proteger($root);
-
+        // Caminho seguro centralizado
         $ano = date('Y');
         $mes = date('m');
         $dia = date('d');
 
-        $subpasta = "$ano/$mes/$dia";
-        $base = $root . "/storage/documentos/$subpasta/";
+        $subpasta = "$ano/$mes/$dia/";
+        $base = STORAGE_DOCUMENTOS . '/' . $subpasta;
 
         PathGuardService::proteger($base);
 
@@ -515,7 +563,7 @@ WHERE 1=1
         }
 
         // Apagar ficheiro antigo
-        $antigo = $root . '/storage/documentos/' . $documento->caminho . $documento->ficheiro;
+        $antigo = STORAGE_DOCUMENTOS . '/' . $documento->caminho . $documento->ficheiro;
         PathGuardService::proteger($antigo);
 
         if (file_exists($antigo)) {
@@ -525,7 +573,7 @@ WHERE 1=1
         // Atualizar BD
         $documento->ficheiro = $nomeGuardado;
         $documento->ficheiro_original = $nomeOriginal;
-        $documento->caminho = $subpasta . '/';
+        $documento->caminho = $subpasta;
         $documento->tamanho = $tamanho;
         $documento->mime_type = mime_content_type($destino);
         $documento->hash = hash_file('sha256', $destino);
@@ -573,15 +621,13 @@ WHERE 1=1
             exit("Ficheiro inválido.");
         }
 
-        $root = realpath(__DIR__ . '/../../../');
-        PathGuardService::proteger($root);
+        $path = STORAGE_DOCUMENTOS . '/' . $ficheiro->caminho . $ficheiro->ficheiro;
 
-        $path = $root . '/storage/documentos/' . $ficheiro->caminho . $ficheiro->ficheiro;
         PathGuardService::proteger($path);
 
         $real = realpath($path);
 
-        if ($real && str_starts_with($real, $root) && file_exists($real)) {
+        if ($real && file_exists($real)) {
             unlink($real);
         }
 
@@ -622,20 +668,26 @@ WHERE 1=1
 
         // Comando
         $cmd = $soffice
-                . ' --headless --nologo --nofirststartwizard'
-                . ' --convert-to pdf'
-                . ' "' . $origem . '"'
-                . ' --outdir "' . $dir . '"';
+            . ' --headless --nologo --nofirststartwizard'
+            . ' --convert-to pdf'
+            . ' "' . $origem . '"'
+            . ' --outdir "' . $dir . '"';
 
         // LOG para debug
-        file_put_contents(__DIR__ . '/../../../storage/logs/conversao.log',
-                date('Y-m-d H:i:s') . "\nCMD: $cmd\n", FILE_APPEND);
+        file_put_contents(
+            __DIR__ . '/../../../storage/logs/conversao.log',
+            date('Y-m-d H:i:s') . "\nCMD: $cmd\n",
+            FILE_APPEND
+        );
 
         exec($cmd . " 2>&1", $output, $returnCode);
 
         // LOG do output
-        file_put_contents(__DIR__ . '/../../../storage/logs/conversao.log',
-                "RETORNO: $returnCode\n" . print_r($output, true) . "\n\n", FILE_APPEND);
+        file_put_contents(
+            __DIR__ . '/../../../storage/logs/conversao.log',
+            "RETORNO: $returnCode\n" . print_r($output, true) . "\n\n",
+            FILE_APPEND
+        );
 
         // Verificar se o PDF foi criado
         return file_exists($pdfDestino) && filesize($pdfDestino) > 0;
@@ -652,23 +704,15 @@ WHERE 1=1
             return $this->redirect('/admin/documentos');
         }
 
-        $root = dirname(__DIR__, 3);
-        PathGuardService::proteger($root);
+        $path = STORAGE_DOCUMENTOS . '/' . $documento->caminho . $documento->ficheiro;
 
-        $caminho = $root . '/storage/documentos/' . $documento->caminho . $documento->ficheiro;
-        PathGuardService::proteger($caminho);
+        PathGuardService::proteger($path);
 
-        $real = realpath($caminho);
+        $real = realpath($path);
 
-        if ($real === false || !file_exists($real)) {
+        if (!$real || !file_exists($real)) {
             http_response_code(404);
             exit("Ficheiro não encontrado.");
-        }
-
-        if (!str_starts_with($real, $root)) {
-            BackupLogger::registar('DOWNLOAD', $real, false, "Traversal detectado");
-            http_response_code(403);
-            exit("Acesso negado.");
         }
 
         $ficheiro = basename($real);
@@ -683,6 +727,8 @@ WHERE 1=1
 
     public function eliminar($id)
     {
+        PathGuardService::init();
+
         $documento = Documento::find($id);
 
         if (!$documento) {
@@ -690,13 +736,29 @@ WHERE 1=1
             return $this->redirect('/admin/documentos');
         }
 
-        $root = dirname(__DIR__, 3);
-        $ficheiro = $root . '/storage/documentos/' . $documento->caminho . $documento->ficheiro;
-
-        if (file_exists($ficheiro)) {
-            unlink($ficheiro);
+        // Impedir eliminar documentos arquivados
+        $arquivo = DocumentosArquivados::porDocumento($id);
+        if ($arquivo) {
+            Sessao::flash('erro', 'Este documento está arquivado — recupere antes de eliminar.');
+            return $this->redirect('/admin/documentos/arquivado/' . $id);
         }
 
+        // Apagar ficheiro físico
+        if (!empty($documento->ficheiro) && !empty($documento->caminho)) {
+
+            $path = STORAGE_DOCUMENTOS . '/' . trim($documento->caminho, '/') . '/' . $documento->ficheiro;
+
+            PathGuardService::proteger($path);
+
+            if (is_file($path)) {
+                unlink($path);
+            }
+        }
+
+        // Apagar registos de ficheiros associados — CORRIGIDO
+        DocumentoFicheiro::deleteWhere('documento_id', $id);
+
+        // Apagar documento
         $documento->delete($documento->id);
 
         Sessao::flash('sucesso', 'Documento eliminado com sucesso.');
@@ -714,7 +776,6 @@ WHERE 1=1
             return $this->redirect('/admin/documentos');
         }
 
-        // Sanitizar IDs
         $ids = array_map('intval', $_POST['docs']);
 
         try {
@@ -727,7 +788,7 @@ WHERE 1=1
         PathGuardService::proteger($zipPath);
 
         $real = realpath($zipPath);
-        if ($real === false || !file_exists($real)) {
+        if (!$real || !file_exists($real)) {
             Sessao::flash('erro', 'Erro ao gerar o ZIP.');
             return $this->redirect('/admin/documentos');
         }
@@ -741,6 +802,30 @@ WHERE 1=1
         exit;
     }
 
+    public function exportarCsv()
+    {
+        $db = \App\Core\Conexao::getInstancia();
+
+        $stmt = $db->query("SELECT * FROM documentos ORDER BY id DESC");
+        $dados = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=documentos.csv');
+
+        $out = fopen('php://output', 'w');
+
+        // Cabeçalhos
+        fputcsv($out, array_keys($dados[0]));
+
+        // Linhas
+        foreach ($dados as $linha) {
+            fputcsv($out, $linha);
+        }
+
+        fclose($out);
+        exit;
+    }
+
     public function arquivados()
     {
         $this->authorize('admin.documentos.arquivados.ver');
@@ -748,10 +833,10 @@ WHERE 1=1
         $docModel = new Documento();
 
         $docModel->leftJoin(
-                'documento_tipos',
-                'documento_tipos.tipo_id',
-                '=',
-                'documentos.tipo_id'
+            'documento_tipos',
+            'documento_tipos.tipo_id',
+            '=',
+            'documentos.tipo_id'
         );
 
         $docModel->where('documentos.estado_atual', '=', 'arquivado');
@@ -760,27 +845,32 @@ WHERE 1=1
         $documentos = $docModel->get();
 
         return $this->render('@admin/documentos/arquivados.twig', [
-                    'documentos' => $documentos
+            'documentos' => $documentos
         ]);
     }
 
     public function verArquivado($id)
     {
-        $this->authorize('admin.documentos.arquivados.ver');
-
+        // 1. Verificar se o documento existe na tabela principal
         $documento = Documento::find($id);
 
-        if (!$documento || $documento->estado_atual !== 'arquivado') {
-            http_response_code(404);
-            exit("Documento arquivado não encontrado.");
+        if (!$documento) {
+            Sessao::flash('erro', 'Este documento já não existe — foi eliminado.');
+            return $this->redirect('/admin/documentos/arquivados');
         }
 
-        // AQUI ESTÁ A CORREÇÃO
-        $historico = DocumentoTramitacao::porDocumento($id);
+        // 2. Verificar se está arquivado
+        $arquivo = DocumentosArquivados::porDocumento($id);
 
-        return $this->render('@admin/documentos/ver_arquivado.twig', [
-                    'documento' => $documento,
-                    'historico' => $historico
+        if (!$arquivo) {
+            Sessao::flash('erro', 'Este documento não está arquivado ou foi removido.');
+            return $this->redirect('/admin/documentos/arquivados');
+        }
+
+        // 3. Renderizar normalmente
+        return $this->render('@admin/documentos/arquivado.twig', [
+            'documento' => $documento,
+            'arquivo' => $arquivo
         ]);
     }
 
@@ -788,38 +878,46 @@ WHERE 1=1
     {
         PathGuardService::init();
 
-        // Sanitizar nome de ficheiro
         $ficheiro = basename($ficheiro);
 
         $anexo = DocumentoTramitacaoAnexo::query(
-                        "SELECT * FROM documento_tramitacao_anexos WHERE tramitacao_id = :hid AND ficheiro = :fic LIMIT 1",
-                        ['hid' => $historicoId, 'fic' => $ficheiro]
-                )[0] ?? null;
+            "SELECT * FROM documento_tramitacao_anexos WHERE tramitacao_id = :hid AND ficheiro = :fic LIMIT 1",
+            ['hid' => $historicoId, 'fic' => $ficheiro]
+        )[0] ?? null;
 
         if (!$anexo) {
             http_response_code(404);
             return $this->render('@admin/errors/404.twig');
         }
 
-        $caminho = $anexo->caminhoAbsoluto();
-        PathGuardService::proteger($caminho);
+        // Caminho seguro centralizado
+        $real = \App\Services\TramitacaoFileService::resolverCaminhoSeguro($historicoId, $ficheiro);
 
-        $real = realpath($caminho);
-        if ($real === false || !file_exists($real)) {
+        if (!$real || !file_exists($real)) {
             http_response_code(404);
             return $this->render('@admin/errors/404.twig');
         }
 
-        // Blindagem contra traversal
-        $root = realpath(__DIR__ . '/../../../storage/tramitacao');
-        if ($root === false || !str_starts_with($real, $root)) {
-            BackupLogger::registar('VER_ANEXO', $real, false, "Traversal detectado");
-            http_response_code(403);
-            return $this->render('@admin/errors/403.twig');
+        PathGuardService::proteger($real);
+
+        // Abrir inline quando possível
+        $ext = strtolower(pathinfo($real, PATHINFO_EXTENSION));
+        $mime = mime_content_type($real);
+
+        $inline = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'txt'];
+
+        if (in_array($ext, $inline)) {
+            header("Content-Type: $mime");
+            header("Content-Disposition: inline; filename=\"" . basename($ficheiro) . "\"");
+            header("Content-Length: " . filesize($real));
+            readfile($real);
+            exit;
         }
 
-        header('Content-Type: ' . $anexo->mime_type);
-        header('Content-Length: ' . filesize($real));
+        // Download
+        header("Content-Type: application/octet-stream");
+        header("Content-Disposition: attachment; filename=\"" . basename($ficheiro) . "\"");
+        header("Content-Length: " . filesize($real));
         readfile($real);
         exit;
     }
@@ -835,30 +933,19 @@ WHERE 1=1
             exit("Anexo não encontrado.");
         }
 
-        $root = dirname(__DIR__, 3);
-        PathGuardService::proteger($root);
+        $path = STORAGE_DOCUMENTOS . '/' . $anexo->caminho . $anexo->ficheiro;
 
-        // usar caminho completo guardado no modelo, se existir
-        $caminho = $root . '/storage/documentos/' . $anexo->caminho . $anexo->ficheiro;
-        PathGuardService::proteger($caminho);
+        PathGuardService::proteger($path);
 
-        $real = realpath($caminho);
+        $real = realpath($path);
 
-        if ($real === false || !file_exists($real)) {
+        if (!$real || !file_exists($real)) {
             http_response_code(404);
             exit("Ficheiro não encontrado.");
         }
 
-        if (!str_starts_with($real, $root)) {
-            BackupLogger::registar('DOWNLOAD_ANEXO', $real, false, "Traversal detectado");
-            http_response_code(403);
-            exit("Acesso negado.");
-        }
-
-        $ficheiro = basename($real);
-
         header("Content-Type: application/octet-stream");
-        header("Content-Disposition: attachment; filename=\"$ficheiro\"");
+        header("Content-Disposition: attachment; filename=\"" . basename($anexo->ficheiro) . "\"");
         header("Content-Length: " . filesize($real));
 
         readfile($real);
@@ -874,65 +961,40 @@ WHERE 1=1
             return $this->redirect('/login');
         }
 
-        // 1) Tentar anexo da tramitação
-        $anexo = DocumentoTramitacaoAnexo::find($idAnexo);
-        $tipo = null;
-
-        if ($anexo) {
-            $tipo = 'tramitacao';
-        } else {
-            // 2) Tentar anexo do documento
-            $anexo = DocumentoFicheiro::find($idAnexo);
-            if ($anexo) {
-                $tipo = 'documento';
-            }
-        }
+        // Apenas anexos do documento
+        $anexo = DocumentoFicheiro::find($idAnexo);
 
         if (!$anexo) {
             http_response_code(404);
             exit("Anexo não encontrado.");
         }
 
-        $root = realpath(__DIR__ . '/../../../');
-        PathGuardService::proteger($root);
-
-        if ($tipo === 'tramitacao') {
-            $path = $root . '/public/uploads/tramitacao/' . intval($anexo->tramitacao_id) . '/' . basename($anexo->ficheiro);
-        } else {
-            $path = $root . '/storage/documentos/' . $anexo->caminho . basename($anexo->ficheiro);
-        }
-
-        // Blindagem contra traversal
-        $real = realpath($path);
-        if ($real === false || !str_starts_with($real, $root)) {
-            BackupLogger::registar('ABRIR', $path, false, "Tentativa de acesso indevido");
-            http_response_code(403);
-            exit("Acesso negado.");
-        }
-
-        PathGuardService::proteger($real);
+        $real = rtrim(STORAGE_DOCUMENTOS, '/') . '/' . trim($anexo->caminho, '/') . '/' . $anexo->ficheiro;
 
         if (!file_exists($real)) {
             http_response_code(404);
-            exit("Ficheiro não encontrado.");
+            exit("Anexo não encontrado.");
         }
 
+        $ext  = strtolower(pathinfo($real, PATHINFO_EXTENSION));
         $mime = mime_content_type($real);
-        $nome = basename($anexo->ficheiro);
 
-        $inline = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'txt', 'webp'];
-        $ext = strtolower(pathinfo($real, PATHINFO_EXTENSION));
+        // Inline permitido
+        $inline = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'txt'];
 
         if (in_array($ext, $inline)) {
-            header("Content-Type: {$mime}");
-            header("Content-Disposition: inline; filename=\"{$nome}\"");
+            PathGuardService::proteger($real);
+
+            header("Content-Type: $mime");
+            header("Content-Disposition: inline; filename=\"" . basename($anexo->ficheiro) . "\"");
             header("Content-Length: " . filesize($real));
             readfile($real);
             exit;
         }
 
-        header("Content-Type: application/octet-stream");
-        header("Content-Disposition: attachment; filename=\"{$nome}\"");
+        // Outros → download (DOCX incluído)
+        header("Content-Type: $mime");
+        header("Content-Disposition: attachment; filename=\"" . basename($anexo->ficheiro) . "\"");
         header("Content-Length: " . filesize($real));
         readfile($real);
         exit;
@@ -954,34 +1016,159 @@ WHERE 1=1
             return $this->render('@admin/errors/404.twig');
         }
 
-        $caminho = $anexo->caminhoAbsoluto();
-        PathGuardService::proteger($caminho);
+        // Caminho real usando a estrutura correta
+        $real = STORAGE_DOCUMENTOS . '/' . trim($anexo->caminho, '/') . '/' . $anexo->ficheiro;
 
-        $real = realpath($caminho);
-
-        if ($real === false || !file_exists($real)) {
+        if (!file_exists($real)) {
             http_response_code(404);
             return $this->render('@admin/errors/404.twig');
         }
 
-        // Blindagem contra traversal
-        $root = realpath(__DIR__ . '/../../../storage/documentos');
-        if (!str_starts_with($real, $root)) {
-            BackupLogger::registar('ABRIR_ANEXO', $real, false, "Traversal detectado");
-            http_response_code(403);
-            exit("Acesso negado.");
+        $ext  = strtolower(pathinfo($real, PATHINFO_EXTENSION));
+        $mime = mime_content_type($real);
+
+        // Proteger apenas PDF e TXT
+        $protegidos = ['pdf', 'txt'];
+        if (in_array($ext, $protegidos)) {
+            PathGuardService::proteger($real);
         }
 
-        header('Content-Type: ' . $anexo->mime_type);
-        header('Content-Length: ' . filesize($real));
+        // Inline permitido
+        $inline = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'txt'];
 
+        if (in_array($ext, $inline)) {
+            header("Content-Type: $mime");
+            header("Content-Disposition: inline; filename=\"" . basename($anexo->ficheiro) . "\"");
+            header("Content-Length: " . filesize($real));
+            readfile($real);
+            exit;
+        }
+
+        // Outros → download
+        header("Content-Type: application/octet-stream");
+        header("Content-Disposition: attachment; filename=\"" . basename($anexo->ficheiro) . "\"");
+        header("Content-Length: " . filesize($real));
         readfile($real);
         exit;
+    }
+
+    public function abrirArquivado($id)
+    {
+        PathGuardService::init();
+
+        $arquivo = DocumentosArquivados::porDocumento($id);
+
+        if (!$arquivo) {
+            throw new \Exception("Registo de arquivo não encontrado.");
+        }
+
+        // Caminho completo correto
+        $path = STORAGE_ARQUIVADOS . '/' . trim($arquivo->caminho, '/') . '/' . $arquivo->ficheiro;
+
+        PathGuardService::proteger($path);
+
+        if (!is_file($path)) {
+            throw new \Exception("Ficheiro arquivado não existe no servidor.");
+        }
+
+        $mime = $arquivo->mime_type ?? mime_content_type($path);
+
+        header("Content-Type: {$mime}");
+        header('Content-Disposition: inline; filename="' . $arquivo->ficheiro . '"');
+        header('Content-Length: ' . filesize($path));
+
+        readfile($path);
+        exit;
+    }
+
+    public function ver($id)
+    {
+        $documento = Documento::find($id);
+
+        if (!$documento) {
+            return $this->error(404, "Documento não encontrado.");
+        }
+
+        if ($documento->estado_atual === 'arquivado') {
+            return $this->verArquivado($id);
+        }
+
+        return $this->verNormal($id);
+    }
+
+    public function verNormal($id)
+    {
+        try {
+
+            PathGuardService::init();
+
+            // Documento
+            $documento = Documento::find($id);
+            if (!$documento) {
+                return $this->error(404, "Documento não encontrado.");
+            }
+
+            // Área, tipo, criador
+            $area    = DocumentoArea::find($documento->area_atual_id);
+            $tipo    = DocumentoTipo::find($documento->tipo_id);
+            $criador = Utilizador::find($documento->criado_por);
+
+            // ✔ Anexos do documento (documento_ficheiros)
+            $ficheiros = (new DocumentoFicheiro())
+                ->where('documento_id', '=', $id)
+                ->get();
+
+            // ✔ Histórico da tramitação
+            $historico = DocumentoTramitacao::porDocumento($id);
+
+            // ✔ Enriquecer histórico (área, utilizador, estado, anexos)
+            foreach ($historico as $h) {
+
+                // Área
+                $h->area = DocumentoArea::find($h->area_id);
+
+                // Utilizador
+                $h->utilizador = Utilizador::find($h->utilizador_id);
+
+                // Estado
+                if (!empty($h->estado)) {
+                    $estado = DocumentoEstado::findByCodigo($h->estado);
+
+                    if ($estado) {
+                        $h->estado_nome   = $estado->nome;
+                        $h->estado_codigo = $estado->codigo;
+                    } else {
+                        $h->estado_nome   = strtoupper(str_replace('_', ' ', $h->estado));
+                        $h->estado_codigo = $h->estado;
+                    }
+                } else {
+                    $h->estado_nome   = null;
+                    $h->estado_codigo = null;
+                }
+
+                // ✔ Anexos da tramitação
+                $h->anexos = DocumentoTramitacaoAnexo::anexosPorHistorico($h->id);
+            }
+
+            // ✔ Renderizar página completa (com layout e tabs)
+            return $this->view('@admin/documentos/editar.twig', [
+                'documento' => $documento,
+                'area'      => $area,
+                'tipo'      => $tipo,
+                'criador'   => $criador,
+                'ficheiros' => $ficheiros,
+                'historico' => $historico,
+                'tab'       => 'tramitacao'
+            ]);
+        } catch (\Exception $e) {
+            return $this->error(500, $e->getMessage());
+        }
     }
 
     public function recuperarArquivado($id)
     {
         $this->authorize('admin.documentos.arquivados.recuperar');
+        PathGuardService::init();
 
         $documento = Documento::find($id);
 
@@ -990,13 +1177,37 @@ WHERE 1=1
             exit("Documento arquivado não encontrado.");
         }
 
-        // Tipo
-        $tipo = DocumentoTipo::find($documento->tipo_id);
-        $documento->tipo_nome = $tipo ? $tipo->nome : null;
+        $arquivo = DocumentosArquivados::porDocumento($id);
 
-        // Criador
-        $criador = Utilizador::find($documento->utilizador_id);
-        $documento->criador_nome = $criador ? $criador->nome : null;
+        if (!$arquivo) {
+            Sessao::flash('erro', 'Nenhum ficheiro arquivado encontrado para este documento.');
+            return $this->redirect("/admin/documentos/editar/{$id}");
+        }
+
+        $real = realpath($arquivo->caminho);
+
+        if (!$real || !file_exists($real)) {
+            Sessao::flash('erro', 'O ficheiro arquivado não existe no servidor.');
+            return $this->redirect("/admin/documentos/editar/{$id}");
+        }
+
+        PathGuardService::proteger($real);
+
+        // Caminho destino (produção)
+        $destino = STORAGE_DOCUMENTOS . '/' . $arquivo->ficheiro;
+
+        PathGuardService::proteger($destino);
+
+        if (!copy($real, $destino)) {
+            Sessao::flash('erro', 'Falha ao recuperar o ficheiro para produção.');
+            return $this->redirect("/admin/documentos/editar/{$id}");
+        }
+
+        // Atualizar documento original
+        $documento->ficheiro   = $arquivo->ficheiro;
+        $documento->caminho    = date('Y') . '/' . date('m') . '/' . date('d') . '/'; // ✔ subpasta correta
+        $documento->mime_type  = $arquivo->mime_type;
+        $documento->tamanho    = $arquivo->tamanho;
 
         $areaAnterior = $documento->area_atual_id;
 
@@ -1005,6 +1216,8 @@ WHERE 1=1
         $documento->arquivado_por_id = null;
         $documento->area_atual_id = $areaAnterior;
         $documento->save();
+
+        DocumentosArquivados::marcarRecuperado($id, Auth::id());
 
         DocumentoTramitacao::create([
             'documento_id' => $id,
@@ -1023,12 +1236,13 @@ WHERE 1=1
     public function arquivar($id)
     {
         $this->authorize('admin.documentos.arquivar');
+        PathGuardService::init();
 
         $documento = Documento::find($id);
 
         if (!$documento) {
             Sessao::flash('erro', 'Documento não encontrado.');
-            return $this->redirect('/admin/documentos');
+            return $this->redirect('/admin/documentos/arquivados');
         }
 
         if ($documento->estado_atual === 'arquivado') {
@@ -1036,22 +1250,72 @@ WHERE 1=1
             return $this->redirect("/admin/documentos/editar/{$id}");
         }
 
-        $documento->update([
-            'estado_atual' => 'arquivado',
-            'arquivado_em' => date('Y-m-d H:i:s'),
-            'arquivado_por_id' => Auth::user()->id,
-            'area_atual_id' => null,
-            'estado' => 0
-                ], "id = {$documento->id}");
+        // Buscar o ficheiro do documento (último ficheiro enviado)
+        $ficheiro = DocumentoFicheiro::query()
+            ->where('documento_id', '=', $documento->id)
+            ->orderBy('criado_em', 'DESC')
+            ->first();
 
+        if (!$ficheiro) {
+            Sessao::flash('erro', 'Este documento não possui ficheiro para arquivar.');
+            return $this->redirect("/admin/documentos/editar/{$id}");
+        }
+
+        // Caminho origem correto
+        $origem = STORAGE_DOCUMENTOS . '/' . trim($ficheiro->caminho, '/') . '/' . $ficheiro->ficheiro;
+        PathGuardService::proteger($origem);
+
+        if (!file_exists($origem)) {
+            Sessao::flash('erro', 'O ficheiro original não existe no servidor.');
+            return $this->redirect("/admin/documentos/editar/{$id}");
+        }
+
+        // Criar subpasta por data
+        $subpasta = date('Y') . '/' . date('m') . '/' . date('d') . '/';
+        $pastaArquivados = STORAGE_ARQUIVADOS . '/' . $subpasta;
+
+        if (!is_dir($pastaArquivados)) {
+            mkdir($pastaArquivados, 0777, true);
+        }
+
+        // Caminho destino correto
+        $destino = $pastaArquivados . $ficheiro->ficheiro;
+        PathGuardService::proteger($destino);
+
+        if (!copy($origem, $destino)) {
+            Sessao::flash('erro', 'Falha ao arquivar o ficheiro.');
+            return $this->redirect("/admin/documentos/editar/{$id}");
+        }
+
+        // Criar registo arquivado
+        DocumentosArquivados::create([
+            'documento_id'  => $documento->id,
+            'ficheiro'      => $ficheiro->ficheiro,
+            'caminho'       => $subpasta,
+            'mime_type'     => $ficheiro->mime_type,
+            'tamanho'       => $ficheiro->tamanho,
+            'arquivado_em'  => date('Y-m-d H:i:s'),
+            'arquivado_por' => Auth::user()->id
+        ]);
+
+        // Atualizar documento
+        $documento->update([
+            'estado_atual'      => 'arquivado',
+            'arquivado_em'      => date('Y-m-d H:i:s'),
+            'arquivado_por_id'  => Auth::user()->id,
+            'area_atual_id'     => null,
+            'estado'            => 0
+        ], "id = {$documento->id}");
+
+        // Histórico
         DocumentoTramitacao::create([
-            'documento_id' => $id,
-            'area_id' => null,
+            'documento_id'  => $id,
+            'area_id'       => null,
             'utilizador_id' => Auth::user()->id,
-            'acao' => 'ARQUIVADO',
-            'estado' => 'arquivado',
-            'comentario' => 'Documento arquivado.',
-            'criado_em' => date('Y-m-d H:i:s')
+            'acao'          => 'ARQUIVADO',
+            'estado'        => 'arquivado',
+            'comentario'    => 'Documento arquivado.',
+            'criado_em'     => date('Y-m-d H:i:s')
         ]);
 
         Sessao::flash('sucesso', 'Documento arquivado com sucesso.');
@@ -1073,10 +1337,8 @@ WHERE 1=1
             exit("Nenhum ficheiro enviado.");
         }
 
-        $root = realpath(__DIR__ . '/../../../');
-        PathGuardService::proteger($root);
+        $base = STORAGE_DOCUMENTOS;
 
-        $base = $root . '/storage/documentos/';
         PathGuardService::proteger($base);
 
         $ano = date('Y');
@@ -1084,7 +1346,7 @@ WHERE 1=1
         $dia = date('d');
 
         $subpasta = "$ano/$mes/$dia/";
-        $destinoFinal = $base . $subpasta;
+        $destinoFinal = $base . '/' . $subpasta;
 
         PathGuardService::proteger($destinoFinal);
 
@@ -1103,7 +1365,6 @@ WHERE 1=1
                 continue;
             }
 
-            // Blindagem contra uploads maliciosos
             $ext = strtolower(pathinfo($nomeOriginal, PATHINFO_EXTENSION));
             $permitidas = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'txt', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'rar', '7z'];
 
@@ -1116,7 +1377,6 @@ WHERE 1=1
             $nomeGuardado = uniqid() . '_' . $nomeSeguro;
 
             $destino = $destinoFinal . $nomeGuardado;
-
             PathGuardService::proteger($destino);
 
             if (!move_uploaded_file($tmp, $destino)) {
@@ -1219,14 +1479,43 @@ WHERE 1=1
             // 4. Configuração
             // ============================
             $extPermitidas = [
-                'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
-                'txt', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'zip', 'rar', '7z'
+                'pdf',
+                'doc',
+                'docx',
+                'xls',
+                'xlsx',
+                'ppt',
+                'pptx',
+                'txt',
+                'jpg',
+                'jpeg',
+                'png',
+                'gif',
+                'webp',
+                'zip',
+                'rar',
+                '7z'
             ];
 
             $extPerigosas = [
-                'php', 'php3', 'php4', 'php5', 'phtml',
-                'exe', 'msi', 'bat', 'cmd', 'sh', 'ps1',
-                'js', 'html', 'htm', 'svg', 'dll', 'sys', 'com'
+                'php',
+                'php3',
+                'php4',
+                'php5',
+                'phtml',
+                'exe',
+                'msi',
+                'bat',
+                'cmd',
+                'sh',
+                'ps1',
+                'js',
+                'html',
+                'htm',
+                'svg',
+                'dll',
+                'sys',
+                'com'
             ];
 
             $limitesPorExt = [
@@ -1331,9 +1620,9 @@ WHERE 1=1
                 // 6.2 VERIFICAR DUPLICADO
                 // ============================
                 $existe = Documento::query()
-                        ->where('hash', '=', $hash)
-                        ->where('criado_por', '=', $user->id)
-                        ->first();
+                    ->where('hash', '=', $hash)
+                    ->where('criado_por', '=', $user->id)
+                    ->first();
 
                 if ($existe) {
                     echo json_encode(['erro' => "Ficheiro duplicado: {$nomeOriginal}"]);

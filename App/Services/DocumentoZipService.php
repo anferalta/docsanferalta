@@ -18,26 +18,23 @@ class DocumentoZipService
         // Inicializar proteção global
         PathGuardService::init();
 
-        $root = dirname(__DIR__, 2);
-
         // Proteger pasta base de documentos
-        $docRoot = realpath($root . '/storage/documentos');
-        if ($docRoot !== false) {
-            PathGuardService::proteger($docRoot);
-        }
+        PathGuardService::proteger(STORAGE_DOCUMENTOS);
 
         // Proteger pasta temporária
-        $tmpDir = $root . '/storage/tmp/';
-        PathGuardService::proteger($tmpDir);
+        PathGuardService::proteger(STORAGE_TEMP);
 
-        if (!is_dir($tmpDir)) {
-            mkdir($tmpDir, 0777, true);
-            file_put_contents($tmpDir . '/.keep', 'sentinel');
+        // Garantir que a pasta temporária existe
+        if (!is_dir(STORAGE_TEMP)) {
+            mkdir(STORAGE_TEMP, 0777, true);
+            file_put_contents(STORAGE_TEMP . '/.keep', 'sentinel');
         }
 
+        // Nome do ZIP
         $zipName = 'documentos_' . $user->id . '_' . date('Ymd_His') . '.zip';
-        $zipPath = $tmpDir . $zipName;
+        $zipPath = STORAGE_TEMP . '/' . $zipName;
 
+        // Criar ZIP
         $zip = new ZipArchive();
         if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             throw new \Exception('Não foi possível criar o ficheiro ZIP.');

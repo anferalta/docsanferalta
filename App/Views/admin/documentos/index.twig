@@ -8,615 +8,434 @@
 
 {% block content %}
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="mb-0">Documentos</h4>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0">Documentos</h4>
 
-        <div class="d-flex gap-2">
-            <a href="/admin/documentos/exportar-csv?{{ app.request.queryString }}" class="btn btn-outline-secondary">
-                <i class="fa fa-file-csv"></i> Exportar CSV
-            </a>
-
-            <a href="/admin/documentos/criar" class="btn btn-primary">
-                <i class="fa fa-upload"></i> Novo Documento
-            </a>
-        </div>
-    </div>
-
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body">
-
-            <form method="get" class="row g-3">
-
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Tipo</label>
-                    <select name="tipo_id" class="form-select">
-                        <option value="">Todos</option>
-                        {% for t in tipos %}
-                            <option value="{{ t.tipo_id }}"
-                                    {{ app.request.get('tipo_id') == t.tipo_id ? 'selected' }}>
-                                {{ t.nome }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                {% if acl is defined and acl.has('admin.documentos.ver_todos') %}
-                    <div class="col-md-3">
-                        <label class="form-label fw-semibold">Criado por</label>
-                        <select name="utilizador" class="form-select">
-                            <option value="">-- Todos --</option>
-                            {% for u in utilizadores %}
-                                <option value="{{ u.id }}"
-                                        {{ app.request.get('utilizador') == u.id ? 'selected' }}>
-                                    {{ u.nome }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                {% endif %}
-
-                <div class="col-md-2">
-                    <label class="form-label fw-semibold">Data inicial</label>
-                    <input type="date" name="data_inicio" class="form-control"
-                           value="{{ app.request.get('data_inicio') }}">
-                </div>
-
-                <div class="col-md-2">
-                    <label class="form-label fw-semibold">Data final</label>
-                    <input type="date" name="data_fim" class="form-control"
-                           value="{{ app.request.get('data_fim') }}">
-                </div>
-
-                <div class="col-md-2">
-                    <label class="form-label fw-semibold">Pesquisa</label>
-                    <input type="text" name="q" class="form-control"
-                           placeholder="Título ou ficheiro..."
-                           value="{{ app.request.get('q') }}">
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Estado</label>
-                    <select name="estado_atual" class="form-select">
-                        <option value="">-- Todos --</option>
-
-                        <option value="novo" {{ app.request.get('estado_atual') == 'novo' ? 'selected' }}>Novo</option>
-                        <option value="pendente" {{ app.request.get('estado_atual') == 'pendente' ? 'selected' }}>Pendente</option>
-                        <option value="em_tramitacao" {{ app.request.get('estado_atual') == 'em_tramitacao' ? 'selected' }}>Em Tramitação</option>
-                        <option value="analise" {{ app.request.get('estado_atual') == 'analise' ? 'selected' }}>Em Análise</option>
-                        <option value="concluido" {{ app.request.get('estado_atual') == 'concluido' ? 'selected' }}>Concluído</option>
-                        <option value="devolvido" {{ app.request.get('estado_atual') == 'devolvido' ? 'selected' }}>Devolvido</option>
-                        <option value="arquivado" {{ app.request.get('estado_atual') == 'arquivado' ? 'selected' }}>Arquivado</option>
-                    </select>
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Área Atual</label>
-                    <select name="area_atual_id" class="form-select">
-                        <option value="">-- Todas --</option>
-                        {% for area in areas %}
-                            <option value="{{ area.id }}"
-                                    {{ app.request.get('area_atual_id') == area.id ? 'selected' }}>
-                                {{ area.nome }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="col-md-2 d-flex align-items-end">
-                    <button class="btn btn-primary w-100">
-                        <i class="fa fa-filter"></i> Filtrar
-                    </button>
-                </div>
-
-            </form>
-
-        </div>
-    </div>
-
-    {% macro sortLink(label, field) %}
-        {% set qs = app.request.query.all ?? {} %}
-        {% set qs = qs|merge({
-        'sort': field,
-        'dir': app.request.get('sort') == field
-            ? (app.request.get('dir') == 'asc' ? 'desc' : 'asc')
-            : 'asc'
-    }) %}
-        <a href="?{{ qs|url_encode }}" class="text-decoration-none text-dark">
-            {{ label }}
-            {% if app.request.get('sort') == field %}
-                <i class="fa fa-sort-{{ app.request.get('dir') == 'asc' ? 'up' : 'down' }}"></i>
-            {% else %}
-                <i class="fa fa-sort text-muted"></i>
-            {% endif %}
+    <div class="d-flex gap-2">
+        <a href="/admin/documentos/exportar-csv?{{ app.request.queryString }}" class="btn btn-outline-secondary">
+            <i class="fa fa-file-csv"></i> Exportar CSV
         </a>
-    {% endmacro %}
-    {# ============================
-       LISTA DE DOCUMENTOS
-    ============================ #}
 
-    <div class="card shadow-sm">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" id="tabelaDocs">
+        <a href="/admin/documentos/criar" class="btn btn-primary">
+            <i class="fa fa-upload"></i> Novo Documento
+        </a>
+    </div>
+</div>
 
-                <thead class="table-light">
-                    <tr>
-                        <th style="width: 25%">{{ _self.sortLink('Título', 'titulo') }}</th>
-                        <th>Anexos</th>
-                        <th>{{ _self.sortLink('Tipo', 'tipo') }}</th>
-                        <th>{{ _self.sortLink('Estado', 'estado') }}</th>
-                        <th>{{ _self.sortLink('Área Atual', 'area') }}</th>
-                        <th>{{ _self.sortLink('Criado em', 'data') }}</th>
+<div class="card mb-4 shadow-sm">
+    <div class="card-body">
 
-                        {% if auth is defined and auth.user.perfil != 'utilizador' %}
-                            <th>{{ _self.sortLink('Criado por', 'criador') }}</th>
-                            {% endif %}
+        <form method="get" class="row g-3">
 
-                        <th class="text-end">Ações</th>
-                    </tr>
-                </thead>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Tipo</label>
+                <select name="tipo_id" class="form-select">
+                    <option value="">Todos</option>
+                    {% for t in tipos %}
+                        <option value="{{ t.tipo_id }}" {{ app.request.get('tipo_id') == t.tipo_id ? 'selected' }}>
+                            {{ t.nome }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-                <tbody>
-
-                    {% if documentos is empty %}
-                        <tr>
-                            <td colspan="8" class="text-center py-4 text-muted">
-                                <i class="fa fa-info-circle me-2"></i> Nenhum documento encontrado.
-                            </td>
-                        </tr>
-                    {% else %}
-
-                        {% for doc in documentos %}
-                            {% set anexos = doc.anexos() %}
-
-                            <tr>
-
-                                {# TÍTULO #}
-                                <td class="fw-semibold">{{ doc.titulo }}</td>
-
-                                {# ANEXOS + PREVIEW INLINE #}
-                                <td>
-                                    <span class="badge bg-primary">{{ anexos|length }} ficheiro(s)</span>
-
-                                    {% if anexos %}
-                                        <ul class="mt-2" style="padding-left: 1rem;">
-                                            {% for a in anexos %}
-                                                {% set nome = a.nome()|split('/')|last %}
-                                                {% set ext = nome|split('.')|last|lower %}
-
-                                                <li class="mb-1">
-
-                                                    {% if ext == 'pdf' %}
-                                                        <i class="fa fa-file-pdf text-danger fa-lg me-2"></i>
-                                                    {% elseif ext in ['jpg','jpeg','png','gif','webp'] %}
-                                                        <i class="fa fa-file-image text-primary fa-lg me-2"></i>
-                                                    {% elseif ext in ['doc','docx'] %}
-                                                        <i class="fa fa-file-word text-info fa-lg me-2"></i>
-                                                    {% elseif ext in ['xls','xlsx','csv'] %}
-                                                        <i class="fa fa-file-excel text-success fa-lg me-2"></i>
-                                                    {% elseif ext in ['zip','rar'] %}
-                                                        <i class="fa fa-file-archive text-warning fa-lg me-2"></i>
-                                                    {% elseif ext == 'txt' %}
-                                                        <i class="fa fa-file-alt text-secondary fa-lg me-2"></i>
-                                                    {% else %}
-                                                        <i class="fa fa-file fa-lg me-2"></i>
-                                                    {% endif %}
-
-                                                    <button type="button"
-                                                            class="btn btn-sm btn-outline-primary me-1 btn-preview-inline"
-                                                            data-anexo-id="{{ a.id }}"
-                                                            data-nome="{{ nome }}">
-                                                        <i class="fa fa-eye"></i> Preview
-                                                    </button>
-
-                                                    <a href="/admin/documentos/anexo/abrir/{{ a.id }}" 
-                                                       class="btn btn-sm btn-outline-primary me-1" 
-                                                       target="_blank">
-                                                        <i class="fa fa-external-link-alt"></i> Ver
-                                                    </a>
-
-                                                    <a href="/admin/documentos/anexo/download/{{ a.id }}" 
-                                                       class="btn btn-sm btn-outline-secondary">
-                                                        <i class="fa fa-download"></i> Download
-                                                    </a>
-
-                                                    <span class="ms-2">{{ nome }}</span>
-
-                                                    <small class="text-muted">
-                                                        ({{ (a.tamanho / 1024)|number_format(1) }} KB)
-                                                    </small>
-
-                                                </li>
-                                            {% endfor %}
-                                        </ul>
-                                    {% endif %}
-                                </td>
-
-                                {# TIPO #}
-                                <td>{{ doc.tipo_nome }}</td>
-
-                                {# ESTADO #}
-                                <td>
-                                    <span class="badge badge-estado badge-{{ doc.estado_atual }}">
-                                        {{ doc.estado_atual|replace({'_':' '})|title }}
-                                    </span>
-                                </td>
-
-                                {# ÁREA #}
-                                <td>{{ doc.area_nome ?? '-' }}</td>
-
-                                {# CRIADO EM #}
-                                <td>{{ doc.criado_em_formatado() }}</td>
-
-                                {# CRIADO POR #}
-                                {% if auth is defined and auth.user.perfil != 'utilizador' %}
-                                    <td>
-                                        <img src="{{ doc.criador_avatar() }}"
-                                             width="32" height="32"
-                                             class="rounded-circle me-2 shadow-sm">
-                                        {{ doc.criador_nome() }}
-                                    </td>
-                                {% endif %}
-
-                                {# AÇÕES #}
-                                <td class="text-end">
-                                    <div class="btn-group">
-
-                                        <button type="button"
-                                                class="btn btn-sm btn-outline-info me-1 btn-ver-detalhes"
-                                                data-doc-id="{{ doc.id }}"
-                                                data-titulo="{{ doc.titulo }}"
-                                                data-tipo="{{ doc.tipo_nome }}"
-                                                data-estado="{{ doc.estado_atual|replace({'_':' '})|title }}"
-                                                data-area="{{ doc.area_nome ?? '-' }}"
-                                                data-criado="{{ doc.criado_em_formatado() }}"
-                                                data-criador="{% if auth is defined and auth.user.perfil != 'utilizador' %}{{ doc.criador_nome() }}{% else %}-{% endif %}">
-                                            <i class="fa fa-info-circle"></i> Detalhes
-                                        </button>
-
-                                        {% set podeApagar = false %}
-
-                                        {# 1. Admin pode apagar tudo #}
-                                        {% if auth.user and auth.user.isAdmin() %}
-                                            {% set podeApagar = true %}
-                                        {% endif %}
-
-                                        {# 2. ACL permite apagar #}
-                                        {% if isGranted is defined and isGranted('admin.documentos.apagar') %}
-                                            {% set podeApagar = true %}
-                                        {% endif %}
-
-                                        {# 3. Dono do documento pode apagar #}
-                                        {% if auth.user and auth.user.id == doc.criado_por %}
-                                            {% set podeApagar = true %}
-                                        {% endif %}
-
-                                        {% if podeApagar %}
-                                            <form action="/admin/documentos/eliminar/{{ doc.id }}"
-                                                  method="post"
-                                                  class="d-inline"
-                                                  onsubmit="return confirm('Eliminar documento?')">
-
-                                                {{ csrf_field() }}
-
-                                                <button class="btn btn-sm btn-danger">
-                                                    <i class="fa fa-trash"></i> Apagar
-                                                </button>
-                                            </form>
-                                        {% endif %}
-
-
-                                    </div>
-                                </td>
-
-                            </tr>
-
+            {% if acl is defined and acl.has('admin.documentos.ver_todos') %}
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Criado por</label>
+                    <select name="utilizador" class="form-select">
+                        <option value="">-- Todos --</option>
+                        {% for u in utilizadores %}
+                            <option value="{{ u.id }}" {{ app.request.get('utilizador') == u.id ? 'selected' }}>
+                                {{ u.nome }}
+                            </option>
                         {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
 
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">Data inicial</label>
+                <input type="date" name="data_inicio" class="form-control"
+                       value="{{ app.request.get('data_inicio') }}">
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">Data final</label>
+                <input type="date" name="data_fim" class="form-control"
+                       value="{{ app.request.get('data_fim') }}">
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">Pesquisa</label>
+                <input type="text" name="q" class="form-control"
+                       placeholder="Título ou ficheiro..."
+                       value="{{ app.request.get('q') }}">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Estado</label>
+                <select name="estado_atual" class="form-select">
+                    <option value="">-- Todos --</option>
+                    <option value="novo" {{ app.request.get('estado_atual') == 'novo' ? 'selected' }}>Novo</option>
+                    <option value="pendente" {{ app.request.get('estado_atual') == 'pendente' ? 'selected' }}>Pendente</option>
+                    <option value="em_tramitacao" {{ app.request.get('estado_atual') == 'em_tramitacao' ? 'selected' }}>Em Tramitação</option>
+                    <option value="analise" {{ app.request.get('estado_atual') == 'analise' ? 'selected' }}>Em Análise</option>
+                    <option value="concluido" {{ app.request.get('estado_atual') == 'concluido' ? 'selected' }}>Concluído</option>
+                    <option value="devolvido" {{ app.request.get('estado_atual') == 'devolvido' ? 'selected' }}>Devolvido</option>
+                    <option value="arquivado" {{ app.request.get('estado_atual') == 'arquivado' ? 'selected' }}>Arquivado</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Área Atual</label>
+                <select name="area_atual_id" class="form-select">
+                    <option value="">-- Todas --</option>
+                    {% for area in areas %}
+                        <option value="{{ area.id }}" {{ app.request.get('area_atual_id') == area.id ? 'selected' }}>
+                            {{ area.nome }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-primary w-100">
+                    <i class="fa fa-filter"></i> Filtrar
+                </button>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+{% macro sortLink(label, field) %}
+    {% set qs = app.request.query.all ?? {} %}
+    {% set qs = qs|merge({ 'sort': field, 'dir': app.request.get('sort') == field ? (app.request.get('dir') == 'asc' ? 'desc' : 'asc') : 'asc' }) %}
+    <a href="?{{ qs|url_encode }}" class="text-decoration-none text-dark">
+        {{ label }}
+        {% if app.request.get('sort') == field %}
+            <i class="fa fa-sort-{{ app.request.get('dir') == 'asc' ? 'up' : 'down' }}"></i>
+        {% else %}
+            <i class="fa fa-sort text-muted"></i>
+        {% endif %}
+    </a>
+{% endmacro %}
+
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="tabelaDocs">
+
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 25%">{{ _self.sortLink('Título', 'titulo') }}</th>
+                    <th>Anexos</th>
+                    <th>{{ _self.sortLink('Tipo', 'tipo') }}</th>
+                    <th>{{ _self.sortLink('Estado', 'estado') }}</th>
+                    <th>{{ _self.sortLink('Área Atual', 'area') }}</th>
+                    <th>{{ _self.sortLink('Criado em', 'data') }}</th>
+
+                    {% if auth is defined and auth.user.perfil != 'utilizador' %}
+                        <th>{{ _self.sortLink('Criado por', 'criador') }}</th>
                     {% endif %}
 
-                </tbody>
+                    <th class="text-end">Ações</th>
+                </tr>
+            </thead>
 
-            </table>
-        </div>
+            <tbody>
 
-        <div class="p-3">
-            {{ paginacao|raw }}
-        </div>
+            {% if documentos is empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">
+                        <i class="fa fa-info-circle me-2"></i> Nenhum documento encontrado.
+                    </td>
+                </tr>
+            {% else %}
 
+                {% for doc in documentos %}
+                    {% set anexos = doc.anexos() %}
+
+                    <tr>
+
+                        <td class="fw-semibold">{{ doc.titulo }}</td>
+
+                        <td>
+                            <span class="badge bg-primary">{{ anexos|length }} ficheiro(s)</span>
+
+                            {% if anexos %}
+                                <ul class="mt-2" style="padding-left: 1rem;">
+
+                                    {% for a in anexos %}
+                                        {% set nome = a.nome()|split('/')|last %}
+                                        {% set ext = nome|split('.')|last|lower %}
+
+                                        <li class="mb-1">
+
+                                            {% if ext == 'pdf' %}
+                                                <i class="fa fa-file-pdf text-danger fa-lg me-2"></i>
+                                            {% elseif ext in ['jpg','jpeg','png','gif','webp'] %}
+                                                <i class="fa fa-file-image text-primary fa-lg me-2"></i>
+                                            {% elseif ext in ['doc','docx'] %}
+                                                <i class="fa fa-file-word text-info fa-lg me-2"></i>
+                                            {% elseif ext in ['xls','xlsx','csv'] %}
+                                                <i class="fa fa-file-excel text-success fa-lg me-2"></i>
+                                            {% elseif ext in ['zip','rar'] %}
+                                                <i class="fa fa-file-archive text-warning fa-lg me-2"></i>
+                                            {% elseif ext == 'txt' %}
+                                                <i class="fa fa-file-alt text-secondary fa-lg me-2"></i>
+                                            {% else %}
+                                                <i class="fa fa-file fa-lg me-2"></i>
+                                            {% endif %}
+
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-secondary btn-preview-inline"
+                                                    data-id="{{ a.id }}"
+                                                    data-nome="{{ nome }}">
+                                                <i class="fa fa-eye me-1"></i> Preview
+                                            </button>
+
+                                            <a href="/admin/documentos/anexo/abrir/{{ a.id }}"
+                                               target="_blank"
+                                               class="btn btn-sm btn-primary">
+                                                <i class="fa fa-download me-1"></i> Abrir
+                                            </a>
+
+                                            <a href="/admin/documentos/anexo/download/{{ a.id }}" class="btn btn-sm btn-outline-																secondary">
+    						<i class="fa fa-download me-1"></i> Download
+					    </a>
+
+                                            <span class="ms-2">{{ nome }}</span>
+                                            <small class="text-muted"> ({{ (a.tamanho / 1024)|number_format(1) }} KB) </small>
+
+                                        </li>
+                                    {% endfor %}
+
+                                </ul>
+                            {% endif %}
+                        </td>
+
+                        <td>{{ doc.tipo_nome }}</td>
+
+                        <td>
+                            <span class="badge badge-estado badge-{{ doc.estado_atual }}">
+                                {{ doc.estado_atual|replace({'_':' '})|title }}
+                            </span>
+                        </td>
+
+                        <td>{{ doc.area_nome ?? '-' }}</td>
+
+                        <td>{{ doc.criado_em_formatado() }}</td>
+
+                        {% if auth is defined and auth.user.perfil != 'utilizador' %}
+                            <td>
+                                <img src="{{ doc.criador_avatar() }}"
+                                     width="32" height="32"
+                                     class="rounded-circle me-2 shadow-sm">
+                                {{ doc.criador_nome() }}
+                            </td>
+                        {% endif %}
+
+                        <td class="text-end">
+                            <div class="btn-group">
+
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-info me-1 btn-ver-detalhes"
+                                        data-doc-id="{{ doc.id }}"
+                                        data-titulo="{{ doc.titulo }}"
+                                        data-tipo="{{ doc.tipo_nome }}"
+                                        data-estado="{{ doc.estado_atual|replace({'_':' '})|title }}"
+                                        data-area="{{ doc.area_nome ?? '-' }}"
+                                        data-criado="{{ doc.criado_em_formatado() }}"
+                                        data-criador="{% if auth is defined and auth.user.perfil != 'utilizador' %}{{ doc.criador_nome() }}{% else %}-{% endif %}">
+                                    <i class="fa fa-info-circle"></i> Detalhes
+                                </button>
+
+                                {% set podeApagar = false %}
+
+                                {% if auth.user and auth.user.isAdmin() %}
+                                    {% set podeApagar = true %}
+                                {% endif %}
+
+                                {% if isGranted is defined and isGranted('admin.documentos.apagar') %}
+                                    {% set podeApagar = true %}
+                                {% endif %}
+
+                                {% if auth.user and auth.user.id == doc.criado_por %}
+                                    {% set podeApagar = true %}
+                                {% endif %}
+
+                                {% if podeApagar %}
+                                    <form action="/admin/documentos/eliminar/{{ doc.id }}"
+                                          method="post"
+                                          class="d-inline"
+                                          onsubmit="return confirm('Eliminar documento?')">
+
+                                        {{ csrf_field() }}
+
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            <i class="fa fa-trash"></i> Apagar
+                                        </button>
+                                    </form>
+                                {% endif %}
+
+                            </div>
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+            {% endif %}
+
+            </tbody>
+
+        </table>
     </div>
-    {# ============================
-       MODAL PREVIEW INLINE
-    ============================ #}
 
-    <div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered">
-            <div class="modal-content">
+    <div class="p-3">
+        {{ paginacao|raw }}
+    </div>
 
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fa fa-eye me-2"></i> Preview do Anexo
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"
-                            aria-label="Close"></button>
+</div>
+
+<!-- MODAL PREVIEW -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa fa-eye me-2"></i> Preview do Anexo
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body" style="min-height: 400px;">
+                <div id="previewContainer"
+                     class="w-100 h-100 d-flex justify-content-center align-items-center">
+                    <span class="text-muted">A carregar preview...</span>
                 </div>
+            </div>
 
-                <div class="modal-body" style="min-height: 400px;">
-                    <div id="previewContainer"
-                         class="w-100 h-100 d-flex justify-content-center align-items-center">
-                        <span class="text-muted">A carregar preview...</span>
-                    </div>
-                </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DETALHES -->
+<div class="modal fade" id="detalhesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa fa-file-alt me-2"></i> Detalhes do Documento
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <dl class="row mb-0">
+
+                    <dt class="col-sm-3">Título</dt>
+                    <dd class="col-sm-9" id="detDocTitulo"></dd>
+
+                    <dt class="col-sm-3">Tipo</dt>
+                    <dd class="col-sm-9" id="detDocTipo"></dd>
+
+                    <dt class="col-sm-3">Estado</dt>
+                    <dd class="col-sm-9" id="detDocEstado"></dd>
+
+                    <dt class="col-sm-3">Área Atual</dt>
+                    <dd class="col-sm-9" id="detDocArea"></dd>
+
+                    <dt class="col-sm-3">Criado em</dt>
+                    <dd class="col-sm-9" id="detDocCriado"></dd>
+
+                    <dt class="col-sm-3">Criado por</dt>
+                    <dd class="col-sm-9" id="detDocCriador"></dd>
+
+                </dl>
 
             </div>
+
         </div>
     </div>
-
-
-    {# ============================
-       MODAL DETALHES DO DOCUMENTO
-    ============================ #}
-
-    <div class="modal fade" id="detalhesModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fa fa-file-alt me-2"></i> Detalhes do Documento
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"
-                            aria-label="Close"></button>
-                </div>
-
-                <div class="modal-body">
-
-                    <dl class="row mb-0">
-
-                        <dt class="col-sm-3">Título</dt>
-                        <dd class="col-sm-9" id="detDocTitulo"></dd>
-
-                        <dt class="col-sm-3">Tipo</dt>
-                        <dd class="col-sm-9" id="detDocTipo"></dd>
-
-                        <dt class="col-sm-3">Estado</dt>
-                        <dd class="col-sm-9" id="detDocEstado"></dd>
-
-                        <dt class="col-sm-3">Área Atual</dt>
-                        <dd class="col-sm-9" id="detDocArea"></dd>
-
-                        <dt class="col-sm-3">Criado em</dt>
-                        <dd class="col-sm-9" id="detDocCriado"></dd>
-
-                        <dt class="col-sm-3">Criado por</dt>
-                        <dd class="col-sm-9" id="detDocCriador"></dd>
-
-                    </dl>
-
-                </div>
-
-            </div>
-        </div>
-    </div>
+</div>
 
 {% endblock %}
+
 {% block scripts %}
-    <script src="/assets/js/documentos/index.js?v={{ random() }}"></script>
+<script src="/assets/js/documentos/index.js?v={{ random() }}"></script>
 
-    <script>
-                                                      document.addEventListener("DOMContentLoaded", () => {
+<script>
+document.addEventListener("DOMContentLoaded", () => {
 
-                                                          // Remove listeners antigos que bloqueavam a paginação
-                                                          document.querySelectorAll(".pagination a.page-link").forEach(a => {
-                                                              const clone = a.cloneNode(true);
-                                                              a.parentNode.replaceChild(clone, a);
-                                                          });
-                                                          // ============================
-                                                          // PREVIEW INLINE (CORRIGIDO E EXPANDIDO)
-                                                          // ============================
-                                                          const previewModalEl = document.getElementById('previewModal');
-                                                          const previewModal = previewModalEl ? new bootstrap.Modal(previewModalEl) : null;
-                                                          const previewContainer = document.getElementById('previewContainer');
-                                                          document.querySelectorAll('.btn-preview-inline').forEach(btn => {
-                                                              btn.addEventListener('click', () => {
-                                                                  if (!previewModal || !previewContainer)
-                                                                      return;
-                                                                  const nome = btn.getAttribute('data-nome') || '';
-                                                                  const caminho = btn.getAttribute('data-caminho') || '';
-                                                                  const ficheiro = btn.getAttribute('data-ficheiro') || '';
-                                                                  const ext = nome.split('.').pop().toLowerCase();
-                                                                  // URL físico real (o mesmo que funciona no módulo User)
-                                                                  const absoluteUrl =
-                                                                          "https://anferalta.com/storage/documentos/" +
-                                                                          caminho + ficheiro;
-                                                                  previewContainer.innerHTML = '<span class="text-muted">A carregar preview...</span>';
-                                                                  let html = '';
-                                                                  if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
-                                                                      html = '<img src="' + absoluteUrl + '" class="img-fluid">';
-                                                                  } else if (ext === 'pdf') {
-                                                                      html = '<iframe src="' + absoluteUrl + '" class="w-100" style="height:600px;border:none;"></iframe>';
-                                                                  } else if (ext === 'txt') {
-                                                                      html = '<iframe src="' + absoluteUrl + '" class="w-100" style="height:400px;border:none;"></iframe>';
-                                                                  } else if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext)) {
-                                                                      const officeUrl =
-                                                                              "https://view.officeapps.live.com/op/view.aspx?src=" +
-                                                                              encodeURIComponent(absoluteUrl);
-                                                                      html = '<iframe src="' + officeUrl + '" class="w-100" style="height:600px;border:none;"></iframe>';
-                                                                  } else if (ext === 'odt') {
-                                                                      html = `
-                <div class="text-center text-muted">
-                    Este ficheiro ODT não pode ser pré-visualizado.
-                    <br><br>
-                    <a href="${absoluteUrl}" class="btn btn-primary" download>Download</a>
-                </div>`;
-                                                                  } else {
-                                                                      html = `
-                <div class="text-center text-muted">
-                    Preview não disponível para este tipo de ficheiro.
-                    <br><br>
-                    <a href="${absoluteUrl}" class="btn btn-primary" download>Download</a>
-                </div>`;
-                                                                  }
+    // Corrige paginação
+    document.querySelectorAll(".pagination a.page-link").forEach(a => {
+        const clone = a.cloneNode(true);
+        a.parentNode.replaceChild(clone, a);
+    });
 
-                                                                  previewContainer.innerHTML = html;
-                                                                  previewModal.show();
-                                                              });
-                                                          });
-                                                      });
-                                                      // ============================
-                                                      // MODAL DETALHES
-                                                      // ============================
-                                                      const detalhesModalEl = document.getElementById('detalhesModal');
-                                                      const detalhesModal = detalhesModalEl ? new bootstrap.Modal(detalhesModalEl) : null;
-                                                      document.querySelectorAll('.btn-ver-detalhes').forEach(btn => {
-                                                          btn.addEventListener('click', () => {
-                                                              if (!detalhesModal)
-                                                                  return;
-                                                              document.getElementById('detDocTitulo').textContent = btn.getAttribute('data-titulo') || '';
-                                                              document.getElementById('detDocTipo').textContent = btn.getAttribute('data-tipo') || '';
-                                                              document.getElementById('detDocEstado').textContent = btn.getAttribute('data-estado') || '';
-                                                              document.getElementById('detDocArea').textContent = btn.getAttribute('data-area') || '';
-                                                              document.getElementById('detDocCriado').textContent = btn.getAttribute('data-criado') || '';
-                                                              document.getElementById('detDocCriador').textContent = btn.getAttribute('data-criador') || '';
-                                                              detalhesModal.show();
-                                                          });
-                                                      });
+    const previewModalEl = document.getElementById('previewModal');
+    const previewModal = previewModalEl ? new bootstrap.Modal(previewModalEl) : null;
+    const previewContainer = document.getElementById('previewContainer');
 
-    </script>
+    // PREVIEW INLINE
+    document.querySelectorAll('.btn-preview-inline').forEach(btn => {
+        btn.addEventListener('click', () => {
 
-    <style>
-        /* ============================
-           DROPZONE PREMIUM
-        ============================ */
-        .drop-zone {
-            border: 2px dashed #b8b8ff;
-            border-radius: 14px;
-            padding: 45px 25px;
-            background: linear-gradient(135deg, #fafaff 0%, #ffffff 100%);
-            text-align: center;
-            cursor: pointer;
-            transition: all .25s ease;
-            color: #4b44e0;
-            position: relative;
-            overflow: hidden;
-        }
+            if (!previewModal || !previewContainer)
+                return;
 
-        .drop-zone:hover {
-            border-color: #6c63ff;
-            background: #f3f2ff;
-            transform: scale(1.01);
-        }
+            const ext = btn.getAttribute('data-nome').split('.').pop().toLowerCase();
+            const absoluteUrl = "/admin/documentos/anexo/abrir/" + btn.getAttribute('data-id');
 
-        .drop-zone.dragover {
-            border-color: #3a33d1;
-            background: #eceaff;
-            box-shadow: 0 0 18px rgba(108, 99, 255, 0.25);
-            transform: scale(1.02);
-        }
+            previewContainer.innerHTML = '<span class="text-muted">A carregar preview...</span>';
 
-        .dz-icon {
-            font-size: 48px;
-            color: #6c63ff;
-            margin-bottom: 10px;
-        }
+            let html = '';
 
-        .dz-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin: 0;
-        }
+            if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
+                html = '<img src="' + absoluteUrl + '" class="img-fluid">';
+            }
+            else if (ext === 'pdf') {
+                html = '<iframe src="' + absoluteUrl + '" class="w-100" style="height:600px;border:none;"></iframe>';
+            }
+            else if (ext === 'txt') {
+                html = '<iframe src="' + absoluteUrl + '" class="w-100" style="height:400px;border:none;"></iframe>';
+            }
+            else if (['doc','docx','xls','xlsx','ppt','pptx'].includes(ext)) {
+                const officeUrl =
+                    "https://view.officeapps.live.com/op/view.aspx?src=" +
+                    encodeURIComponent(absoluteUrl);
 
-        .dz-subtitle {
-            font-size: 14px;
-            color: #777;
-            margin: 0;
-        }
+                html = '<iframe src="' + officeUrl + '" class="w-100" style="height:600px;border:none;"></iframe>';
+            }
+            else if (ext === 'odt') {
+                html = `
+                    <div class="text-center text-muted">
+                        Este ficheiro ODT não pode ser pré-visualizado.
+                        <br><br>
+                        <a href="${absoluteUrl}" class="btn btn-primary" download>Download</a>
+                    </div>`;
+            }
+            else {
+                html = `
+                    <div class="text-center text-muted">
+                        Preview não disponível para este tipo de ficheiro.
+                        <br><br>
+                        <a href="${absoluteUrl}" class="btn btn-primary" download>Download</a>
+                    </div>`;
+            }
 
-        .drop-zone::after {
-            content: "";
-            position: absolute;
-            top: -100%;
-            left: 0;
-            width: 100%;
-            height: 200%;
-            background: linear-gradient(
-                120deg,
-                transparent 0%,
-                rgba(255,255,255,0.4) 50%,
-                transparent 100%
-                );
-            transform: rotate(25deg);
-            transition: 0.6s;
-            opacity: 0;
-        }
+            previewContainer.innerHTML = html;
+            previewModal.show();
+        });
+    });
 
-        .drop-zone:hover::after {
-            top: -30%;
-            opacity: 1;
-        }
-
-        /* ============================
-           BADGES DE ESTADO
-        ============================ */
-        .badge-estado {
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: capitalize;
-        }
-
-        .badge-novo {
-            background: #d0e7ff;
-            color: #004a99;
-        }
-
-        .badge-pendente {
-            background: #ffc107 !important;
-            color: #000 !important;
-        }
-
-        .badge-em_tramitacao {
-            background: #fd7e14;
-            color: #fff !important;
-        }
-
-        .badge-analise,
-        .badge-em_analise {
-            background: #17a2b8;
-            color: #fff !important;
-        }
-
-        .badge-concluido {
-            background: #c8f7c5;
-            color: #1b6e1b;
-        }
-
-        .badge-devolvido {
-            background: #ffd6d6;
-            color: #a10000;
-        }
-
-        .badge-arquivado {
-            background: #d3d3d3;
-            color: #333;
-        }
-
-        /* ============================
-           TABELA
-        ============================ */
-        table td {
-            vertical-align: middle !important;
-        }
-
-        .table-hover tbody tr:hover {
-            background-color: #f5f7ff !important;
-        }
-
-        .rounded-circle {
-            border: 2px solid #fff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-        }
-    </style>
-
+});
+</script>
 {% endblock %}
-

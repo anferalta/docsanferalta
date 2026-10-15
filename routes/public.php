@@ -1,5 +1,9 @@
 <?php
 
+use App\Core\RouterSingleton;
+
+$router = RouterSingleton::get();
+
 // HOME
 $router->get('/', 'Site\HomeController@index')->name('site.home');
 

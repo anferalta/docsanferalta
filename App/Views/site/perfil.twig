@@ -1,0 +1,16 @@
+{% extends "@site/layout.twig" %}
+
+{% block title %}Perfil{% endblock %}
+
+{% block content %}
+<section class="py-5">
+    <div class="container">
+        <h1 class="mb-4">Perfil do Utilizador</h1>
+
+        <div class="card p-4">
+            <p><strong>Nome:</strong> {{ user.nome }}</p>
+            <p><strong>Email:</strong> {{ user.email }}</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

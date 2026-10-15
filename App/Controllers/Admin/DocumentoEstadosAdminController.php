@@ -9,12 +9,12 @@ use App\Models\DocumentoEstado;
 
 class DocumentoEstadosAdminController extends BaseController
 {
-
     public function index()
     {
         $csrf = CSRF::token();
 
         $estados = DocumentoEstado::all();
+
         return $this->render('admin/documento-estados/index.twig', [
             'estados' => $estados,
             '_csrf' => $csrf
@@ -46,11 +46,7 @@ class DocumentoEstadosAdminController extends BaseController
 
         $estado = new DocumentoEstado();
         $estado->nome = $nome;
-
-        $estado->codigo = strtolower(
-            preg_replace('/[^a-z0-9]+/', '-', $nome)
-        );
-
+        $estado->codigo = strtolower(preg_replace('/[^a-z0-9]+/', '-', $nome));
         $estado->ordem = count(DocumentoEstado::all()) + 1;
 
         $estado->save();
@@ -98,10 +94,7 @@ class DocumentoEstadosAdminController extends BaseController
         }
 
         $estado->nome = $nome;
-
-        $estado->codigo = strtolower(
-            preg_replace('/[^a-z0-9]+/', '-', $nome)
-        );
+        $estado->codigo = strtolower(preg_replace('/[^a-z0-9]+/', '-', $nome));
 
         $estado->save();
 

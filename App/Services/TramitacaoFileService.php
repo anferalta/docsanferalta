@@ -21,21 +21,22 @@ class TramitacaoFileService
 
         PathGuardService::init();
 
-        $root = dirname(__DIR__, 2);
-        $baseRoot = $root . "/storage/tramitacao";
+        // Usar caminho centralizado
+        $baseRoot = STORAGE_TRAMITACAO;
 
+        // Garantir que existe
         if (!is_dir($baseRoot)) {
             mkdir($baseRoot, 0777, true);
             file_put_contents($baseRoot . '/.keep', 'sentinel');
         }
 
-        // proteção só para leitura
+        // Proteger pasta base
         PathGuardService::proteger($baseRoot);
 
         // Caminho do histórico
-        $base = $baseRoot . "/$historicoId";
+        $base = $baseRoot . '/' . intval($historicoId);
 
-        // 🔒 Proteger a pasta do histórico (mesmo antes de existir)
+        // Proteger pasta do histórico
         PathGuardService::proteger($base);
 
         // Criar pasta do histórico
@@ -65,7 +66,9 @@ class TramitacaoFileService
             $nomeGuardado = uniqid() . '_' . $nomeSeguro;
 
             $destino = $base . '/' . $nomeGuardado;
-            
+
+            PathGuardService::proteger($destino);
+
             if (!move_uploaded_file($tmp, $destino)) {
                 throw new \Exception("Erro ao guardar o ficheiro: {$nomeOriginal}");
             }
@@ -88,13 +91,14 @@ class TramitacaoFileService
     {
         PathGuardService::init();
 
-        $root = realpath(dirname(__DIR__, 2) . '/storage/tramitacao');
+        // Caminho centralizado
+        $root = STORAGE_TRAMITACAO;
 
-        if ($root === false) {
+        if (!is_dir($root)) {
             throw new \Exception("Pasta base de tramitação não encontrada.");
         }
 
-        // 🔒 Proteger a pasta base
+        // Proteger pasta base
         PathGuardService::proteger($root);
 
         $historicoId = intval($historicoId);
@@ -112,7 +116,7 @@ class TramitacaoFileService
             throw new \Exception("Ficheiro não encontrado.");
         }
 
-        // 🔒 Blindagem contra traversal
+        // Blindagem contra traversal
         if (!str_starts_with($real, $root)) {
             throw new \Exception("Tentativa bloqueada: acesso fora da pasta de tramitação ({$real})");
         }

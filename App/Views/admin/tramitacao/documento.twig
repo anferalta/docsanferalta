@@ -12,7 +12,6 @@
         <h4 class="mb-0">
             <i class="fa fa-file-text me-2"></i> Documento: {{ documento.titulo }}
         </h4>
-
         <a href="/admin/tramitacao" class="btn btn-secondary">
             <i class="fa fa-arrow-left me-1"></i> Voltar
         </a>
@@ -25,7 +24,6 @@
             <div class="row">
                 <div class="col-md-6">
                     <p><strong>Tipo:</strong> {{ documento.tipo_nome }}</p>
-
                     <p>
                         <strong>Estado atual:</strong>
                         <span class="badge-estado badge-{{ documento.estado_atual }}">
@@ -40,8 +38,6 @@
                 </div>
             </div>
 
-            <!-- BOTÃO VER DOCUMENTO (primeiro ficheiro) -->
-            {% set anexos = anexos %}
             {% if anexos|length > 0 %}
                 <a href="/admin/documentos/anexo/abrir/{{ anexos[0].id }}"
                    target="_blank"
@@ -60,26 +56,44 @@
         </div>
 
         <div class="card-body">
+
             {% if anexos|length == 0 %}
                 <p class="text-muted">Nenhum ficheiro anexado.</p>
             {% else %}
                 <ul class="list-group">
+
                     {% for f in anexos %}
                         <li class="list-group-item d-flex justify-content-between align-items-center">
+
                             <span>
-                                <i class="fa fa-file me-2"></i>
-                                {{ f.nome_original }}
+                                <i class="fa fa-file me-2"></i> {{ f.nome_original }}
                             </span>
 
-                            <a href="/admin/documentos/anexo/abrir/{{ f.id }}"
-                               target="_blank"
-                               class="btn btn-sm btn-primary">
-                                Abrir
-                            </a>
+                            <div class="d-flex gap-2">
+
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-secondary btn-preview-inline"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#previewModal"
+                                        data-url="/admin/documentos/anexo/abrir/{{ f.id }}"
+                                        data-mime="{{ f.mime_type }}">
+                                    <i class="fa fa-eye me-1"></i> Preview
+                                </button>
+
+                                <a href="/admin/documentos/anexo/abrir/{{ f.id }}"
+                                   target="_blank"
+                                   class="btn btn-sm btn-primary">
+                                    Abrir
+                                </a>
+
+                            </div>
+
                         </li>
                     {% endfor %}
+
                 </ul>
             {% endif %}
+
         </div>
     </div>
 
@@ -142,14 +156,30 @@
                                     <div class="mt-2">
                                         <strong>Anexos:</strong>
                                         <ul class="list-unstyled ms-2">
+
                                             {% for a in h.anexos %}
-                                                <li>
-                                                    <a href="/admin/tramitacao/anexo/{{ h.id }}/{{ a.ficheiro }}"
-                                                       target="_blank">
-                                                        <i class="fa fa-paperclip me-1"></i> {{ a.nome_original }}
+                                                <li class="d-flex align-items-center gap-2">
+
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-outline-secondary btn-preview-inline"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#previewModal"
+                                                            data-url="/admin/tramitacao/anexo/abrir/{{ a.id }}"
+                                                            data-mime="{{ a.mime_type }}">
+                                                        <i class="fa fa-eye me-1"></i> Preview
+                                                    </button>
+
+                                                    <a href="/admin/tramitacao/anexo/abrir/{{ a.id }}"
+                                                       target="_blank"
+                                                       class="btn btn-sm btn-primary">
+                                                        Abrir
                                                     </a>
+
+                                                    <span>{{ a.nome_original }}</span>
+
                                                 </li>
                                             {% endfor %}
+
                                         </ul>
                                     </div>
                                 {% endif %}
@@ -169,35 +199,28 @@
     <div class="d-flex gap-2 mb-4">
 
         {% if user.hasPermissao('admin.tramitacao.encaminhar') %}
-            <button class="btn btn-primary"
-                    data-bs-toggle="modal"
-                    data-bs-target="#modalTramitar">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalTramitar">
                 <i class="fa fa-random me-1"></i> Encaminhar
             </button>
         {% endif %}
 
         {% if user.hasPermissao('admin.tramitacao.comentar') %}
-            <button class="btn btn-secondary"
-                    data-bs-toggle="modal"
-                    data-bs-target="#modalComentar">
+            <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modalComentar">
                 <i class="fa fa-comment me-1"></i> Comentar
             </button>
         {% endif %}
 
         {% if user.hasPermissao('admin.tramitacao.estado') %}
-            <button class="btn btn-warning"
-                    data-bs-toggle="modal"
-                    data-bs-target="#modalEstado">
+            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalEstado">
                 <i class="fa fa-flag me-1"></i> Alterar Estado
             </button>
         {% endif %}
 
-        {% if user.hasPermissao('admin.tramitacao.estado')
-            and documento.estado_atual in ['pendente','analise','em_tramitacao','concluido'] %}
+        {% if user.hasPermissao('admin.tramitacao.estado') and documento.estado_atual in ['pendente','analise','em_tramitacao','concluido'] %}
             <form action="/admin/tramitacao/arquivar" method="post" class="d-inline">
                 {{ csrf_field() }}
                 <input type="hidden" name="documento_id" value="{{ documento.id }}">
-                <button class="btn btn-dark">
+                <button type="submit" class="btn btn-dark">
                     <i class="fa fa-archive me-1"></i> Arquivar
                 </button>
             </form>
@@ -205,11 +228,9 @@
 
     </div>
 
-</div>
-{% endblock %}
-
-{% block modals %}
     {% include "@admin/tramitacao/modais.twig" %}
+
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -220,20 +241,19 @@ document.addEventListener('DOMContentLoaded', function () {
     const btn = document.getElementById('btnTramitar');
     const modalEl = document.getElementById('modalTramitar');
 
-    if (!form || !btn || !modalEl)
-        return;
+    if (form && btn && modalEl) {
+        form.addEventListener('submit', function () {
 
-    form.addEventListener('submit', function () {
+            try {
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+            } catch (e) {}
 
-        try {
-            const modal = bootstrap.Modal.getInstance(modalEl);
-            if (modal)
-                modal.hide();
-        } catch (e) {}
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> A enviar...';
+        });
+    }
 
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> A enviar...';
-    });
 });
 </script>
 {% endblock %}

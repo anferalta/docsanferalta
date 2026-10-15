@@ -10,29 +10,23 @@ class DocumentoExistsValidator
 {
     public static function validarOuFalhar(int $id): Documento
     {
-        // ID inválido
         if ($id <= 0) {
             throw new \InvalidArgumentException("ID de documento inválido.");
         }
 
-        // Procurar documento
         $doc = Documento::find($id);
 
         if (!$doc) {
             throw new \InvalidArgumentException("Documento não encontrado.");
         }
 
-        // Inicializar proteção
         PathGuardService::init();
 
-        // Proteger caminho base dos documentos
-        $root = realpath(dirname(__DIR__, 2) . '/storage/documentos');
+        // Storage pública correta
+        $root = $_SERVER['DOCUMENT_ROOT'] . '/storage/documentos';
+        PathGuardService::proteger($root);
 
-        if ($root !== false) {
-            PathGuardService::proteger($root);
-        }
-
-        // Validar integridade mínima
+        // Integridade mínima
         if (empty($doc->titulo)) {
             BackupLogger::registar('DOCUMENTO', $id, false, "Documento sem título: {$id}");
         }
@@ -41,7 +35,6 @@ class DocumentoExistsValidator
             BackupLogger::registar('DOCUMENTO', $id, false, "Documento sem estado: {$id}");
         }
 
-        // Documento válido e protegido
         return $doc;
     }
 }

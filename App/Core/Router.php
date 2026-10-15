@@ -81,7 +81,6 @@ class Router
     {
         $method = $_SERVER['REQUEST_METHOD'];
 
-        // Normalizar URI
         $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         $uri = '/' . trim($uri, '/');
 
@@ -90,24 +89,19 @@ class Router
             if ($route['method'] !== $method)
                 continue;
 
-            // Aceitar barra final opcional
             $pattern = rtrim($route['uri'], '/');
-
-            // Parâmetros opcionais
             $pattern = preg_replace('#\{([^}/]+)\?\}#', '([^/]+)?', $pattern);
-
-            // Parâmetros obrigatórios
             $pattern = preg_replace('#\{([^}]+)\}#', '([^/]+)', $pattern);
-
-            // Aceitar barra final opcional
             $pattern .= '/?';
 
             if (preg_match('#^' . $pattern . '$#', $uri, $matches)) {
 
                 array_shift($matches);
 
-                // Executar middlewares da rota (se existirem)
+                // Executar middlewares corretamente
                 foreach ($route['middleware'] as $m) {
+
+                    // Middleware simples
                     if (is_string($m)) {
                         if (str_contains($m, ':')) {
                             [$name, $arg] = explode(':', $m, 2);
@@ -115,13 +109,22 @@ class Router
                         } else {
                             Middleware::run($m);
                         }
-                    } elseif (is_array($m)) {
-                        Middleware::run($m[0] ?? null, $m[1] ?? null);
+                    }
+
+                    // Middleware dentro de array
+                    elseif (is_array($m)) {
+
+                        // Ex: ['csrf']
+                        if (count($m) === 1) {
+                            Middleware::run($m[0]);
+                        }
+
+                        // Ex: ['perm', 'admin.documentos']
+                        elseif (count($m) >= 2) {
+                            Middleware::run($m[0], $m[1]);
+                        }
                     }
                 }
-
-                // ❌ CSRF global removido
-                // O CSRF é validado apenas no controller
 
                 self::executeAction($route['action'], $matches);
                 exit;

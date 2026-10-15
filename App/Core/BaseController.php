@@ -11,9 +11,11 @@ use App\Services\AnexosGuardService;
 
 class BaseController
 {
-
     protected Environment $twig;
     protected AnexosGuardService $anexosGuard;
+
+    // Token CSRF gerado uma vez por request
+    protected string $csrfToken;
 
     public function __construct()
     {
@@ -21,13 +23,10 @@ class BaseController
         // TWIG LOADER
         // ============================
         $loader = new FilesystemLoader();
-
         $loader->addPath(__DIR__ . '/../Views/site', 'site');
         $loader->addPath(__DIR__ . '/../Views/admin', 'admin');
         $loader->addPath(__DIR__ . '/../Views', '__main__');
 
-// ❌ NÃO adicionar "Views/emails"
-// Os templates de email estão em Views/site/emails → já coberto pelo namespace @site
         // ============================
         // TWIG ENGINE
         // ============================
@@ -37,6 +36,13 @@ class BaseController
         ]);
 
         $this->twig->addExtension(new DebugExtension());
+
+        // ============================
+        // CSRF — gerar UMA vez por request
+        // ============================
+        $this->csrfToken = CSRF::token();
+        $this->twig->addGlobal('_csrf', $this->csrfToken);
+        $this->twig->addGlobal('_csrf_global', $this->csrfToken);
 
         // ============================
         // FLASH MESSAGES
@@ -76,25 +82,24 @@ class BaseController
         $this->twig->addFunction(new TwigFunction('asset', fn($p) => '/assets/' . ltrim($p, '/')));
         $this->twig->addFunction(new TwigFunction('isGranted', fn($p) => $acl->has($p)));
 
-        $this->twig->addFunction(new TwigFunction('route', fn($name, $params = []) =>
-                        Router::route($name, $params)
+        $this->twig->addFunction(new TwigFunction(
+            'route',
+            fn($name, $params = []) =>
+            Router::route($name, $params)
         ));
 
-        // ============================
-        // CSRF FUNCTIONS
-        // ============================
         // Campo hidden HTML seguro
         $this->twig->addFunction(
-                new TwigFunction(
-                        'csrf_field',
-                        fn() => '<input type="hidden" name="_csrf" value="' . CSRF::token() . '">',
-                        ['is_safe' => ['html']]
-                )
+            new TwigFunction(
+                'csrf_field',
+                fn() => '<input type="hidden" name="_csrf" value="' . $this->csrfToken . '">',
+                ['is_safe' => ['html']]
+            )
         );
 
         // Função csrf_token() usada no layout
         $this->twig->addFunction(
-                new TwigFunction('csrf_token', fn() => CSRF::token())
+            new TwigFunction('csrf_token', fn() => $this->csrfToken)
         );
     }
 
@@ -138,11 +143,8 @@ class BaseController
     // ============================
     protected function render(string $template, array $data = []): void
     {
-        // Token para formulários da página
-        $data['_csrf'] = CSRF::token();
-
-        // Token global para sidebar/logout
-        $this->twig->addGlobal('_csrf_global', CSRF::token());
+        // Usar o token já gerado no construtor
+        $data['_csrf'] = $this->csrfToken;
 
         $this->injectUser();
 
@@ -206,7 +208,7 @@ class BaseController
         http_response_code(403);
 
         return $this->render('@admin/errors/403.twig', [
-                    'mensagem' => $permissao
+            'mensagem' => $permissao
         ]);
     }
 
@@ -229,7 +231,7 @@ class BaseController
         }
 
         return $this->render($template, array_merge([
-                    'mensagem' => $mensagem
-                                ], $extra));
+            'mensagem' => $mensagem
+        ], $extra));
     }
 }

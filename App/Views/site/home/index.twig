@@ -1,51 +1,86 @@
 {% extends "@site/layout.twig" %}
-
 {% block title %}Gestão Documental{% endblock %}
 
 {% block content %}
 
-<!-- HERO -->
-<section class="hero bg-light py-5 mb-5 text-center">
-    <h1 class="display-4 fw-bold mb-3">Gestão Documental Inteligente</h1>
-    <p class="lead mb-4">
-        Organize, armazene e aceda aos seus documentos de forma rápida, segura e eficiente.
-    </p>
-    <a href="/login" class="btn btn-primary btn-lg px-4 shadow-sm mt-3">
-        Entrar no Sistema
-    </a>
+<section class="py-5 text-center" style="background: var(--brand-bg-light);">
+    <div class="container">
+
+        <!-- LOGO ANFERALTA -->
+        <div class="mb-4">
+            <img src="/assets/logo/anferalta.png" alt="Anferalta" height="90">
+        </div>
+
+        <h1 class="display-5 fw-bold mb-3" style="font-family: Montserrat; color: var(--brand-dark);">
+            Gestão Documental Inteligente
+        </h1>
+
+        <p class="fs-5 mb-4" style="color: var(--brand-gray); font-family: Inter;">
+            Organize, armazene e aceda aos seus documentos de forma rápida, segura e eficiente.
+        </p>
+
+        <a href="/login"
+           class="btn btn-primary btn-lg px-4"
+           style="background: var(--brand-primary); border-color: var(--brand-primary); font-family: Montserrat;">
+            Entrar no Sistema
+        </a>
+
+    </div>
 </section>
 
-<!-- FEATURES -->
-<section class="features py-5">
-    <div class="row g-4">
+<section class="py-5">
+    <div class="container">
+        <div class="row g-4">
 
-        <div class="col-md-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-body text-center p-4">
-                    <h4 class="fw-bold mb-3">Armazenamento Seguro</h4>
-                    <p>Os seus documentos são guardados com encriptação e controlo de acessos.</p>
+            <!-- CARD 1 -->
+            <div class="col-md-4">
+                <div class="p-4 border rounded-3 h-100 text-center"
+                     style="background:#fff; border-color:#e1e4e8; box-shadow:0 2px 6px rgba(0,0,0,0.05);">
+                    <div class="mb-3">
+                        <i class="bi bi-shield-lock" style="font-size:2rem; color: var(--brand-primary);"></i>
+                    </div>
+                    <h4 class="fw-bold mb-2" style="font-family: Montserrat; color: var(--brand-dark);">
+                        Armazenamento Seguro
+                    </h4>
+                    <p class="text-muted" style="font-family: Inter;">
+                        Documentos protegidos com encriptação e controlo de acessos.
+                    </p>
                 </div>
             </div>
-        </div>
 
-        <div class="col-md-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-body text-center p-4">
-                    <h4 class="fw-bold mb-3">Acesso Rápido</h4>
-                    <p>Encontre qualquer documento em segundos com pesquisa avançada.</p>
+            <!-- CARD 2 -->
+            <div class="col-md-4">
+                <div class="p-4 border rounded-3 h-100 text-center"
+                     style="background:#fff; border-color:#e1e4e8; box-shadow:0 2px 6px rgba(0,0,0,0.05);">
+                    <div class="mb-3">
+                        <i class="bi bi-lightning-charge" style="font-size:2rem; color: var(--brand-primary);"></i>
+                    </div>
+                    <h4 class="fw-bold mb-2" style="font-family: Montserrat; color: var(--brand-dark);">
+                        Acesso Rápido
+                    </h4>
+                    <p class="text-muted" style="font-family: Inter;">
+                        Pesquisa avançada para encontrar qualquer documento em segundos.
+                    </p>
                 </div>
             </div>
-        </div>
 
-        <div class="col-md-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-body text-center p-4">
-                    <h4 class="fw-bold mb-3">Gestão Colaborativa</h4>
-                    <p>Partilhe documentos com equipas e mantenha tudo organizado.</p>
+            <!-- CARD 3 -->
+            <div class="col-md-4">
+                <div class="p-4 border rounded-3 h-100 text-center"
+                     style="background:#fff; border-color:#e1e4e8; box-shadow:0 2px 6px rgba(0,0,0,0.05);">
+                    <div class="mb-3">
+                        <i class="bi bi-people" style="font-size:2rem; color: var(--brand-primary);"></i>
+                    </div>
+                    <h4 class="fw-bold mb-2" style="font-family: Montserrat; color: var(--brand-dark);">
+                        Gestão Colaborativa
+                    </h4>
+                    <p class="text-muted" style="font-family: Inter;">
+                        Partilhe documentos com equipas e mantenha tudo organizado.
+                    </p>
                 </div>
             </div>
-        </div>
 
+        </div>
     </div>
 </section>
 

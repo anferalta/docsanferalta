@@ -7,19 +7,6 @@ use App\Models\DocumentoEstado;
 class EstadoService
 {
     /**
-     * Lista de estados permitidos (códigos reais da BD)
-     */
-    private static array $permitidos = [
-        'novo',
-        'pendente',
-        'analise',
-        'em_tramitacao',
-        'concluido',
-        'devolvido',
-        'arquivado'
-    ];
-
-    /**
      * Normaliza o estado recebido do POST
      */
     public static function normalizar(string $estado): string
@@ -35,20 +22,21 @@ class EstadoService
         );
 
         // Remover caracteres inválidos
-        $estado = preg_replace('/[^a-z_]/', '', $estado);
+        $estado = preg_replace('/[^a-z0-9_]/i', '', $estado);
 
         return $estado;
     }
 
     /**
-     * Valida o estado e devolve o código correto
+     * Valida o estado usando a BD (não lista fixa)
      */
     public static function validarOuFalhar(string $estado): string
     {
         $estado = self::normalizar($estado);
 
-        // Verificar se está na lista permitida
-        if (!in_array($estado, self::$permitidos, true)) {
+        $registo = DocumentoEstado::findByCodigo($estado);
+
+        if (!$registo) {
             throw new \Exception("Estado inválido: {$estado}");
         }
 
@@ -56,14 +44,12 @@ class EstadoService
     }
 
     /**
-     * Verifica se o estado existe na BD (opcional)
+     * Verifica se o estado existe na BD
      */
     public static function existeNaBD(string $estado): bool
     {
         $estado = self::normalizar($estado);
 
-        $registo = DocumentoEstado::findByCodigo($estado);
-
-        return $registo !== null;
+        return DocumentoEstado::findByCodigo($estado) !== null;
     }
 }

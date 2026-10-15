@@ -30,7 +30,7 @@ class BackupIntegrityService
             'ficheiros'      => []
         ];
 
-        // ------------------ DESENCRIPTAR SE NECESSÁRIO ------------------
+        // DESENCRIPTAR SE NECESSÁRIO
         if ($detalhes['encriptado']) {
             $pathTmp = $this->desencriptarTemporario($path);
 
@@ -43,7 +43,7 @@ class BackupIntegrityService
             $path = $pathTmp;
         }
 
-        // ------------------ VALIDAR ZIP ------------------
+        // VALIDAR ZIP
         $zip = new ZipArchive();
         if ($zip->open($path) === true) {
             $detalhes['zip_ok'] = true;
@@ -55,7 +55,7 @@ class BackupIntegrityService
             $zip->close();
         }
 
-        // ------------------ VALIDAR SQL (apenas BD) ------------------
+        // VALIDAR SQL (apenas BD)
         if ($tipo === 'bd') {
             $detalhes['sql_ok'] = $this->validarSQL($path);
         }
@@ -101,7 +101,7 @@ class BackupIntegrityService
             return null;
         }
 
-        $tmp = sys_get_temp_dir() . '/backup_tmp_' . uniqid() . '.zip';
+        $tmp = STORAGE_TEMP . '/backup_tmp_' . uniqid() . '.zip';
         PathGuardService::proteger($tmp);
 
         file_put_contents($tmp, $conteudo);

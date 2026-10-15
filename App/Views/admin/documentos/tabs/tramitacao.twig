@@ -1,61 +1,23 @@
-<!-- CONTEÚDO DA TAB DE TRAMITAÇÃO (SEM EXTENDS, SEM BLOCKS) -->
+{# ============================================================
+   ABA: TRAMITAÇÃO DO DOCUMENTO
+============================================================ #}
 
-<div class="card mb-4">
-    <div class="card-header">
-        <h5 class="mb-0">
-            <i class="fa fa-file-text me-2"></i> Tramitação do Documento #{{ documento.id }}
-        </h5>
-    </div>
+<div class="tab-pane fade show active" id="tab-tramitacao">
 
-    <div class="card-body">
+    {# ============================================================
+       ANEXOS DO DOCUMENTO (documento_ficheiros)
+    ============================================================ #}
 
-        <!-- INFO DO DOCUMENTO -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <p><strong>Título:</strong> {{ documento.titulo }}</p>
+    {% if ficheiros and ficheiros|length > 0 %}
+        <div class="mb-4">
+            <h5 class="fw-bold">
+                <i class="fa fa-paperclip me-1"></i> Anexos do Documento
+            </h5>
 
-                <p><strong>Tipo:</strong>
-                    {% if documento.tipo_nome %}
-                        {{ documento.tipo_nome }}
-                    {% else %}
-                        <span class="text-muted">Não definido</span>
-                    {% endif %}
-                </p>
-
-                <p><strong>Área atual:</strong>
-                    {% if documento.area_nome %}
-                        {{ documento.area_nome }}
-                    {% else %}
-                        <span class="text-muted">Sem área definida</span>
-                    {% endif %}
-                </p>
-
-                <p><strong>Criado por:</strong>
-                    {% if documento.criador_nome %}
-                        {{ documento.criador_nome }}
-                    {% else %}
-                        <span class="text-muted">Desconhecido</span>
-                    {% endif %}
-                </p>
-
-                {% if ficheiros|length > 0 %}
-                    <a href="/admin/documentos/anexo/abrir/{{ ficheiros[0].id }}"
-                       target="_blank"
-                       class="btn btn-outline-primary mt-2">
-                        <i class="fa fa-file me-1"></i> Ver Documento
-                    </a>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- LISTA DE FICHEIROS DO DOCUMENTO -->
-        <h5 class="mb-3"><i class="fa fa-paperclip me-2"></i> Ficheiros do Documento</h5>
-
-        {% if ficheiros|length > 0 %}
-            <ul class="list-group mb-4">
-
+            <ul class="list-group mt-2">
                 {% for f in ficheiros %}
                     {% set ext = f.ficheiro_original|lower|split('.')|last %}
+                    {% set url = "/admin/documentos/anexo/abrir/" ~ f.id %}
 
                     <li class="list-group-item d-flex justify-content-between align-items-center">
 
@@ -75,176 +37,278 @@
                                 <i class="fa fa-file fa-lg me-2"></i>
                             {% endif %}
 
-                            <span>{{ f.ficheiro_original }}</span>
+                            <span>{{ f.ficheiro_original ?: f.ficheiro }}</span>
                         </div>
 
                         <div class="d-flex gap-2">
 
-                            {% if ext == 'pdf' %}
-                                <a href="/admin/documentos/anexo/abrir/{{ f.id }}"
-                                   target="_blank"
-                                   class="btn btn-sm btn-outline-secondary">
-                                    <i class="fa fa-eye me-1"></i> Preview
-                                </a>
-                            {% endif %}
+                            <button type="button"
+        			class="btn btn-sm btn-outline-secondary btn-preview-inline"
+        			data-bs-toggle="modal"
+        			data-bs-target="#previewModal"
+        			data-url="{{ url }}"
+        			data-ext="{{ ext }}">
+    				<i class="fa fa-eye me-1"></i> Preview
+			    </button>
 
-                            <a href="/admin/documentos/anexo/abrir/{{ f.id }}"
+                            <a href="{{ url }}"
                                target="_blank"
                                class="btn btn-sm btn-primary">
                                 <i class="fa fa-download me-1"></i> Abrir
                             </a>
 
-                            <form action="/admin/documentos/ficheiros/apagar/{{ f.id }}" method="post"
-                                  onsubmit="return confirm('Tem a certeza que deseja apagar este ficheiro?');">
-                                {{ csrf_field() }}
-                                <button class="btn btn-sm btn-danger">
-                                    <i class="fa fa-trash me-1"></i> Apagar
-                                </button>
-                            </form>
+                        </div>
+
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    {# ============================================================
+       ANEXOS DA TRAMITAÇÃO (lista consolidada)
+============================================================ #}
+
+    {% set anexos_tramitacao = [] %}
+
+    {% for h in historico %}
+        {% if h.anexos and h.anexos|length > 0 %}
+            {% for a in h.anexos %}
+                {% set anexos_tramitacao = anexos_tramitacao|merge([a]) %}
+            {% endfor %}
+        {% endif %}
+    {% endfor %}
+
+    {% if anexos_tramitacao|length > 0 %}
+        <div class="mb-4">
+            <h5 class="fw-bold">
+                <i class="fa fa-paperclip me-1"></i> Anexos da Tramitação
+            </h5>
+
+            <ul class="list-group mt-2">
+                {% for a in anexos_tramitacao %}
+                    {% set ext = a.ficheiro_original|lower|split('.')|last %}
+                    {% set url = "/admin/tramitacao/anexo/abrir/" ~ a.id %}
+
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+
+                        <div class="d-flex align-items-center">
+
+                            {% if ext == 'pdf' %}
+                                <i class="fa fa-file-pdf text-danger fa-lg me-2"></i>
+                            {% elseif ext in ['jpg','jpeg','png','gif','webp'] %}
+                                <i class="fa fa-file-image text-primary fa-lg me-2"></i>
+                            {% elseif ext in ['doc','docx'] %}
+                                <i class="fa fa-file-word text-info fa-lg me-2"></i>
+                            {% elseif ext in ['xls','xlsx'] %}
+                                <i class="fa fa-file-excel text-success fa-lg me-2"></i>
+                            {% elseif ext in ['zip','rar'] %}
+                                <i class="fa fa-file-archive text-warning fa-lg me-2"></i>
+                            {% else %}
+                                <i class="fa fa-file fa-lg me-2"></i>
+                            {% endif %}
+
+                            <span>{{ a.ficheiro_original ?: a.ficheiro }}</span>
+                        </div>
+
+                        <div class="d-flex gap-2">
+
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary btn-preview-inline"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#previewModal"
+                                    data-url="{{ url }}"
+                                    data-mime="{{ a.mime_type }}">
+                                <i class="fa fa-eye me-1"></i> Preview
+                            </button>
+
+                            <a href="{{ url }}"
+                               target="_blank"
+                               class="btn btn-sm btn-primary">
+                                <i class="fa fa-download me-1"></i> Abrir
+                            </a>
 
                         </div>
 
                     </li>
                 {% endfor %}
-
             </ul>
-        {% else %}
-            <p class="text-muted mb-4">Este documento não tem ficheiros anexados.</p>
-        {% endif %}
+        </div>
+    {% endif %}
 
-        <!-- HISTÓRICO -->
-        <h5 class="mb-3"><i class="fa fa-history me-2"></i> Histórico de Tramitação</h5>
+    {# ============================================================
+       HISTÓRICO DA TRAMITAÇÃO
+    ============================================================ #}
 
-        {% if historico is empty %}
-            <p class="text-muted">Ainda não existem movimentos neste documento.</p>
-        {% else %}
-            <div class="timeline">
+    <h5 class="fw-bold mt-4">
+        <i class="fa fa-random me-1"></i> Histórico de Tramitação
+    </h5>
 
-                {% for h in historico %}
-                    <div class="timeline-item">
+    <ul class="timeline mt-3">
 
-                        <div class="timeline-icon bg-primary text-white">
-                            {% if h.acao == 'ENCAMINHADO' %}
-                                <i class="fa fa-random"></i>
-                            {% elseif h.acao == 'COMENTARIO' %}
-                                <i class="fa fa-comment"></i>
-                            {% elseif h.acao == 'ESTADO' %}
-                                <i class="fa fa-flag"></i>
-                            {% else %}
-                                <i class="fa fa-circle"></i>
-                            {% endif %}
+        {% for h in historico %}
+            <li class="timeline-item">
+
+                <div class="timeline-marker"></div>
+
+                <div class="timeline-content">
+
+                    <h6 class="fw-bold mb-1">
+                        {{ h.acao }} — {{ h.criado_em|date("d/m/Y H:i") }}
+                    </h6>
+
+                    <p class="mb-2">
+                        <strong>Área:</strong> {{ h.area ? h.area.nome : '—' }}<br>
+                        <strong>Utilizador:</strong> {{ h.utilizador ? h.utilizador.nome : '—' }}
+                    </p>
+
+                    {% if h.comentario %}
+                        <p class="mb-2">
+                            <strong>Comentário:</strong><br>
+                            {{ h.comentario }}
+                        </p>
+                    {% endif %}
+
+                    {% if h.anexos and h.anexos|length > 0 %}
+                        <div class="mt-3">
+                            <strong><i class="fa fa-paperclip me-1"></i> Anexos da ação:</strong>
+
+                            <ul class="list-group mt-2">
+
+                                {% for a in h.anexos %}
+                                    {% set ext = a.ficheiro_original|lower|split('.')|last %}
+                                    {% set url = "/admin/tramitacao/anexo/abrir/" ~ a.id %}
+
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+
+                                        <div class="d-flex align-items-center">
+
+                                            {% if ext == 'pdf' %}
+                                                <i class="fa fa-file-pdf text-danger fa-lg me-2"></i>
+                                            {% elseif ext in ['jpg','jpeg','png','gif','webp'] %}
+                                                <i class="fa fa-file-image text-primary fa-lg me-2"></i>
+                                            {% elseif ext in ['doc','docx'] %}
+                                                <i class="fa fa-file-word text-info fa-lg me-2"></i>
+                                            {% elseif ext in ['xls','xlsx'] %}
+                                                <i class="fa fa-file-excel text-success fa-lg me-2"></i>
+                                            {% elseif ext in ['zip','rar'] %}
+                                                <i class="fa fa-file-archive text-warning fa-lg me-2"></i>
+                                            {% else %}
+                                                <i class="fa fa-file fa-lg me-2"></i>
+                                            {% endif %}
+
+                                            <span>{{ a.ficheiro_original ?: a.ficheiro }}</span>
+                                        </div>
+
+                                        <div class="d-flex gap-2">
+
+                                            {% set ext = f.ficheiro_original|lower|split('.')|last %}
+
+					    <button type="button"
+  					      class="btn btn-sm btn-outline-secondary btn-preview-inline"
+    					      data-bs-toggle="modal"
+        				      data-bs-target="#previewModal"
+        				      data-url="{{ url }}"
+        				      data-ext="{{ ext }}">
+    						<i class="fa fa-eye me-1"></i> Preview
+					    </button>
+
+                                            <a href="{{ url }}"
+                                               target="_blank"
+                                               class="btn btn-sm btn-primary">
+                                                <i class="fa fa-download me-1"></i> Abrir
+                                            </a>
+
+                                        </div>
+
+                                    </li>
+                                {% endfor %}
+
+                            </ul>
                         </div>
+                    {% endif %}
 
-                        <div class="timeline-content">
+                </div>
+            </li>
+        {% endfor %}
 
-                            <h6 class="mb-1">
-                                {{ h.utilizador_nome }}
-                                <small class="text-muted">— {{ h.criado_em|date("d/m/Y H:i") }}</small>
-                            </h6>
+    </ul>
 
-                            <p class="mb-1">
-                                {% if h.acao == 'ENCAMINHADO' %}
-                                    Documento encaminhado para <strong>{{ h.area_nome }}</strong>.
-                                {% elseif h.acao == 'COMENTARIO' %}
-                                    Comentário adicionado.
-                                {% elseif h.acao == 'ESTADO' %}
-                                    Estado alterado para
-                                    <span class="badge-estado badge-{{ h.estado_codigo }}">
-                                        {{ h.estado_nome|upper }}
-                                    </span>
-                                {% endif %}
-                            </p>
+</div>
 
-                            {% if h.comentario %}
-                                <div class="alert alert-secondary py-2 px-3 mb-2">
-                                    {{ h.comentario }}
-                                </div>
-                            {% endif %}
+{# ============================================================
+   MODAL DE PREVIEW INLINE
+============================================================ #}
 
-                            {% if h.anexos and h.anexos|length > 0 %}
-                                <div class="mt-3">
-                                    <strong><i class="fa fa-paperclip me-1"></i> Anexos da ação:</strong>
+<div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
 
-                                    <ul class="list-group mt-2">
-
-                                        {% for a in h.anexos %}
-                                            {% set ext = a.ficheiro_original|lower|split('.')|last %}
-
-                                            <li class="list-group-item d-flex justify-content-between align-items-center">
-
-                                                <div class="d-flex align-items-center">
-
-                                                    {% if ext == 'pdf' %}
-                                                        <i class="fa fa-file-pdf text-danger fa-lg me-2"></i>
-                                                    {% elseif ext in ['jpg','jpeg','png','gif','webp'] %}
-                                                        <i class="fa fa-file-image text-primary fa-lg me-2"></i>
-                                                    {% elseif ext in ['doc','docx'] %}
-                                                        <i class="fa fa-file-word text-info fa-lg me-2"></i>
-                                                    {% elseif ext in ['xls','xlsx'] %}
-                                                        <i class="fa fa-file-excel text-success fa-lg me-2"></i>
-                                                    {% elseif ext in ['zip','rar'] %}
-                                                        <i class="fa fa-file-archive text-warning fa-lg me-2"></i>
-                                                    {% else %}
-                                                        <i class="fa fa-file fa-lg me-2"></i>
-                                                    {% endif %}
-
-                                                    <span>{{ a.ficheiro_original ?: a.ficheiro }}</span>
-                                                </div>
-
-                                                <div class="d-flex gap-2">
-
-                                                    {% if ext == 'pdf' %}
-                                                        <a href="/admin/tramitacao/anexo/{{ h.id }}/{{ a.ficheiro }}"
-                                                           target="_blank"
-                                                           class="btn btn-sm btn-outline-secondary">
-                                                            <i class="fa fa-eye me-1"></i> Preview
-                                                        </a>
-                                                    {% endif %}
-
-                                                    <a href="/admin/tramitacao/anexo/{{ h.id }}/{{ a.ficheiro }}"
-                                                       target="_blank"
-                                                       class="btn btn-sm btn-primary">
-                                                        <i class="fa fa-download me-1"></i> Abrir
-                                                    </a>
-
-                                                </div>
-
-                                            </li>
-                                        {% endfor %}
-
-                                    </ul>
-                                </div>
-                            {% endif %}
-
-                        </div>
-                    </div>
-                {% endfor %}
-
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa fa-eye me-1"></i> Preview
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-        {% endif %}
 
-        <!-- BOTÕES DE AÇÃO -->
-        <div class="d-flex gap-2 mt-4">
-
-            {% if user.hasPermissao('admin.tramitacao.encaminhar') %}
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalTramitar">
-                    <i class="fa fa-random me-1"></i> Encaminhar
-                </button>
-            {% endif %}
-
-            {% if user.hasPermissao('admin.tramitacao.comentar') %}
-                <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modalComentar">
-                    <i class="fa fa-comment me-1"></i> Comentar
-                </button>
-            {% endif %}
-
-            {% if user.hasPermissao('admin.tramitacao.estado') %}
-                <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalEstado">
-                    <i class="fa fa-flag me-1"></i> Alterar Estado
-                </button>
-            {% endif %}
+            <div class="modal-body">
+                <iframe id="previewFrame"
+                        src=""
+                        style="width:100%; height:80vh; border:0;"></iframe>
+            </div>
 
         </div>
-
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    document.querySelectorAll('.btn-preview-inline').forEach(btn => {
+
+        btn.addEventListener('click', function () {
+
+            const url  = btn.getAttribute('data-url');
+            const mime = btn.getAttribute('data-mime') || '';
+            const frame = document.getElementById('previewFrame');
+
+            frame.src = "";
+
+            let ext = "";
+
+            if (mime.includes('pdf')) ext = 'pdf';
+            else if (mime.includes('msword')) ext = 'doc';
+            else if (mime.includes('word')) ext = 'docx';
+            else if (mime.includes('excel')) ext = 'xlsx';
+            else if (mime.includes('spreadsheet')) ext = 'xls';
+            else if (mime.includes('powerpoint')) ext = 'pptx';
+            else if (mime.includes('presentation')) ext = 'ppt';
+            else if (mime.includes('text')) ext = 'txt';
+            else if (mime.includes('image')) ext = 'jpg';
+
+            if (ext === 'pdf') {
+                frame.src = url;
+                return;
+            }
+
+            if (['doc','docx','xls','xlsx','ppt','pptx'].includes(ext)) {
+                frame.src = "https://view.officeapps.live.com/op/view.aspx?src=" + encodeURIComponent(url);
+                return;
+            }
+
+            if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
+                frame.src = url;
+                return;
+            }
+
+            if (ext === 'txt') {
+                frame.src = url;
+                return;
+            }
+
+            frame.src = url;
+        });
+    });
+
+});
+</script>

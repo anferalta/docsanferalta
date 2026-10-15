@@ -12,7 +12,6 @@
                 Recuperar para Produção
             </button>
         </form>
-
     </div>
 
     <div class="card mb-4">
@@ -31,12 +30,19 @@
         <div class="card-header">
             <strong>Ficheiro</strong>
         </div>
+
         <div class="card-body">
-            <a href="/admin/documentos/abrir/{{ documento.id }}"
-               target="_blank"
-               class="btn btn-primary">
-                Abrir Ficheiro
-            </a>
+
+            {% if documento.estado_atual == 'arquivado' %}
+                <a href="/admin/documentos/arquivado/abrir/{{ documento.id }}"
+                   target="_blank"
+                   class="btn btn-primary">
+                    Abrir Ficheiro Arquivado
+                </a>
+            {% else %}
+                <p class="text-muted">Este documento não está arquivado.</p>
+            {% endif %}
+
         </div>
     </div>
 
@@ -59,7 +65,6 @@
 
                         <div class="timeline-item">
 
-                            {# ÍCONE + COR PADRONIZADOS #}
                             <div class="timeline-icon 
                                  {% if h.acao == 'ENCAMINHADO' %} bg-primary
                                  {% elseif h.acao == 'COMENTARIO' %} bg-info
@@ -80,7 +85,6 @@
 
                             <div class="timeline-content">
 
-                                {# TEXTO PADRONIZADO #}
                                 {% if h.acao == 'ENCAMINHADO' %}
                                     <p>
                                         <strong>{{ h.utilizador_nome }}</strong>
@@ -132,4 +136,3 @@
     </div>
 
 {% endblock %}
-

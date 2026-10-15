@@ -1,21 +1,21 @@
 {# ============================================================
-   MODAL: ENCAMINHAR DOCUMENTO
+   MODAL: ENCAMINHAR DOCUMENTO — PREMIUM
 ============================================================ #}
 <div class="modal fade" id="modalTramitar" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <form method="POST"
               action="/admin/tramitacao/encaminhar"
               enctype="multipart/form-data"
-              class="modal-content"
+              class="modal-content shadow-lg"
               id="formEncaminhar">
 
             {{ csrf_field() }}
-
             <input type="hidden" name="documento_id" value="{{ documento.id }}">
 
             <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fa fa-random me-2"></i> Encaminhar Documento
+                <h5 class="modal-title d-flex align-items-center">
+                    <i class="fa fa-random me-2 text-primary"></i>
+                    Encaminhar Documento
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -23,9 +23,9 @@
             <div class="modal-body">
 
                 <!-- ÁREA DESTINO -->
-                <div class="mb-3">
+                <div class="mb-4">
                     <label class="form-label fw-semibold">Área de destino</label>
-                    <select name="area_id" class="form-select" required>
+                    <select name="area_id" class="form-select form-select-lg" required>
                         <option value="">Selecione...</option>
                         {% for a in areas %}
                             <option value="{{ a.id }}">{{ a.nome }}</option>
@@ -34,20 +34,20 @@
                 </div>
 
                 <!-- COMENTÁRIO -->
-                <div class="mb-3">
+                <div class="mb-4">
                     <label class="form-label fw-semibold">Comentário (opcional)</label>
                     <textarea name="comentario"
-                              class="form-control"
+                              class="form-control form-control-lg"
                               rows="3"
                               placeholder="Descreva o motivo do encaminhamento..."></textarea>
                 </div>
 
                 <!-- ANEXOS -->
-                <div class="mb-3">
+                <div class="mb-4">
                     <label class="form-label fw-semibold">Anexos (opcional)</label>
                     <input type="file"
                            name="anexos[]"
-                           class="form-control"
+                           class="form-control form-control-lg"
                            multiple>
 
                     <small class="text-muted">
@@ -58,8 +58,8 @@
             </div>
 
             <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" id="btnTramitar">
-                    <i class="fa fa-paper-plane me-1"></i> Encaminhar
+                <button type="submit" class="btn btn-primary btn-lg px-4" id="btnTramitar">
+                    <i class="fa fa-paper-plane me-2"></i> Encaminhar
                 </button>
             </div>
 
@@ -69,23 +69,23 @@
 
 
 {# ============================================================
-   MODAL: COMENTAR DOCUMENTO
+   MODAL: COMENTAR DOCUMENTO — PREMIUM
 ============================================================ #}
 <div class="modal fade" id="modalComentar" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <form method="POST"
               action="/admin/tramitacao/comentar"
               enctype="multipart/form-data"
-              class="modal-content"
+              class="modal-content shadow-lg"
               id="formComentar">
 
             {{ csrf_field() }}
-
             <input type="hidden" name="documento_id" value="{{ documento.id }}">
 
             <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fa fa-comment me-1"></i> Adicionar Comentário
+                <h5 class="modal-title d-flex align-items-center">
+                    <i class="fa fa-comment me-2 text-secondary"></i>
+                    Adicionar Comentário
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -93,26 +93,26 @@
             <div class="modal-body">
 
                 <!-- COMENTÁRIO -->
-                <div class="mb-3">
+                <div class="mb-4">
                     <label class="form-label fw-semibold">Comentário</label>
                     <textarea name="comentario"
-                              class="form-control"
+                              class="form-control form-control-lg"
                               rows="4"
                               required
                               placeholder="Escreva o seu comentário..."></textarea>
                 </div>
 
                 <!-- ANEXOS -->
-                <div class="mb-3">
+                <div class="mb-4">
                     <label class="form-label fw-semibold">Anexos (opcional)</label>
-                    <input type="file" name="anexos[]" class="form-control" multiple>
+                    <input type="file" name="anexos[]" class="form-control form-control-lg" multiple>
                 </div>
 
             </div>
 
             <div class="modal-footer">
-                <button type="submit" class="btn btn-secondary" id="btnComentar">
-                    <i class="fa fa-save me-1"></i> Guardar Comentário
+                <button type="submit" class="btn btn-secondary btn-lg px-4" id="btnComentar">
+                    <i class="fa fa-save me-2"></i> Guardar Comentário
                 </button>
             </div>
 
@@ -122,23 +122,23 @@
 
 
 {# ============================================================
-   MODAL: ALTERAR ESTADO DO DOCUMENTO
+   MODAL: ALTERAR ESTADO DO DOCUMENTO — PREMIUM
 ============================================================ #}
 <div class="modal fade" id="modalEstado" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <form method="POST"
               action="/admin/tramitacao/estado"
               enctype="multipart/form-data"
-              class="modal-content"
+              class="modal-content shadow-lg"
               id="formEstado">
 
             {{ csrf_field() }}
-
             <input type="hidden" name="documento_id" value="{{ documento.id }}">
 
             <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fa fa-flag me-1"></i> Alterar Estado do Documento
+                <h5 class="modal-title d-flex align-items-center">
+                    <i class="fa fa-flag me-2 text-warning"></i>
+                    Alterar Estado do Documento
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -146,9 +146,9 @@
             <div class="modal-body">
 
                 <!-- ESTADO -->
-                <div class="mb-3">
+                <div class="mb-4">
                     <label class="form-label fw-semibold">Novo estado</label>
-                    <select name="estado" class="form-select" required>
+                    <select name="estado" class="form-select form-select-lg" required>
                         <option value="">Selecione...</option>
                         {% for e in estados %}
                             {% if e.codigo != 'arquivado' %}
@@ -159,22 +159,24 @@
                 </div>
 
                 <!-- COMENTÁRIO -->
-                <div class="mb-3">
+                <div class="mb-4">
                     <label class="form-label fw-semibold">Comentário (opcional)</label>
-                    <textarea name="comentario" class="form-control" rows="3"></textarea>
+                    <textarea name="comentario"
+                              class="form-control form-control-lg"
+                              rows="3"></textarea>
                 </div>
 
                 <!-- ANEXOS -->
-                <div class="mb-3">
+                <div class="mb-4">
                     <label class="form-label fw-semibold">Anexos (opcional)</label>
-                    <input type="file" name="anexos[]" class="form-control" multiple>
+                    <input type="file" name="anexos[]" class="form-control form-control-lg" multiple>
                 </div>
 
             </div>
 
             <div class="modal-footer">
-                <button type="submit" class="btn btn-warning" id="btnEstado">
-                    <i class="fa fa-check me-1"></i> Alterar Estado
+                <button type="submit" class="btn btn-warning btn-lg px-4" id="btnEstado">
+                    <i class="fa fa-check me-2"></i> Alterar Estado
                 </button>
             </div>
 

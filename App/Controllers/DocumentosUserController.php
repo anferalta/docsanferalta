@@ -10,9 +10,22 @@ use App\Models\Documento;
 use App\Models\DocumentoTipo;
 use App\Models\DocumentoFicheiro;
 use App\Core\Conexao;
+use App\Services\PathGuardService;
 
 class DocumentosUserController extends BaseController
 {
+
+    private string $root;
+    private string $storageDocs;
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        // Caminho correto e unificado
+        $this->root = STORAGE_PATH;
+        $this->storageDocs = STORAGE_DOCUMENTOS . '/';
+    }
 
     /**
      * Lista apenas os documentos do utilizador autenticado
@@ -59,7 +72,7 @@ class DocumentosUserController extends BaseController
         }
 
         return $this->render('@site/documentos/index.twig', [
-                    'documentos' => $documentos
+            'documentos' => $documentos
         ]);
     }
 
@@ -77,8 +90,8 @@ class DocumentosUserController extends BaseController
         $csrf = CSRF::token();
 
         return $this->render('@site/documentos/criar.twig', [
-                    'tipos' => $tipos,
-                    '_csrf' => $csrf
+            'tipos' => $tipos,
+            '_csrf' => $csrf
         ]);
     }
 
@@ -92,28 +105,16 @@ class DocumentosUserController extends BaseController
             return $this->redirect('/documentos/criar');
         }
 
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            return $this->redirect('/documentos/criar');
-        }
-
         $user = Auth::user();
         if (!$user) {
             return $this->redirect('/login');
         }
 
-        // ============================================================
-        // 1. Validação dos campos
-        // ============================================================
         $titulo = trim($_POST['titulo'] ?? '');
         $tipo_id = intval($_POST['tipo_id'] ?? 0);
 
-        if ($titulo === '') {
-            Sessao::flash('erro', 'O título é obrigatório.');
-            return $this->redirect('/documentos/criar');
-        }
-
-        if ($tipo_id <= 0) {
-            Sessao::flash('erro', 'Selecione o tipo de documento.');
+        if ($titulo === '' || $tipo_id <= 0) {
+            Sessao::flash('erro', 'Dados inválidos.');
             return $this->redirect('/documentos/criar');
         }
 
@@ -122,45 +123,7 @@ class DocumentosUserController extends BaseController
             return $this->redirect('/documentos/criar');
         }
 
-        // ============================================================
-        // 2. VALIDAR TODOS OS FICHEIROS ANTES DE CRIAR DOCUMENTO
-        // ============================================================
-        $permitidos = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'jpg', 'jpeg', 'png', 'gif', 'webp'];
-
-        foreach ($_FILES['ficheiros']['name'] as $i => $nomeOriginal) {
-
-            $tmp = $_FILES['ficheiros']['tmp_name'][$i];
-            $tamanho = $_FILES['ficheiros']['size'][$i];
-
-            // 2.1 Validar extensão
-            $ext = strtolower(pathinfo($nomeOriginal, PATHINFO_EXTENSION));
-            if (!in_array($ext, $permitidos)) {
-                Sessao::flash('erro', 'Extensão inválida: ' . $ext);
-                return $this->redirect('/documentos/criar');
-            }
-
-            // 2.2 Validar tamanho
-            if ($tamanho > 20 * 1024 * 1024) {
-                Sessao::flash('erro', 'Um ficheiro excede o limite de 20 MB.');
-                return $this->redirect('/documentos/criar');
-            }
-
-            // 2.3 Verificar duplicado
-            $duplicado = DocumentoFicheiro::query()
-                    ->join('documentos', 'documentos.id', '=', 'documento_ficheiros.documento_id')
-                    ->where('documentos.criado_por', '=', $user->id)
-                    ->where('documento_ficheiros.ficheiro_original', '=', $nomeOriginal)
-                    ->first();
-
-            if ($duplicado) {
-                Sessao::flash('erro', 'Já existe um ficheiro com esse nome.');
-                return $this->redirect('/documentos/criar');
-            }
-        }
-
-        // ============================================================
-        // 3. Criar documento
-        // ============================================================
+        // Criar documento
         $documentoId = Documento::create([
             'titulo' => $titulo,
             'tipo_id' => $tipo_id,
@@ -170,43 +133,59 @@ class DocumentosUserController extends BaseController
             'area_atual_desde' => date('Y-m-d H:i:s')
         ]);
 
-        // ============================================================
-        // 4. Criar diretório baseado na data
-        // ============================================================
-        $baseDir = date('Y/m/d/');
-        $root = realpath(__DIR__ . '/../../');
-        $fullPath = $root . '/storage/documentos/' . $baseDir;
+        // Caminho seguro
+        $ano = date('Y');
+        $mes = date('m');
+        $dia = date('d');
 
-        if (!is_dir($fullPath)) {
-            mkdir($fullPath, 0777, true);
+        $subpasta = "$ano/$mes/$dia/";
+        $base = STORAGE_DOCUMENTOS . '/' . $subpasta;
+
+        PathGuardService::init();
+        PathGuardService::proteger($base);
+
+        if (!is_dir($base)) {
+            mkdir($base, 0777, true);
+            file_put_contents($base . '/.keep', 'sentinel');
         }
 
-        // ============================================================
-        // 5. Processar upload
-        // ============================================================
         foreach ($_FILES['ficheiros']['name'] as $i => $nomeOriginal) {
 
             $tmp = $_FILES['ficheiros']['tmp_name'][$i];
+            $erro = $_FILES['ficheiros']['error'][$i];
+            $tamanho = $_FILES['ficheiros']['size'][$i];
 
-            $novoNome = uniqid() . '_' . preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $nomeOriginal);
-            $destino = $fullPath . $novoNome;
+            if ($erro !== UPLOAD_ERR_OK) {
+                continue;
+            }
 
-            move_uploaded_file($tmp, $destino);
+            if (!is_uploaded_file($tmp)) {
+                continue;
+            }
+
+            // Nome seguro
+            $nomeSeguro = preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $nomeOriginal);
+            $nomeGuardado = uniqid() . '_' . $nomeSeguro;
+
+            $destino = $base . $nomeGuardado;
+            PathGuardService::proteger($destino);
+
+            if (!move_uploaded_file($tmp, $destino)) {
+                continue;
+            }
 
             DocumentoFicheiro::create([
                 'documento_id' => $documentoId,
-                'ficheiro' => $novoNome,
+                'ficheiro' => $nomeGuardado,
                 'ficheiro_original' => $nomeOriginal,
-                'caminho' => $baseDir, // <-- ADICIONADO
-                'tamanho' => filesize($destino),
-                'mime' => mime_content_type($destino),
+                'caminho' => $subpasta,
+                'tamanho' => $tamanho,
+                'mime_type' => mime_content_type($destino),
+                'hash' => hash_file('sha256', $destino),
                 'criado_em' => date('Y-m-d H:i:s')
             ]);
         }
 
-        // ============================================================
-        // 6. Sucesso
-        // ============================================================
         Sessao::flash('sucesso', 'Documentos carregados com sucesso.');
         return $this->redirect('/documentos/criar');
     }
@@ -216,28 +195,26 @@ class DocumentosUserController extends BaseController
      */
     public function abrir($idAnexo)
     {
+        PathGuardService::init();
+
         $user = Auth::user();
-        if (!$user) {
-            return $this->redirect('/login');
-        }
+        if (!$user) return $this->redirect('/login');
 
         $anexo = DocumentoFicheiro::find($idAnexo);
-
         if (!$anexo) {
             http_response_code(404);
             exit("Anexo não encontrado.");
         }
 
-        // Garantir que o anexo pertence ao utilizador autenticado
         $documento = Documento::find($anexo->documento_id);
-
         if (!$documento || $documento->criado_por != $user->id) {
             http_response_code(403);
             exit("Acesso não autorizado.");
         }
 
-        $root = realpath(__DIR__ . '/../../');
-        $path = $root . '/storage/documentos/' . $anexo->caminho . $anexo->ficheiro;
+        $path = STORAGE_DOCUMENTOS . '/' . $anexo->caminho . $anexo->ficheiro;
+
+        PathGuardService::proteger($path);
 
         if (!file_exists($path)) {
             http_response_code(404);
@@ -247,19 +224,8 @@ class DocumentosUserController extends BaseController
         $mime = mime_content_type($path);
         $nome = basename($anexo->ficheiro);
 
-        $inline = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'txt', 'webp'];
-        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-
-        if (in_array($ext, $inline)) {
-            header("Content-Type: {$mime}");
-            header("Content-Disposition: inline; filename=\"{$nome}\"");
-            header("Content-Length: " . filesize($path));
-            readfile($path);
-            exit;
-        }
-
-        header("Content-Type: application/octet-stream");
-        header("Content-Disposition: attachment; filename=\"{$nome}\"");
+        header("Content-Type: {$mime}");
+        header("Content-Disposition: inline; filename=\"{$nome}\"");
         header("Content-Length: " . filesize($path));
         readfile($path);
         exit;
@@ -267,28 +233,26 @@ class DocumentosUserController extends BaseController
 
     public function download($id)
     {
-        $anexo = DocumentoFicheiro::find($id);
+        PathGuardService::init();
 
+        $user = Auth::user();
+        if (!$user) return $this->redirect('/login');
+
+        $anexo = DocumentoFicheiro::find($id);
         if (!$anexo) {
             http_response_code(404);
             exit("Anexo não encontrado.");
         }
 
-        $user = Auth::user();
-        if (!$user) {
-            return $this->redirect('/login');
-        }
-
-        // Garantir que o anexo pertence ao utilizador autenticado
         $documento = Documento::find($anexo->documento_id);
-
         if (!$documento || $documento->criado_por != $user->id) {
             http_response_code(403);
             exit("Acesso não autorizado.");
         }
 
-        $root = realpath(__DIR__ . '/../../');
-        $path = $root . '/storage/documentos/' . $anexo->caminho . $anexo->ficheiro;
+        $path = STORAGE_DOCUMENTOS . '/' . $anexo->caminho . $anexo->ficheiro;
+
+        PathGuardService::proteger($path);
 
         if (!file_exists($path)) {
             http_response_code(404);
@@ -296,7 +260,7 @@ class DocumentosUserController extends BaseController
         }
 
         header("Content-Type: application/octet-stream");
-        header("Content-Disposition: attachment; filename=\"" . $anexo->nome() . "\"");
+        header("Content-Disposition: attachment; filename=\"" . basename($anexo->ficheiro) . "\"");
         header("Content-Length: " . filesize($path));
         readfile($path);
         exit;
@@ -304,6 +268,8 @@ class DocumentosUserController extends BaseController
 
     public function preview($idAnexo)
     {
+        PathGuardService::init();
+
         $user = Auth::user();
         if (!$user) {
             return $this->redirect('/login');
@@ -316,7 +282,6 @@ class DocumentosUserController extends BaseController
             exit("Anexo não encontrado.");
         }
 
-        // Garantir que pertence ao utilizador
         $documento = Documento::find($anexo->documento_id);
 
         if (!$documento || $documento->criado_por != $user->id) {
@@ -324,8 +289,10 @@ class DocumentosUserController extends BaseController
             exit("Acesso não autorizado.");
         }
 
-        $root = realpath(__DIR__ . '/../../');
-        $path = $root . '/storage/documentos/' . $anexo->caminho . $anexo->ficheiro;
+        // Caminho físico CORRIGIDO
+        $path = STORAGE_DOCUMENTOS . '/' . trim($anexo->caminho, '/') . '/' . $anexo->ficheiro;
+
+        PathGuardService::proteger($path);
 
         if (!file_exists($path)) {
             http_response_code(404);
@@ -335,10 +302,14 @@ class DocumentosUserController extends BaseController
         $mime = mime_content_type($path);
         $nome = basename($anexo->ficheiro);
 
+        // Caminho público CORRIGIDO
+        $publicPath = '/storage/documentos/' . trim($anexo->caminho, '/') . '/' . $anexo->ficheiro;
+
+        // ADMIN deve usar template do ADMIN
         return $this->render('@site/documentos/preview.twig', [
-                    'mime' => $mime,
-                    'nome' => $nome,
-                    'caminho' => '/storage/documentos/' . $anexo->caminho . $anexo->ficheiro
+            'mime' => $mime,
+            'nome' => $nome,
+            'caminho' => $publicPath
         ]);
     }
 }

@@ -79,8 +79,11 @@ class Perfil extends Model
     /**
      * Apagar perfil + permissões associadas
      */
-    public function delete($id): bool
+    public function delete($id = null): bool
     {
+        // Usar o ID do próprio objeto se não for passado
+        $id = $id ?? $this->id;
+
         // Proteger perfil Administrador
         if ((int)$id === 1) {
             return false;
