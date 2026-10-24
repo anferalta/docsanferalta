@@ -10,9 +10,7 @@ class Auth
 
     private static function startSession(): void
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        Sessao::start();
     }
 
     /**

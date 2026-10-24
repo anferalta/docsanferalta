@@ -16,7 +16,8 @@
 
             <ul class="list-group mt-2">
                 {% for f in ficheiros %}
-                    {% set ext = f.ficheiro_original|lower|split('.')|last %}
+                    {% set nomeAnexo = f.ficheiro_original|default(f.ficheiro|default('')) %}
+                    {% set ext = nomeAnexo|lower|split('.')|last %}
                     {% set url = "/admin/documentos/anexo/abrir/" ~ f.id %}
 
                     <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -47,7 +48,8 @@
         			data-bs-toggle="modal"
         			data-bs-target="#previewModal"
         			data-url="{{ url }}"
-        			data-ext="{{ ext }}">
+				data-ext="{{ ext }}"
+                                data-preview-url="{% if ext in ['doc','docx'] %}/admin/documentos/preview-pdf/{{ f.id }}{% endif %}">
     				<i class="fa fa-eye me-1"></i> Preview
 			    </button>
 
@@ -87,7 +89,8 @@
 
             <ul class="list-group mt-2">
                 {% for a in anexos_tramitacao %}
-                    {% set ext = a.ficheiro_original|lower|split('.')|last %}
+                    {% set nomeAnexo = a.ficheiro_original|default(a.ficheiro|default('')) %}
+                    {% set ext = nomeAnexo|lower|split('.')|last %}
                     {% set url = "/admin/tramitacao/anexo/abrir/" ~ a.id %}
 
                     <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -118,6 +121,8 @@
                                     data-bs-toggle="modal"
                                     data-bs-target="#previewModal"
                                     data-url="{{ url }}"
+                                    data-ext="{{ ext }}"
+                                    data-preview-url="{% if ext in ['doc','docx'] %}/admin/tramitacao/anexo/preview-pdf/{{ a.id }}{% endif %}"
                                     data-mime="{{ a.mime_type }}">
                                 <i class="fa fa-eye me-1"></i> Preview
                             </button>
@@ -176,7 +181,8 @@
                             <ul class="list-group mt-2">
 
                                 {% for a in h.anexos %}
-                                    {% set ext = a.ficheiro_original|lower|split('.')|last %}
+                                    {% set nomeAnexo = a.ficheiro_original|default(a.ficheiro|default('')) %}
+                                    {% set ext = nomeAnexo|lower|split('.')|last %}
                                     {% set url = "/admin/tramitacao/anexo/abrir/" ~ a.id %}
 
                                     <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -202,14 +208,14 @@
 
                                         <div class="d-flex gap-2">
 
-                                            {% set ext = f.ficheiro_original|lower|split('.')|last %}
-
 					    <button type="button"
   					      class="btn btn-sm btn-outline-secondary btn-preview-inline"
     					      data-bs-toggle="modal"
         				      data-bs-target="#previewModal"
         				      data-url="{{ url }}"
-        				      data-ext="{{ ext }}">
+		      data-ext="{{ ext }}"
+                                              data-preview-url="{% if ext in ['doc','docx'] %}/admin/tramitacao/anexo/preview-pdf/{{ a.id }}{% endif %}"
+                                              data-mime="{{ a.mime_type }}">
     						<i class="fa fa-eye me-1"></i> Preview
 					    </button>
 
@@ -236,79 +242,3 @@
 
 </div>
 
-{# ============================================================
-   MODAL DE PREVIEW INLINE
-============================================================ #}
-
-<div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fa fa-eye me-1"></i> Preview
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-
-            <div class="modal-body">
-                <iframe id="previewFrame"
-                        src=""
-                        style="width:100%; height:80vh; border:0;"></iframe>
-            </div>
-
-        </div>
-    </div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-
-    document.querySelectorAll('.btn-preview-inline').forEach(btn => {
-
-        btn.addEventListener('click', function () {
-
-            const url  = btn.getAttribute('data-url');
-            const mime = btn.getAttribute('data-mime') || '';
-            const frame = document.getElementById('previewFrame');
-
-            frame.src = "";
-
-            let ext = "";
-
-            if (mime.includes('pdf')) ext = 'pdf';
-            else if (mime.includes('msword')) ext = 'doc';
-            else if (mime.includes('word')) ext = 'docx';
-            else if (mime.includes('excel')) ext = 'xlsx';
-            else if (mime.includes('spreadsheet')) ext = 'xls';
-            else if (mime.includes('powerpoint')) ext = 'pptx';
-            else if (mime.includes('presentation')) ext = 'ppt';
-            else if (mime.includes('text')) ext = 'txt';
-            else if (mime.includes('image')) ext = 'jpg';
-
-            if (ext === 'pdf') {
-                frame.src = url;
-                return;
-            }
-
-            if (['doc','docx','xls','xlsx','ppt','pptx'].includes(ext)) {
-                frame.src = "https://view.officeapps.live.com/op/view.aspx?src=" + encodeURIComponent(url);
-                return;
-            }
-
-            if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
-                frame.src = url;
-                return;
-            }
-
-            if (ext === 'txt') {
-                frame.src = url;
-                return;
-            }
-
-            frame.src = url;
-        });
-    });
-
-});
-</script>

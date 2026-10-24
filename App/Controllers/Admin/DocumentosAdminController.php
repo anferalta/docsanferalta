@@ -17,6 +17,7 @@ use App\Models\DocumentoFicheiro;   // <-- ESTA LINHA RESOLVE O ERRO
 use App\Models\Utilizador;
 use App\Services\PathGuardService;
 use App\Services\BackupLogger;
+use App\Services\DocumentoPreviewService;
 use App\Models\DocumentosArquivados;
 use PDO;
 
@@ -296,6 +297,9 @@ WHERE 1=1
         }
 
         $tab = $_GET['tab'] ?? 'dados';
+        if (!in_array($tab, ['dados', 'ficheiros', 'tramitacao'], true)) {
+            $tab = 'dados';
+        }
 
         // Área atual
         $area = DocumentoArea::find($documento->area_atual_id);
@@ -314,34 +318,11 @@ WHERE 1=1
         // Ficheiros do documento
         $ficheiros = DocumentoFicheiro::anexosDoDocumento($documento->id);
 
-        // Histórico completo
-        $historico = DocumentoTramitacao::porDocumento($id);
-
-        foreach ($historico as $h) {
-
-            // Anexos da ação
-            $h->anexos = DocumentoTramitacaoAnexo::anexosPorHistorico($h->id);
-
-            // Estado da ação (nome + código)
-            if (!empty($h->estado)) {
-
-                // Buscar estado pelo código guardado na coluna "estado"
-                $estado = DocumentoEstado::findByCodigo($h->estado);
-
-                if ($estado) {
-                    $h->estado_nome = $estado->nome;
-                    $h->estado_codigo = $estado->codigo;
-                } else {
-                    // fallback: usar o valor literal guardado na coluna
-                    $h->estado_nome = strtoupper(str_replace('_', ' ', $h->estado));
-                    $h->estado_codigo = $h->estado;
-                }
-            } else {
-                // Sem estado definido
-                $h->estado_nome = null;
-                $h->estado_codigo = null;
-            }
-        }
+        // Só consultar o histórico quando a respetiva aba é aberta. A aba de
+        // ficheiros não deve falhar por causa de dados ou anexos da tramitação.
+        $historico = $tab === 'tramitacao'
+            ? DocumentoTramitacao::porDocumento($id)
+            : [];
 
         // Áreas e estados
         $areas = DocumentoArea::ativas();
@@ -638,15 +619,26 @@ WHERE 1=1
             exit("Ficheiro inválido.");
         }
 
-        $path = STORAGE_DOCUMENTOS . '/' . $ficheiro->caminho . $ficheiro->ficheiro;
+        $path = rtrim(STORAGE_DOCUMENTOS, '/\\') . DIRECTORY_SEPARATOR
+            . trim((string) $ficheiro->caminho, '/\\') . DIRECTORY_SEPARATOR
+            . basename((string) $ficheiro->ficheiro);
 
         PathGuardService::proteger($path);
 
         $real = realpath($path);
 
-        if ($real && file_exists($real)) {
-            unlink($real);
+        $fisicoRemovido = false;
+        if ($real && is_file($real)) {
+            $fisicoRemovido = unlink($real);
         }
+
+        error_log(sprintf(
+            '[DOCUMENTO_ANEXO_DELETE] user=%s anexo=%s path=%s physical_removed=%s',
+            (string) ($user->id ?? 'unknown'),
+            (string) $ficheiro->id,
+            $real ?: $path,
+            $fisicoRemovido ? 'yes' : 'no'
+        ));
 
         DocumentoFicheiro::delete($id);
 
@@ -670,93 +662,12 @@ WHERE 1=1
      */
     private function converterDocxParaPdf($origem, $pdfDestino)
     {
-        // Cache inteligente
-        if (file_exists($pdfDestino) && filesize($pdfDestino) > 0) {
-            return true;
-        }
-
-        $dir = dirname($pdfDestino);
-        if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
-        }
-
-        // Caminho do LibreOffice
-        // soffice.com mantém a conversão ligada ao stdout e ao código de saída no Windows.
-        $soffice = '"C:\Program Files\LibreOffice\program\soffice.com"';
-
-        // Alguns DOCX chegam com espaços antes da assinatura ZIP. O pacote continua íntegro,
-        // mas o LibreOffice não o reconhece; convertemos uma cópia temporária normalizada.
-        $origemConversao = $origem;
-        $origemTemporaria = null;
-        $pdfGerado = $pdfDestino;
-        if (strtolower(pathinfo($origem, PATHINFO_EXTENSION)) === 'docx') {
-            $cabecalho = file_get_contents($origem, false, null, 0, 16);
-            $posAssinatura = $cabecalho === false ? false : strpos($cabecalho, "PK\x03\x04");
-            if ($posAssinatura !== false && $posAssinatura > 0) {
-                $prefixo = substr($cabecalho, 0, $posAssinatura);
-                if (trim($prefixo, " \t\r\n\0") === '') {
-                    $conteudo = file_get_contents($origem);
-                    if ($conteudo === false) {
-                        return false;
-                    }
-
-                    $origemTemporaria = $dir . DIRECTORY_SEPARATOR
-                        . pathinfo($origem, PATHINFO_FILENAME) . '.normalized.docx';
-                    if (file_put_contents($origemTemporaria, substr($conteudo, $posAssinatura)) === false) {
-                        return false;
-                    }
-                    $origemConversao = $origemTemporaria;
-                    $pdfGerado = $dir . DIRECTORY_SEPARATOR
-                        . pathinfo($origemTemporaria, PATHINFO_FILENAME) . '.pdf';
-                }
-            }
-        }
-
-        // Comando
-        $cmd = $soffice
-            . ' --headless --nologo --nofirststartwizard'
-            . ' --convert-to pdf'
-            . ' "' . $origemConversao . '"'
-            . ' --outdir "' . $dir . '"';
-
-        // LOG para debug
-        file_put_contents(
-            __DIR__ . '/../../../storage/logs/conversao.log',
-            date('Y-m-d H:i:s') . "\nCMD: $cmd\n",
-            FILE_APPEND
-        );
-
-        $output = [];
-        $returnCode = 1;
-        exec($cmd . " 2>&1", $output, $returnCode);
-
-        // LOG do output
-        file_put_contents(
-            __DIR__ . '/../../../storage/logs/conversao.log',
-            "RETORNO: $returnCode\n" . print_r($output, true) . "\n\n",
-            FILE_APPEND
-        );
-
-        if ($origemTemporaria && is_file($origemTemporaria)) {
-            @unlink($origemTemporaria);
-        }
-
-        if ($pdfGerado !== $pdfDestino && is_file($pdfGerado)) {
-            @rename($pdfGerado, $pdfDestino);
-        }
-
-        return is_file($pdfDestino) && filesize($pdfDestino) > 0;
+        return DocumentoPreviewService::converterParaPdf((string) $origem, (string) $pdfDestino);
     }
 
     private function caminhoPreviewPdf(DocumentoFicheiro $anexo, string $origem): string
     {
-        $versao = (string) filesize($origem) . ':' . (string) filemtime($origem);
-        $diretorio = rtrim(STORAGE_TEMP, '/\\') . DIRECTORY_SEPARATOR
-            . 'documentos_preview' . DIRECTORY_SEPARATOR
-            . (int) $anexo->id . '-' . hash('sha256', $versao);
-
-        return $diretorio . DIRECTORY_SEPARATOR
-            . pathinfo($origem, PATHINFO_FILENAME) . '.pdf';
+        return DocumentoPreviewService::caminhoPdf($anexo, $origem);
     }
 
     public function servirPreviewPdf($idAnexo): void
@@ -973,6 +884,48 @@ WHERE 1=1
             'documento' => $documento,
             'arquivo' => $arquivo
         ]);
+    }
+
+    /** Elimina definitivamente um documento arquivado, mesmo que o ficheiro já não exista. */
+    public function eliminarArquivado($id)
+    {
+        $this->authorize('admin.documentos.apagar');
+        PathGuardService::init();
+
+        $id = (int) $id;
+        $documento = Documento::find($id);
+        $db = Conexao::getInstancia();
+
+        // O registo do arquivo pode sobreviver à remoção manual do ficheiro.
+        $stmt = $db->prepare('SELECT caminho, ficheiro FROM documentos_arquivados WHERE documento_id = :id');
+        $stmt->execute(['id' => $id]);
+        foreach ($stmt->fetchAll(PDO::FETCH_OBJ) as $arquivo) {
+            $path = STORAGE_ARQUIVADOS . '/' . trim((string) $arquivo->caminho, '/') . '/' . basename((string) $arquivo->ficheiro);
+            PathGuardService::proteger($path);
+            if (is_file($path)) {
+                unlink($path);
+            }
+        }
+
+        if ($documento && !empty($documento->ficheiro) && !empty($documento->caminho)) {
+            $path = STORAGE_DOCUMENTOS . '/' . trim($documento->caminho, '/') . '/' . basename($documento->ficheiro);
+            PathGuardService::proteger($path);
+            if (is_file($path)) {
+                unlink($path);
+            }
+        }
+
+        DocumentoFicheiro::deleteWhere('documento_id', $id);
+        DocumentosArquivados::deleteWhere('documento_id', $id);
+
+        if ($documento) {
+            $documento->delete($id);
+            Sessao::flash('sucesso', 'Documento e registo de arquivo eliminados com sucesso.');
+        } else {
+            Sessao::flash('sucesso', 'Registo órfão do arquivo eliminado com sucesso.');
+        }
+
+        return $this->redirect('/admin/documentos/arquivados');
     }
 
     public function verAnexo($historicoId, $ficheiro)

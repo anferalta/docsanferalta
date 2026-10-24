@@ -127,7 +127,12 @@ class Permissao extends Model {
     /**
      * Apagar permissão + ligações
      */
-    public function delete($id): bool {
+    public function delete($id = null): bool {
+        $id = $id ?? $this->id;
+        if (!$id) {
+            return false;
+        }
+
         $db = Conexao::getInstancia();
 
         // remover ligações a perfis

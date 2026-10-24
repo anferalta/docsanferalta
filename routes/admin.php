@@ -127,6 +127,7 @@
         $router->get('/documentos/arquivados', 'Admin\DocumentosAdminController@arquivados')->name('admin.documentos.arquivados');
         $router->get('/documentos/arquivado/{id:\d+}', 'Admin\DocumentosAdminController@verArquivado')->name('admin.documentos.arquivado.ver');
         $router->post('/documentos/arquivado/{id:\d+}/recuperar', 'Admin\DocumentosAdminController@recuperarArquivado', ['csrf'])->name('admin.documentos.arquivados.recuperar');
+        $router->post('/documentos/arquivado/{id:\d+}/eliminar', 'Admin\DocumentosAdminController@eliminarArquivado', ['csrf'])->name('admin.documentos.arquivados.eliminar');
         $router->get('/documentos/arquivado/abrir/{id:\d+}', 'Admin\DocumentosAdminController@abrirArquivado');
 
         // Eliminar
@@ -180,6 +181,8 @@
         // Abrir anexos da tramitação
         $router->get('/tramitacao/anexo/abrir/{id:\d+}', 'Admin\TramitacaoAdminController@abrirAnexoTramitacao')
             ->name('admin.tramitacao.anexo.abrir');
+        $router->get('/tramitacao/anexo/preview-pdf/{id:\d+}', 'Admin\TramitacaoAdminController@previewPdfAnexoTramitacao')
+            ->name('admin.tramitacao.anexo.preview_pdf');
 
         $router->post('/tramitacao/arquivar', 'Admin\TramitacaoAdminController@arquivar', ['csrf'])->name('admin.tramitacao.arquivar');
 

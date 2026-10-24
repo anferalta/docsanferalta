@@ -5,11 +5,38 @@ namespace App\Core;
 class Sessao
 {
 
-    private static function start(): void
+    public static function start(): void
     {
         if (session_status() === PHP_SESSION_NONE) {
+            $secure = (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off')
+                || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+            $domain = trim((string) ($_ENV['SESSION_COOKIE_DOMAIN'] ?? ''));
+            session_set_cookie_params([
+                'lifetime' => 0,
+                'path' => '/',
+                'domain' => $domain,
+                'secure' => $secure,
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
             session_start();
         }
+
+        $timeout = max(60, (int) ($_ENV['SESSION_IDLE_TIMEOUT'] ?? 1800));
+        $now = time();
+        $lastActivity = (int) ($_SESSION['_last_activity'] ?? 0);
+        $authenticated = isset($_SESSION['user_id']) || isset($_SESSION['utilizador_id']);
+
+        if ($lastActivity > 0 && ($now - $lastActivity) >= $timeout) {
+            $_SESSION = [];
+            session_destroy();
+            session_start();
+            if ($authenticated) {
+                $_SESSION['flash']['erro'] = 'A sessão terminou por inatividade. Inicie sessão novamente.';
+            }
+        }
+
+        $_SESSION['_last_activity'] = $now;
     }
 
     // ============================================================

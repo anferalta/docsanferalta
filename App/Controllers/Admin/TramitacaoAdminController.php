@@ -17,6 +17,7 @@ use App\Models\Notificacao;
 use App\Models\DocumentoTipo;
 use App\Models\Utilizador;
 use App\Services\PathGuardService;
+use App\Services\DocumentoPreviewService;
 use App\Services\DocumentoExistsValidator;
 use App\Services\AreaExistsValidator;
 use App\Services\UtilizadorExistsValidator;
@@ -359,6 +360,45 @@ class TramitacaoAdminController extends BaseController
         header("Content-Disposition: inline; filename=\"" . basename($ficheiro->ficheiro_original ?: $ficheiro->ficheiro) . "\"");
         header("Content-Length: " . filesize($path));
         readfile($path);
+        exit;
+    }
+
+    public function previewPdfAnexoTramitacao($id): void
+    {
+        PathGuardService::init();
+
+        $anexo = DocumentoTramitacaoAnexo::find((int) $id);
+        if (!$anexo) {
+            http_response_code(404);
+            exit('Anexo de tramitação não encontrado.');
+        }
+
+        $ext = strtolower(pathinfo((string) $anexo->ficheiro, PATHINFO_EXTENSION));
+        if (!in_array($ext, ['doc', 'docx'], true)) {
+            http_response_code(404);
+            exit('Preview PDF não disponível para este tipo de ficheiro.');
+        }
+
+        $origem = rtrim(STORAGE_TRAMITACAO, '/\\') . DIRECTORY_SEPARATOR
+            . trim((string) $anexo->caminho, '/\\') . DIRECTORY_SEPARATOR
+            . basename((string) $anexo->ficheiro);
+        PathGuardService::proteger($origem);
+        if (!is_file($origem)) {
+            http_response_code(404);
+            exit('Ficheiro de tramitação não encontrado.');
+        }
+
+        $pdf = DocumentoPreviewService::caminhoPdfPorId((int) $anexo->id, $origem);
+        if (!DocumentoPreviewService::converterParaPdf($origem, $pdf)) {
+            http_response_code(500);
+            exit('Não foi possível gerar o preview PDF deste anexo.');
+        }
+
+        header('X-Content-Type-Options: nosniff');
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: inline; filename="anexo-tramitacao-' . (int) $anexo->id . '.pdf"');
+        header('Content-Length: ' . filesize($pdf));
+        readfile($pdf);
         exit;
     }
 

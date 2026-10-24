@@ -20,13 +20,18 @@ use App\Models\DocumentoFicheiro;
 
 echo "\n=== REMOÇÃO DE ANEXOS ÓRFÃOS DO DOCUMENTO ===\n\n";
 
+$aplicar = in_array('--apply', $argv ?? [], true);
+if (!$aplicar) {
+    echo "SIMULAÇÃO: nenhum registo será removido. Para aplicar, execute: php scripts/delete_documento_orfaos.php --apply\n\n";
+}
+
 // Confirmar storage
 if (!defined('STORAGE_DOCUMENTOS')) {
     echo "ERRO: STORAGE_DOCUMENTOS não está definida.\n";
     exit;
 }
 
-$base = rtrim(STORAGE_DOCUMENTOS, '/');
+$base = rtrim(STORAGE_DOCUMENTOS, '/\\');
 
 // Testar BD
 try {
@@ -46,21 +51,28 @@ $apagados = 0;
 foreach ($anexos as $a) {
 
     $id       = $a->id;
-    $caminho  = trim($a->caminho, '/');
-    $ficheiro = $a->ficheiro;
+    $caminho  = trim((string) $a->caminho, '/\\');
+    $ficheiro = basename((string) $a->ficheiro);
 
-    $path = "{$base}/{$caminho}/{$ficheiro}";
+    $path = $base . DIRECTORY_SEPARATOR
+        . ($caminho !== '' ? str_replace('/', DIRECTORY_SEPARATOR, $caminho) . DIRECTORY_SEPARATOR : '')
+        . $ficheiro;
 
     echo "Anexo #{$id}: {$path}\n";
 
     // Se o ficheiro existe → não apagar
-    if (file_exists($path)) {
+    if (is_file($path)) {
         echo " - OK (mantido)\n\n";
         continue;
     }
 
-    // Se não existe → apagar da BD
-    echo " - ORFÃO → APAGADO DA BD\n";
+    // Este comando remove apenas o registo da BD; nunca apaga ficheiros físicos.
+    if (!$aplicar) {
+        echo " - sem ficheiro físico; registo seria removido da BD (simulação)\n\n";
+        continue;
+    }
+
+    echo " - sem ficheiro físico; a remover apenas o registo da BD\n";
 
     $a->delete();
     $apagados++;

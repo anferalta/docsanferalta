@@ -1,16 +1,5 @@
 <?php
 
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path' => '/',
-    'domain' => 'anferalta.com',
-    'secure' => true,
-    'httponly' => true,
-    'samesite' => 'Lax'
-]);
-
-session_start();
-
 // AUTOLOAD
 require __DIR__ . '/vendor/autoload.php';
 
@@ -28,6 +17,8 @@ use App\Core\ErrorHandler;
 use App\Core\CSRF;
 use App\Core\Sessao;
 use App\Core\Helpers;
+
+Sessao::start();
 
 // ERROS
 ErrorHandler::register();

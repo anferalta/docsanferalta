@@ -116,8 +116,10 @@
                         <ul class="list-group">
 
                             {% for f in ficheiros %}
-                                {% set ext = f.ficheiro_original|lower|split('.')|last %}
+                                {% set nomeAnexo = f.ficheiro_original|default(f.ficheiro|default('')) %}
+                                {% set ext = nomeAnexo|lower|split('.')|last %}
                                 {% set url = "/admin/documentos/anexo/abrir/" ~ f.id %}
+                                {% set previewUrl = ext in ['doc', 'docx'] ? "/admin/documentos/preview-pdf/" ~ f.id : '' %}
 
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
 
@@ -141,7 +143,7 @@
                                             <i class="fa fa-file fa-lg me-2"></i>
                                         {% endif %}
 
-                                        <span>{{ f.ficheiro_original }}</span>
+                                        <span>{{ nomeAnexo }}</span>
                                     </div>
 
                                     <div class="d-flex gap-2">
@@ -151,7 +153,8 @@
         				   data-bs-toggle="modal"
         				   data-bs-target="#previewModal"
   				           data-url="{{ url }}"
-    				           data-ext="{{ ext }}">
+    				           data-ext="{{ ext }}"
+                                           data-preview-url="{{ previewUrl }}">
    					 <i class="fa fa-eye me-1"></i> Preview
 					</button>
 
@@ -210,8 +213,8 @@
 
     <!-- MODAL DE PREVIEW INLINE -->
     <div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered">
-            <div class="modal-content">
+        <div class="modal-dialog m-0" style="width:100vw;max-width:100vw;height:100vh">
+            <div class="modal-content" style="height:100vh;border:0;border-radius:0">
 
                 <div class="modal-header">
                     <h5 class="modal-title">Preview do Ficheiro</h5>
@@ -219,7 +222,7 @@
                 </div>
 
                 <div class="modal-body p-0" id="previewContainer"
-                     style="min-height: 70vh; display: flex; align-items: center; justify-content: center;">
+                     style="height:calc(100vh - 56px);min-height:0;display:flex;align-items:center;justify-content:center;overflow:auto">
                     <p class="text-muted">A carregar preview...</p>
                 </div>
 
@@ -240,6 +243,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const button = event.relatedTarget;
         const url = button.getAttribute('data-url');
         const ext = button.getAttribute('data-ext')?.toLowerCase();
+        const previewUrl = button.getAttribute('data-preview-url') || '';
 
         previewContainer.innerHTML = '<p class="text-muted">A carregar preview...</p>';
 
@@ -253,27 +257,33 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
-            previewContainer.innerHTML = `<img src="${url}" class="img-fluid rounded border">`;
+            previewContainer.innerHTML = `<img src="${url}" class="img-fluid" style="max-width:100%;max-height:100%;object-fit:contain">`;
             return;
         }
 
         if (ext === 'pdf') {
-            previewContainer.innerHTML = `<embed src="${url}" type="application/pdf" width="100%" height="80vh">`;
+            previewContainer.innerHTML = `<embed src="${url}" type="application/pdf" style="width:100%;height:100%;border:0">`;
             return;
         }
 
         if (ext === 'txt') {
-            previewContainer.innerHTML = `<iframe src="${url}" width="100%" height="80vh" class="border rounded"></iframe>`;
+            previewContainer.innerHTML = `<iframe src="${url}" style="width:100%;height:100%;border:0"></iframe>`;
             return;
         }
 
         if (['doc','docx','xls','xlsx','ppt','pptx'].includes(ext)) {
+            if (['doc', 'docx'].includes(ext) && previewUrl) {
+                previewContainer.innerHTML = `
+                    <iframe src="${previewUrl}" style="width:100%;height:100%;border:0"></iframe>`;
+                return;
+            }
+
             const officeUrl =
                 "https://view.officeapps.live.com/op/view.aspx?src=" +
                 encodeURIComponent(url);
 
             previewContainer.innerHTML = `
-                <iframe src="${officeUrl}" width="100%" height="80vh" class="border rounded"></iframe>`;
+                <iframe src="${officeUrl}" style="width:100%;height:100%;border:0"></iframe>`;
             return;
         }
 

@@ -76,6 +76,8 @@
                                         data-bs-toggle="modal"
                                         data-bs-target="#previewModal"
                                         data-url="/admin/documentos/anexo/abrir/{{ f.id }}"
+                                        data-ext="{{ f.ficheiro_original|lower|split('.')|last }}"
+                                        data-preview-url="{% if f.ficheiro_original|lower|split('.')|last in ['doc','docx'] %}/admin/documentos/preview-pdf/{{ f.id }}{% endif %}"
                                         data-mime="{{ f.mime_type }}">
                                     <i class="fa fa-eye me-1"></i> Preview
                                 </button>
@@ -165,6 +167,8 @@
                                                             data-bs-toggle="modal"
                                                             data-bs-target="#previewModal"
                                                             data-url="/admin/tramitacao/anexo/abrir/{{ a.id }}"
+                                                            data-ext="{{ a.ficheiro_original|lower|split('.')|last }}"
+                                                            data-preview-url="{% if a.ficheiro|lower|split('.')|last in ['doc','docx'] %}/admin/tramitacao/anexo/preview-pdf/{{ a.id }}{% endif %}"
                                                             data-mime="{{ a.mime_type }}">
                                                         <i class="fa fa-eye me-1"></i> Preview
                                                     </button>
@@ -237,6 +241,18 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
+    document.querySelectorAll('.btn-preview-inline').forEach(function (button) {
+        button.addEventListener('click', function () {
+            const frame = document.getElementById('previewFrame');
+            if (!frame) return;
+
+            const url = button.getAttribute('data-url') || '';
+            const previewUrl = button.getAttribute('data-preview-url') || '';
+            const ext = (button.getAttribute('data-ext') || '').toLowerCase();
+            frame.src = ['doc', 'docx'].includes(ext) && previewUrl ? previewUrl : url;
+        });
+    });
+
     const form = document.getElementById('formEncaminhar');
     const btn = document.getElementById('btnTramitar');
     const modalEl = document.getElementById('modalTramitar');
@@ -256,4 +272,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 </script>
+{% endblock %}
+
+{% block modals %}
+<div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog m-0" style="width:100vw;max-width:100vw;height:100vh">
+        <div class="modal-content" style="height:100vh;border:0;border-radius:0">
+            <div class="modal-header">
+                <h5 class="modal-title">Preview do ficheiro</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body p-0" style="height:calc(100vh - 56px);min-height:0;overflow:auto">
+                <iframe id="previewFrame" src="" title="Preview do ficheiro"
+                        style="width:100%;height:100%;border:0"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
