@@ -399,7 +399,7 @@ document.addEventListener("DOMContentLoaded", () => {
             let html = '';
 
             if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
-                html = '<img src="' + absoluteUrl + '" class="img-fluid">';
+                html = '<img src="' + absoluteUrl + '?inline=1" alt="Preview da imagem" class="img-fluid" style="display:block;width:auto;max-width:100%;max-height:75vh;object-fit:contain;">';
             }
             else if (ext === 'pdf') {
                 html = '<iframe src="' + absoluteUrl + '" class="w-100" style="height:600px;border:none;"></iframe>';
@@ -408,11 +408,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 html = '<iframe src="' + absoluteUrl + '" class="w-100" style="height:400px;border:none;"></iframe>';
             }
             else if (['doc','docx','xls','xlsx','ppt','pptx'].includes(ext)) {
-                const officeUrl =
-                    "https://view.officeapps.live.com/op/view.aspx?src=" +
-                    encodeURIComponent(absoluteUrl);
-
-                html = '<iframe src="' + officeUrl + '" class="w-100" style="height:600px;border:none;"></iframe>';
+                if (['doc', 'docx'].includes(ext)) {
+                    const pdfUrl = "/admin/documentos/preview-pdf/" + btn.getAttribute('data-id');
+                    html = '<iframe src="' + pdfUrl + '" class="w-100" style="height:600px;border:none;"></iframe>';
+                } else if (['anferalta.com', 'www.anferalta.com'].includes(window.location.hostname.toLowerCase())) {
+                    const publicUrl = "https://anferalta.com/public/documentos/" + btn.getAttribute('data-id');
+                    const officeUrl = "https://view.officeapps.live.com/op/view.aspx?src=" + encodeURIComponent(publicUrl);
+                    html = '<iframe src="' + officeUrl + '" class="w-100" style="height:600px;border:none;"></iframe>';
+                } else {
+                    html = '<div class="text-center p-4">' +
+                        '<p>O preview deste formato requer que o ficheiro esteja acessível pela internet. Descarregue-o para o abrir na aplicação correspondente.</p>' +
+                        '<a href="' + absoluteUrl + '" class="btn btn-primary">Descarregar ficheiro</a></div>';
+                }
             }
             else if (ext === 'odt') {
                 html = `

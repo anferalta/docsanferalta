@@ -11,7 +11,7 @@
 ============================================================ #}
 
 {# 1) Office Viewer para DOCX, XLSX, PPTX #}
-{% if office is defined %}
+{% if office is defined and office %}
     <iframe src="{{ office }}" 
             width="100%" 
             height="100%" 

@@ -35,6 +35,12 @@ class BaseController
             'debug' => true
         ]);
 
+        // Os templates usam a API app.request (filtros, ordenação e navegação).
+        // Como este projeto não usa Symfony, expomos aqui um contexto equivalente.
+        $this->twig->addGlobal('app', (object) [
+            'request' => new TwigRequestContext()
+        ]);
+
         $this->twig->addExtension(new DebugExtension());
 
         // ============================

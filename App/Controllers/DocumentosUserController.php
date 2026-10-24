@@ -10,6 +10,7 @@ use App\Models\Documento;
 use App\Models\DocumentoTipo;
 use App\Models\DocumentoFicheiro;
 use App\Core\Conexao;
+use App\Services\DocumentoPreviewService;
 use App\Services\PathGuardService;
 
 class DocumentosUserController extends BaseController
@@ -212,7 +213,8 @@ class DocumentosUserController extends BaseController
             exit("Acesso não autorizado.");
         }
 
-        $path = STORAGE_DOCUMENTOS . '/' . $anexo->caminho . $anexo->ficheiro;
+        $path = rtrim(STORAGE_DOCUMENTOS, '/\\') . DIRECTORY_SEPARATOR
+            . trim((string) $anexo->caminho, '/\\') . DIRECTORY_SEPARATOR . $anexo->ficheiro;
 
         PathGuardService::proteger($path);
 
@@ -221,9 +223,16 @@ class DocumentosUserController extends BaseController
             exit("Ficheiro não encontrado.");
         }
 
-        $mime = mime_content_type($path);
+        $mime = $this->mimeAnexo($path);
         $nome = basename($anexo->ficheiro);
 
+        if (in_array(strtolower(pathinfo($path, PATHINFO_EXTENSION)), ['doc', 'docx'], true)) {
+            return $this->redirect('/documentos/preview/' . (int) $anexo->id);
+        }
+
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
         header("Content-Type: {$mime}");
         header("Content-Disposition: inline; filename=\"{$nome}\"");
         header("Content-Length: " . filesize($path));
@@ -250,7 +259,8 @@ class DocumentosUserController extends BaseController
             exit("Acesso não autorizado.");
         }
 
-        $path = STORAGE_DOCUMENTOS . '/' . $anexo->caminho . $anexo->ficheiro;
+        $path = rtrim(STORAGE_DOCUMENTOS, '/\\') . DIRECTORY_SEPARATOR
+            . trim((string) $anexo->caminho, '/\\') . DIRECTORY_SEPARATOR . $anexo->ficheiro;
 
         PathGuardService::proteger($path);
 
@@ -299,17 +309,88 @@ class DocumentosUserController extends BaseController
             exit("Ficheiro não encontrado.");
         }
 
-        $mime = mime_content_type($path);
+        $mime = $this->mimeAnexo($path);
         $nome = basename($anexo->ficheiro);
 
-        // Caminho público CORRIGIDO
-        $publicPath = '/storage/documentos/' . trim($anexo->caminho, '/') . '/' . $anexo->ficheiro;
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        if (in_array($ext, ['doc', 'docx'], true)) {
+            $pdfPreview = DocumentoPreviewService::caminhoPdf($anexo, $path);
+            if (!DocumentoPreviewService::converterParaPdf($path, $pdfPreview)) {
+                http_response_code(500);
+                exit('Não foi possível gerar o preview PDF deste documento.');
+            }
 
-        // ADMIN deve usar template do ADMIN
+            $mime = 'application/pdf';
+            $publicPath = '/documentos/preview-pdf/' . (int) $anexo->id;
+        } else {
+            // Servir pelo controller autenticado; a pasta storage não é pública.
+            $publicPath = '/documentos/anexo/abrir/' . (int) $anexo->id;
+        }
+
         return $this->render('@site/documentos/preview.twig', [
             'mime' => $mime,
             'nome' => $nome,
             'caminho' => $publicPath
         ]);
+    }
+
+    public function previewPdf($idAnexo): void
+    {
+        PathGuardService::init();
+        $user = Auth::user();
+        if (!$user) {
+            http_response_code(403);
+            exit('Não autorizado.');
+        }
+
+        $anexo = DocumentoFicheiro::find($idAnexo);
+        if (!$anexo) {
+            http_response_code(404);
+            exit('Anexo não encontrado.');
+        }
+
+        $documento = Documento::find($anexo->documento_id);
+        if (!$documento || $documento->criado_por != $user->id) {
+            http_response_code(403);
+            exit('Acesso não autorizado.');
+        }
+
+        $origem = rtrim(STORAGE_DOCUMENTOS, '/\\') . DIRECTORY_SEPARATOR
+            . trim((string) $anexo->caminho, '/\\') . DIRECTORY_SEPARATOR . $anexo->ficheiro;
+        if (!is_file($origem) || !in_array(strtolower(pathinfo($origem, PATHINFO_EXTENSION)), ['doc', 'docx'], true)) {
+            http_response_code(404);
+            exit('Preview não disponível para este anexo.');
+        }
+
+        $pdf = DocumentoPreviewService::caminhoPdf($anexo, $origem);
+        if (!DocumentoPreviewService::converterParaPdf($origem, $pdf)) {
+            http_response_code(500);
+            exit('Não foi possível gerar o preview PDF deste documento.');
+        }
+
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        header('X-Content-Type-Options: nosniff');
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: inline; filename="documento-' . (int) $anexo->id . '.pdf"');
+        header('Content-Length: ' . filesize($pdf));
+        readfile($pdf);
+        exit;
+    }
+
+    private function mimeAnexo(string $path): string
+    {
+        $porExtensao = [
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'pdf' => 'application/pdf',
+            'txt' => 'text/plain; charset=utf-8',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'doc' => 'application/msword',
+        ];
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        return $porExtensao[$ext] ?? (mime_content_type($path) ?: 'application/octet-stream');
     }
 }

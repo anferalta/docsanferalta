@@ -444,16 +444,32 @@ WHERE 1=1
 
         $ext = strtolower(pathinfo($anexo->ficheiro, PATHINFO_EXTENSION));
 
-        // URL público para Office Viewer
-        $publicUrl = "https://anferalta.com/public/documentos/" . $idAnexo;
+        if (in_array($ext, ['doc', 'docx'], true)) {
+            $pdfPreview = $this->caminhoPreviewPdf($anexo, $path);
+            if ($this->converterDocxParaPdf($path, $pdfPreview)) {
+                return $this->render('@admin/documentos/preview.twig', [
+                    'nome' => $anexo->ficheiro_original ?: $anexo->ficheiro,
+                    'ext' => 'pdf',
+                    'caminho' => '/admin/documentos/preview-pdf/' . $idAnexo,
+                    'office' => null
+                ]);
+            }
+        }
 
-        // Office Viewer
-        $officeUrl = "https://view.officeapps.live.com/op/view.aspx?src=" . urlencode($publicUrl);
+        // O Office Viewer só consegue abrir uma URL pública e acessível pela internet.
+        $officeUrl = null;
+        $host = strtolower($_SERVER['HTTP_HOST'] ?? '');
+        if (in_array($ext, ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'], true)
+            && in_array($host, ['anferalta.com', 'www.anferalta.com'], true)) {
+            $publicUrl = "https://anferalta.com/public/documentos/" . $idAnexo;
+            $officeUrl = "https://view.officeapps.live.com/op/view.aspx?src=" . urlencode($publicUrl);
+        }
 
         return $this->render('@admin/documentos/preview.twig', [
             'nome'    => $anexo->ficheiro,
             'ext'     => $ext,
-            'caminho' => "/admin/documentos/anexo/abrir/" . $idAnexo,
+            'caminho' => "/admin/documentos/anexo/abrir/" . $idAnexo
+                . (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true) ? '?inline=1' : ''),
             'office'  => $officeUrl
         ]);
     }
@@ -477,12 +493,13 @@ WHERE 1=1
         }
 
         $ext  = strtolower(pathinfo($real, PATHINFO_EXTENSION));
-        $mime = mime_content_type($real);
+        $mime = $this->mimePorExtensao($ext, $real);
 
         // Inline permitido
         $inline = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'txt'];
 
         if (in_array($ext, $inline)) {
+            header('X-Content-Type-Options: nosniff');
             header("Content-Type: $mime");
             header("Content-Disposition: inline; filename=\"" . $anexo->ficheiro . "\"");
             header("Content-Length: " . filesize($real));
@@ -664,13 +681,42 @@ WHERE 1=1
         }
 
         // Caminho do LibreOffice
-        $soffice = '"C:\Program Files\LibreOffice\program\soffice.exe"';
+        // soffice.com mantém a conversão ligada ao stdout e ao código de saída no Windows.
+        $soffice = '"C:\Program Files\LibreOffice\program\soffice.com"';
+
+        // Alguns DOCX chegam com espaços antes da assinatura ZIP. O pacote continua íntegro,
+        // mas o LibreOffice não o reconhece; convertemos uma cópia temporária normalizada.
+        $origemConversao = $origem;
+        $origemTemporaria = null;
+        $pdfGerado = $pdfDestino;
+        if (strtolower(pathinfo($origem, PATHINFO_EXTENSION)) === 'docx') {
+            $cabecalho = file_get_contents($origem, false, null, 0, 16);
+            $posAssinatura = $cabecalho === false ? false : strpos($cabecalho, "PK\x03\x04");
+            if ($posAssinatura !== false && $posAssinatura > 0) {
+                $prefixo = substr($cabecalho, 0, $posAssinatura);
+                if (trim($prefixo, " \t\r\n\0") === '') {
+                    $conteudo = file_get_contents($origem);
+                    if ($conteudo === false) {
+                        return false;
+                    }
+
+                    $origemTemporaria = $dir . DIRECTORY_SEPARATOR
+                        . pathinfo($origem, PATHINFO_FILENAME) . '.normalized.docx';
+                    if (file_put_contents($origemTemporaria, substr($conteudo, $posAssinatura)) === false) {
+                        return false;
+                    }
+                    $origemConversao = $origemTemporaria;
+                    $pdfGerado = $dir . DIRECTORY_SEPARATOR
+                        . pathinfo($origemTemporaria, PATHINFO_FILENAME) . '.pdf';
+                }
+            }
+        }
 
         // Comando
         $cmd = $soffice
             . ' --headless --nologo --nofirststartwizard'
             . ' --convert-to pdf'
-            . ' "' . $origem . '"'
+            . ' "' . $origemConversao . '"'
             . ' --outdir "' . $dir . '"';
 
         // LOG para debug
@@ -680,6 +726,8 @@ WHERE 1=1
             FILE_APPEND
         );
 
+        $output = [];
+        $returnCode = 1;
         exec($cmd . " 2>&1", $output, $returnCode);
 
         // LOG do output
@@ -689,8 +737,61 @@ WHERE 1=1
             FILE_APPEND
         );
 
-        // Verificar se o PDF foi criado
-        return file_exists($pdfDestino) && filesize($pdfDestino) > 0;
+        if ($origemTemporaria && is_file($origemTemporaria)) {
+            @unlink($origemTemporaria);
+        }
+
+        if ($pdfGerado !== $pdfDestino && is_file($pdfGerado)) {
+            @rename($pdfGerado, $pdfDestino);
+        }
+
+        return is_file($pdfDestino) && filesize($pdfDestino) > 0;
+    }
+
+    private function caminhoPreviewPdf(DocumentoFicheiro $anexo, string $origem): string
+    {
+        $versao = (string) filesize($origem) . ':' . (string) filemtime($origem);
+        $diretorio = rtrim(STORAGE_TEMP, '/\\') . DIRECTORY_SEPARATOR
+            . 'documentos_preview' . DIRECTORY_SEPARATOR
+            . (int) $anexo->id . '-' . hash('sha256', $versao);
+
+        return $diretorio . DIRECTORY_SEPARATOR
+            . pathinfo($origem, PATHINFO_FILENAME) . '.pdf';
+    }
+
+    public function servirPreviewPdf($idAnexo): void
+    {
+        $anexo = DocumentoFicheiro::find($idAnexo);
+        if (!$anexo) {
+            http_response_code(404);
+            exit('Anexo não encontrado.');
+        }
+
+        $ext = strtolower(pathinfo((string) $anexo->ficheiro, PATHINFO_EXTENSION));
+        if (!in_array($ext, ['doc', 'docx'], true)) {
+            http_response_code(404);
+            exit('Preview PDF não disponível para este tipo de ficheiro.');
+        }
+
+        $origem = rtrim(STORAGE_DOCUMENTOS, '/\\') . DIRECTORY_SEPARATOR
+            . trim((string) $anexo->caminho, '/\\') . DIRECTORY_SEPARATOR . $anexo->ficheiro;
+        if (!is_file($origem)) {
+            http_response_code(404);
+            exit('Ficheiro original não encontrado.');
+        }
+
+        $pdf = $this->caminhoPreviewPdf($anexo, $origem);
+        if (!$this->converterDocxParaPdf($origem, $pdf)) {
+            http_response_code(500);
+            exit('Não foi possível gerar o preview PDF deste documento.');
+        }
+
+        header('X-Content-Type-Options: nosniff');
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: inline; filename="documento-' . (int) $anexo->id . '.pdf"');
+        header('Content-Length: ' . filesize($pdf));
+        readfile($pdf);
+        exit;
     }
 
     public function download($id)
@@ -868,7 +969,7 @@ WHERE 1=1
         }
 
         // 3. Renderizar normalmente
-        return $this->render('@admin/documentos/arquivado.twig', [
+        return $this->render('@admin/documentos/ver_arquivado.twig', [
             'documento' => $documento,
             'arquivo' => $arquivo
         ]);
@@ -902,11 +1003,12 @@ WHERE 1=1
 
         // Abrir inline quando possível
         $ext = strtolower(pathinfo($real, PATHINFO_EXTENSION));
-        $mime = mime_content_type($real);
+        $mime = $this->mimePorExtensao($ext, $real);
 
         $inline = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'txt'];
 
         if (in_array($ext, $inline)) {
+            header('X-Content-Type-Options: nosniff');
             header("Content-Type: $mime");
             header("Content-Disposition: inline; filename=\"" . basename($ficheiro) . "\"");
             header("Content-Length: " . filesize($real));
@@ -1025,7 +1127,14 @@ WHERE 1=1
         }
 
         $ext  = strtolower(pathinfo($real, PATHINFO_EXTENSION));
-        $mime = mime_content_type($real);
+        $mime = $this->mimePorExtensao($ext, $real);
+
+        // Só pedidos explicitamente marcados como inline recebem os bytes da
+        // imagem. A navegação direta segue para a página de preview responsiva.
+        $imagens = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        if (in_array($ext, $imagens, true) && ($_GET['inline'] ?? '') !== '1') {
+            return $this->redirect('/admin/documentos/preview/' . (int) $anexo->id);
+        }
 
         // Proteger apenas PDF e TXT
         $protegidos = ['pdf', 'txt'];
@@ -1037,6 +1146,13 @@ WHERE 1=1
         $inline = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'txt'];
 
         if (in_array($ext, $inline)) {
+            // Evita que espaços/BOM emitidos antes pelo bootstrap contaminem
+            // os bytes binários e façam o browser rejeitar a imagem.
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+
+            header('X-Content-Type-Options: nosniff');
             header("Content-Type: $mime");
             header("Content-Disposition: inline; filename=\"" . basename($anexo->ficheiro) . "\"");
             header("Content-Length: " . filesize($real));
@@ -1045,11 +1161,34 @@ WHERE 1=1
         }
 
         // Outros → download
-        header("Content-Type: application/octet-stream");
+        header('X-Content-Type-Options: nosniff');
+        header("Content-Type: $mime");
         header("Content-Disposition: attachment; filename=\"" . basename($anexo->ficheiro) . "\"");
         header("Content-Length: " . filesize($real));
         readfile($real);
         exit;
+    }
+
+    private function mimePorExtensao(string $extensao, string $caminho): string
+    {
+        $tiposConhecidos = [
+            'png' => 'image/png',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            'pdf' => 'application/pdf',
+            'txt' => 'text/plain; charset=utf-8',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'doc' => 'application/msword',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'xls' => 'application/vnd.ms-excel',
+            'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'ppt' => 'application/vnd.ms-powerpoint',
+        ];
+
+        $mime = $tiposConhecidos[$extensao] ?? mime_content_type($caminho);
+        return $mime ?: 'application/octet-stream';
     }
 
     public function abrirArquivado($id)

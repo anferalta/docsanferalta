@@ -64,6 +64,7 @@
     // Preview
     //$router->get('/documentos/preview/{id:\d+}', 'DocumentosUserController@preview');
     $router->get('/documentos/preview/{id}', 'DocumentosUserController@preview');
+    $router->get('/documentos/preview-pdf/{id:\d+}', 'DocumentosUserController@previewPdf');
     $router->get('/public/documentos/{id}', 'DocumentosPublicController@abrirPublico');
     // ============================================================
     // ROTAS ADMIN (PROTEGIDAS POR AUTH)
@@ -115,6 +116,7 @@
         $router->get('/documentos/ver/{id:\d+}', 'Admin\DocumentosAdminController@ver')->name('admin.documentos.ver_detalhe');
         $router->get('/documentos/preview/{id:\d+}', 'Admin\DocumentosAdminController@preview')
             ->name('admin.documentos.preview');
+        $router->get('/documentos/preview-pdf/{id:\d+}', 'Admin\DocumentosAdminController@servirPreviewPdf');
         
         // Anexos
         $router->get('/documentos/anexo/abrir/{id:\d+}', 'Admin\DocumentosAdminController@abrirAnexo');
