@@ -1,0 +1,67 @@
+{% extends "@admin/layout.twig" %}
+
+{% block title %}Definições{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <h1 class="h3 mb-2">Definições</h1>
+        <p class="text-muted mb-4">Configure as opções e listas utilizadas na gestão documental.</p>
+
+        <div class="row g-3">
+            {% if podeGerirAreas %}
+                <div class="col-md-6 col-xl-4">
+                    <a href="/admin/documento-areas" class="card h-100 text-decoration-none shadow-sm">
+                        <div class="card-body">
+                            <h2 class="h5 text-dark"><i class="bi bi-diagram-3 me-2"></i>Áreas documentais</h2>
+                            <p class="text-muted mb-0">Gerir as áreas responsáveis pela tramitação dos documentos.</p>
+                        </div>
+                    </a>
+                </div>
+            {% endif %}
+
+            {% if podeGerirTipos %}
+                <div class="col-md-6 col-xl-4">
+                    <a href="/admin/documento-tipos" class="card h-100 text-decoration-none shadow-sm">
+                        <div class="card-body">
+                            <h2 class="h5 text-dark"><i class="bi bi-file-earmark-text me-2"></i>Tipos de documento</h2>
+                            <p class="text-muted mb-0">Gerir os tipos disponíveis no registo de documentos.</p>
+                        </div>
+                    </a>
+                </div>
+            {% endif %}
+
+            {% if podeGerirEstados %}
+                <div class="col-md-6 col-xl-4">
+                    <a href="/admin/documento-estados" class="card h-100 text-decoration-none shadow-sm">
+                        <div class="card-body">
+                            <h2 class="h5 text-dark"><i class="bi bi-list-check me-2"></i>Estados documentais</h2>
+                            <p class="text-muted mb-0">Consultar e configurar os estados dos documentos.</p>
+                        </div>
+                    </a>
+                </div>
+            {% endif %}
+
+            {% if podeGerirPerfis %}
+                <div class="col-md-6 col-xl-4">
+                    <a href="/admin/perfis" class="card h-100 text-decoration-none shadow-sm">
+                        <div class="card-body">
+                            <h2 class="h5 text-dark"><i class="bi bi-people me-2"></i>Perfis</h2>
+                            <p class="text-muted mb-0">Gerir perfis de acesso e as permissões associadas.</p>
+                        </div>
+                    </a>
+                </div>
+            {% endif %}
+
+            {% if podeGerirPermissoes %}
+                <div class="col-md-6 col-xl-4">
+                    <a href="/admin/permissoes" class="card h-100 text-decoration-none shadow-sm">
+                        <div class="card-body">
+                            <h2 class="h5 text-dark"><i class="bi bi-shield-lock me-2"></i>Permissões</h2>
+                            <p class="text-muted mb-0">Consultar as permissões disponíveis no sistema.</p>
+                        </div>
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "@admin/layout.twig" %}
+
+{% block title %}Meu Perfil{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <h1 class="h3 mb-4">Meu Perfil</h1>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-3">Nome</dt>
+                    <dd class="col-sm-9">{{ user.nome }}</dd>
+
+                    <dt class="col-sm-3">Email</dt>
+                    <dd class="col-sm-9">{{ user.email }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+{% endblock %}

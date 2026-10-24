@@ -79,6 +79,12 @@
         $router->get('/', 'Admin\DashboardAdminController@index')->name('admin.dashboard');
         $router->get('/dashboard', 'Admin\DashboardAdminController@index');
 
+        // Perfil do utilizador autenticado
+        $router->get('/perfil', 'Admin\PerfilAdminController@index')->name('admin.profile');
+
+        // Centro de definições do sistema
+        $router->get('/definicoes', 'Admin\DefinicoesAdminController@index')->name('admin.settings');
+
         // Utilizadores
         $router->get('/utilizadores', 'Admin\UtilizadoresAdminController@index')->name('admin.users.index');
         $router->get('/utilizadores/criar', 'Admin\UtilizadoresAdminController@criar')->name('admin.users.create');
