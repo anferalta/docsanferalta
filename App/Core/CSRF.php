@@ -52,7 +52,12 @@ class CSRF
             return true;
         }
 
-        $sent   = $_POST[self::FIELD_NAME] ?? null;
+        // Older views and the csrf_field() helper submit `csrf`, while newer
+        // views use `_csrf`. Accept both names against the same session token.
+        $sent   = $_POST[self::FIELD_NAME]
+            ?? $_POST['csrf']
+            ?? $_SERVER['HTTP_X_CSRF_TOKEN']
+            ?? null;
         $stored = $_SESSION[self::SESSION_KEY] ?? null;
 
         if (!$sent || !$stored) {
