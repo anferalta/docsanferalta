@@ -10,16 +10,14 @@ class FileBackupService
 {
     private string $baseDir;
     private string $sourceDir;
-    private string $hashFile;
 
     public function __construct()
 {
     PathGuardService::init();
 
-    // PASTA CORRETA DOS DOCUMENTOS (storage pública)
-    $this->sourceDir = $_SERVER['DOCUMENT_ROOT'] . '/storage/documentos';
-
-    $this->sourceDir = rtrim(str_replace('\\', '/', $this->sourceDir), '/') . '/';
+    // Os documentos ficam no storage privado do projeto, não na raiz pública
+    // do servidor web. DOCUMENT_ROOT varia conforme o virtual host e o rewrite.
+    $this->sourceDir = rtrim(str_replace('\\', '/', STORAGE_DOCUMENTOS), '/') . '/';
 
     // 🔒 Proteger pasta de origem
     PathGuardService::proteger($this->sourceDir);
@@ -41,9 +39,6 @@ class FileBackupService
 
     $this->baseDir = rtrim(str_replace('\\', '/', $this->baseDir), '/') . '/';
 
-    $this->hashFile = __DIR__ . '/../../backups/hashes_files.json';
-
-    PathGuardService::proteger($this->hashFile);
 }
 
 	public function criar(): string
@@ -70,7 +65,7 @@ class FileBackupService
         $dir = rtrim(str_replace('\\', '/', realpath($dir)), '/') . '/';
 
         // Nome do ZIP
-        $nome = 'backup_files_' . date('Y-m-d_H-i-s') . '.zip';
+        $nome = 'backup_files_' . date('Y-m-d_H-i-s') . '_' . bin2hex(random_bytes(3)) . '.zip';
         $zipPath = $dir . $nome;
 
         // 🔒 Proteger ZIP antes de criar
@@ -82,8 +77,7 @@ class FileBackupService
         }
 
         $totalAdicionados = 0;
-
-        // ITERAR DOCUMENTOS REAIS
+        // Cada execução manual cria uma cópia completa e independente.
         $files = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($this->sourceDir, \FilesystemIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::LEAVES_ONLY
@@ -101,43 +95,42 @@ class FileBackupService
             // 🔒 Proteger ficheiro antes de ler
             PathGuardService::proteger($filePath);
 
-            // Ignorar ficheiros corrompidos ou vazios
-            if (!is_readable($filePath) || filesize($filePath) === 0) {
-                BackupLogger::registar('BACKUP', $filePath, false, "Ficheiro ignorado (corrompido ou vazio)");
-                continue;
+            if (!is_readable($filePath)) {
+                $zip->close();
+                throw new \Exception("Sem permissão para ler o ficheiro: {$relative}");
             }
-
-            // BACKUP INCREMENTAL
-            $hashAtual = md5_file($filePath);
-            $hashAnterior = $this->lerHashAnterior($relative);
-
-            if ($hashAtual === $hashAnterior) {
-                continue;
-            }
-
-            $this->guardarHash($relative, $hashAtual);
 
             if (!$zip->addFile($filePath, $relative)) {
+                $zip->close();
                 throw new \Exception("Erro ao adicionar ficheiro ao ZIP: {$relative}");
             }
 
             $totalAdicionados++;
         }
 
-        $zip->close();
+        $fechoOk = $zip->close();
+        if (!$this->validarZip($zipPath)) {
+            $this->recuperarZipTemporario($zipPath);
+        }
 
         // Proteger contra ZIP vazio
         if ($totalAdicionados === 0) {
-            PathGuardService::proteger($zipPath);
-            unlink($zipPath);
-            throw new \Exception("Nenhum ficheiro novo ou alterado para backup.");
+            if (is_file($zipPath)) {
+                @unlink($zipPath);
+            }
+            throw new \Exception('A pasta de documentos não contém ficheiros para incluir no backup.');
         }
 
         // Verificar integridade do ZIP
         if (!$this->validarZip($zipPath)) {
             PathGuardService::proteger($zipPath);
-            unlink($zipPath);
-            throw new \Exception("Backup inválido — ZIP corrompido.");
+            if (is_file($zipPath)) {
+                @unlink($zipPath);
+            }
+            $motivo = $fechoOk
+                ? 'Backup inválido — o ZIP não passou na verificação de integridade.'
+                : 'O servidor não conseguiu finalizar o ZIP; verifique permissões e bloqueios na pasta de backups.';
+            throw new \Exception($motivo);
         }
 
         // Limpeza automática (30 dias)
@@ -156,46 +149,59 @@ class FileBackupService
     {
         PathGuardService::proteger($ficheiro);
 
-        if (!file_exists($ficheiro) || filesize($ficheiro) < 1024) {
+        if (!is_file($ficheiro) || !is_readable($ficheiro) || filesize($ficheiro) === 0) {
             return false;
         }
 
         $zip = new ZipArchive();
-        if ($zip->open($ficheiro) !== true) {
+        if ($zip->open($ficheiro, ZipArchive::CHECKCONS) !== true) {
             return false;
         }
 
         $ok = $zip->numFiles > 0;
-        $zip->close();
+        $fechoOk = $zip->close();
 
-        return $ok;
+        return $ok && $fechoOk;
     }
 
-    private function lerHashAnterior(string $ficheiro): ?string
+    /** Tenta promover um ZIP temporário do libzip para o nome final. */
+    private function recuperarZipTemporario(string $zipPath): bool
     {
-        PathGuardService::proteger($this->hashFile);
+        $diretorio = dirname($zipPath);
+        $prefixo = basename($zipPath) . '.';
+        $temporarios = [];
 
-        if (!file_exists($this->hashFile)) {
-            return null;
+        foreach (new \DirectoryIterator($diretorio) as $item) {
+            if (!$item->isFile() || !str_starts_with($item->getFilename(), $prefixo)) {
+                continue;
+            }
+
+            $sufixo = substr($item->getFilename(), strlen($prefixo));
+            if (preg_match('/^[a-f0-9]{8}$/i', $sufixo) && $item->getSize() > 0) {
+                $temporarios[] = $item->getPathname();
+            }
         }
 
-        $hashes = json_decode(file_get_contents($this->hashFile), true);
-        return $hashes[$ficheiro] ?? null;
-    }
+        usort($temporarios, static fn(string $a, string $b): int => filemtime($b) <=> filemtime($a));
 
-    private function guardarHash(string $ficheiro, string $hash): void
-    {
-        PathGuardService::proteger($this->hashFile);
+        foreach ($temporarios as $temporario) {
+            if (!$this->validarZip($temporario)) {
+                continue;
+            }
 
-        $hashes = [];
+            if (@rename($temporario, $zipPath) && $this->validarZip($zipPath)) {
+                return true;
+            }
 
-        if (file_exists($this->hashFile)) {
-            $hashes = json_decode(file_get_contents($this->hashFile), true) ?? [];
+            // Se o rename for bloqueado temporariamente no Windows, copiar e
+            // validar o destino antes de aceitar o backup.
+            if (@copy($temporario, $zipPath) && $this->validarZip($zipPath)) {
+                @unlink($temporario);
+                return true;
+            }
         }
 
-        $hashes[$ficheiro] = $hash;
-
-        file_put_contents($this->hashFile, json_encode($hashes, JSON_PRETTY_PRINT));
+        return false;
     }
 
     private function limparAntigos(string $baseDir, int $dias): void

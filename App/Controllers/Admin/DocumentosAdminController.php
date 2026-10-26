@@ -416,9 +416,8 @@ WHERE 1=1
             exit("Anexo não encontrado.");
         }
 
-        $path = rtrim(STORAGE_DOCUMENTOS, '/') . '/' . trim($anexo->caminho, '/') . '/' . $anexo->ficheiro;
-
-        if (!file_exists($path)) {
+        $path = $this->resolverCaminhoFisicoAnexo($anexo);
+        if (!$path) {
             http_response_code(404);
             exit("Ficheiro não encontrado.");
         }
@@ -435,6 +434,10 @@ WHERE 1=1
                     'office' => null
                 ]);
             }
+
+            // Não deixar o navegador abrir o Office como download quando o
+            // servidor não consegue converter o original para pré-visualização.
+            return $this->error(503, 'Não foi possível pré-visualizar este ficheiro. Confirme a configuração do conversor PDF no servidor.');
         }
 
         return $this->render('@admin/documentos/preview.twig', [
@@ -457,15 +460,20 @@ WHERE 1=1
             exit("Ficheiro não encontrado.");
         }
 
-        $real = STORAGE_DOCUMENTOS . '/' . trim($anexo->caminho, '/') . '/' . $anexo->ficheiro;
-
-        if (!file_exists($real)) {
+        $real = $this->resolverCaminhoFisicoAnexo($anexo);
+        if (!$real) {
             http_response_code(404);
             exit("Ficheiro não encontrado.");
         }
 
         $ext  = strtolower(pathinfo($real, PATHINFO_EXTENSION));
         $mime = $this->mimePorExtensao($ext, $real);
+
+        // Word, Excel e PowerPoint não são apresentados pelos browsers. A
+        // abertura deve passar sempre pela conversão local para PDF.
+        if (in_array($ext, ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'], true)) {
+            return $this->redirect('/admin/documentos/preview/' . (int) $anexo->id);
+        }
 
         // Inline permitido
         $inline = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'txt'];
@@ -661,6 +669,57 @@ WHERE 1=1
         return DocumentoPreviewService::caminhoPdf($anexo, $origem);
     }
 
+    /** Resolve o anexo ativo e repara a cópia ativa a partir do arquivo legado, se necessário. */
+    private function resolverCaminhoFisicoAnexo(DocumentoFicheiro $anexo): ?string
+    {
+        $caminhoAnexo = rtrim(STORAGE_DOCUMENTOS, '/\\') . DIRECTORY_SEPARATOR
+            . trim((string) $anexo->caminho, '/\\') . DIRECTORY_SEPARATOR
+            . basename((string) $anexo->ficheiro);
+        $real = realpath($caminhoAnexo);
+        if ($real !== false && is_file($real)) {
+            return $real;
+        }
+
+        $documento = Documento::find((int) $anexo->documento_id);
+        if ($documento && !empty($documento->ficheiro)) {
+            $caminhoDocumento = rtrim(STORAGE_DOCUMENTOS, '/\\') . DIRECTORY_SEPARATOR
+                . trim((string) $documento->caminho, '/\\') . DIRECTORY_SEPARATOR
+                . basename((string) $documento->ficheiro);
+            $real = realpath($caminhoDocumento);
+            if ($real !== false && is_file($real)) {
+                return $real;
+            }
+        }
+
+        $arquivo = DocumentosArquivados::porDocumento((int) $anexo->documento_id);
+        if (!$arquivo) {
+            return null;
+        }
+
+        $realArquivo = realpath($arquivo->caminhoAbsoluto());
+        if ($realArquivo === false || !is_file($realArquivo)) {
+            return null;
+        }
+
+        // Uma recuperação anterior pode ter gravado os registos sem copiar os bytes.
+        if ($documento && !empty($documento->ficheiro) && !empty($documento->caminho)) {
+            $destino = rtrim(STORAGE_DOCUMENTOS, '/\\') . DIRECTORY_SEPARATOR
+                . trim((string) $documento->caminho, '/\\') . DIRECTORY_SEPARATOR
+                . basename((string) $documento->ficheiro);
+            PathGuardService::proteger($realArquivo);
+            PathGuardService::proteger($destino);
+            $pastaDestino = dirname($destino);
+            if (!is_dir($pastaDestino)) {
+                @mkdir($pastaDestino, 0775, true);
+            }
+            if (is_dir($pastaDestino) && @copy($realArquivo, $destino) && is_file($destino)) {
+                return realpath($destino) ?: $destino;
+            }
+        }
+
+        return $realArquivo;
+    }
+
     public function servirPreviewPdf($idAnexo): void
     {
         $anexo = DocumentoFicheiro::find($idAnexo);
@@ -675,9 +734,8 @@ WHERE 1=1
             exit('Preview PDF não disponível para este tipo de ficheiro.');
         }
 
-        $origem = rtrim(STORAGE_DOCUMENTOS, '/\\') . DIRECTORY_SEPARATOR
-            . trim((string) $anexo->caminho, '/\\') . DIRECTORY_SEPARATOR . $anexo->ficheiro;
-        if (!is_file($origem)) {
+        $origem = $this->resolverCaminhoFisicoAnexo($anexo);
+        if (!$origem) {
             http_response_code(404);
             exit('Ficheiro original não encontrado.');
         }
@@ -1128,10 +1186,8 @@ WHERE 1=1
             return $this->render('@admin/errors/404.twig');
         }
 
-        // Caminho real usando a estrutura correta
-        $real = STORAGE_DOCUMENTOS . '/' . trim($anexo->caminho, '/') . '/' . $anexo->ficheiro;
-
-        if (!file_exists($real)) {
+        $real = $this->resolverCaminhoFisicoAnexo($anexo);
+        if (!$real) {
             http_response_code(404);
             return $this->render('@admin/errors/404.twig');
         }
@@ -1316,9 +1372,17 @@ WHERE 1=1
         PathGuardService::proteger($ficheiro['path']);
         PathGuardService::proteger($destino);
 
-        if (realpath($ficheiro['path']) !== realpath($destino) && !copy($ficheiro['path'], $destino)) {
-            Sessao::flash('erro', 'Falha ao recuperar o ficheiro para produção.');
-            return $this->redirect('/admin/documentos/arquivados');
+        $origemReal = realpath($ficheiro['path']);
+        $destinoReal = realpath($destino);
+        $jaEstaNoDestino = $origemReal !== false
+            && $destinoReal !== false
+            && $origemReal === $destinoReal;
+
+        if (!$jaEstaNoDestino) {
+            if (!is_file($ficheiro['path']) || !@copy($ficheiro['path'], $destino) || !is_file($destino)) {
+                Sessao::flash('erro', 'Falha ao copiar o ficheiro recuperado para a pasta de documentos. A recuperação não foi concluída.');
+                return $this->redirect('/admin/documentos/arquivados');
+            }
         }
 
         $areaAnterior = null;

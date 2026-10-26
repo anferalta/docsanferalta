@@ -315,6 +315,11 @@ class TramitacaoAdminController extends BaseController
             return $this->error(404, "O anexo de tramitação solicitado não existe.");
         }
 
+        $ext = strtolower(pathinfo((string) $ficheiro->ficheiro, PATHINFO_EXTENSION));
+        if (in_array($ext, ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'], true)) {
+            return $this->redirect('/admin/tramitacao/anexo/preview-pdf/' . (int) $ficheiro->id);
+        }
+
         // ⭐ Caminho corrigido com barras garantidas
         $path = rtrim(STORAGE_TRAMITACAO, '/') . '/' . trim($ficheiro->caminho, '/') . '/' . $ficheiro->ficheiro;
 

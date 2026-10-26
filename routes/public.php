@@ -28,7 +28,7 @@ $router->post('/reset-password/token/{token}', 'PasswordResetController@guardarN
 $router->get('/logout', 'AuthController@logout')->name('auth.logout');
 
 // DASHBOARD USER
-$router->get('/dashboard', 'DashboardUserController@index');
+$router->get('/dashboard', 'DashboardUserController@index', ['auth']);
 
 // DOCUMENTOS USER
 $router->get('/documentos', 'DocumentosUserController@index');

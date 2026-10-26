@@ -10,7 +10,17 @@ class Sessao
         if (session_status() === PHP_SESSION_NONE) {
             $secure = (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off')
                 || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
-            $domain = trim((string) ($_ENV['SESSION_COOKIE_DOMAIN'] ?? ''));
+            $domain = strtolower(ltrim(trim((string) ($_ENV['SESSION_COOKIE_DOMAIN'] ?? '')), '.'));
+            $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+            $host = preg_replace('/:\\d+$/', '', $host);
+
+            // Um cookie configurado para produção (ex.: anferalta.com) não é
+            // aceite pelo browser em localhost/anferalta.local. Nesse caso,
+            // usar cookie host-only para manter a sessão nesse ambiente.
+            if ($domain === '' || $host === '' || ($host !== $domain && !str_ends_with($host, '.' . $domain))) {
+                $domain = null;
+            }
+
             session_set_cookie_params([
                 'lifetime' => 0,
                 'path' => '/',
@@ -29,8 +39,9 @@ class Sessao
 
         if ($lastActivity > 0 && ($now - $lastActivity) >= $timeout) {
             $_SESSION = [];
-            session_destroy();
-            session_start();
+            if (!session_regenerate_id(true)) {
+                throw new \RuntimeException('Não foi possível renovar a sessão expirada.');
+            }
             if ($authenticated) {
                 $_SESSION['flash']['erro'] = 'A sessão terminou por inatividade. Inicie sessão novamente.';
             }

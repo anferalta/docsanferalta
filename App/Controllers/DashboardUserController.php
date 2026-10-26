@@ -4,12 +4,17 @@ namespace App\Controllers;
 
 use App\Core\BaseController;
 use App\Core\Conexao;
+use App\Core\Auth;
 
 class DashboardUserController extends BaseController
 {
     public function index()
     {
-        $user = \App\Core\Auth::user();
+        $user = Auth::user();
+        if (!$user) {
+            return $this->redirect('/login');
+        }
+
         $db = Conexao::getInstancia();
 
         // Se for admin → redireciona para o dashboard admin
