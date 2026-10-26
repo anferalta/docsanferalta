@@ -59,23 +59,14 @@ class DocumentoTramitacao
      */
     public static function registarAntigo($doc_id, $area_id, $user_id, $acao, $estado, $comentario)
     {
-        $db = Conexao::getInstancia();
-
-        $sql = "INSERT INTO documento_tramitacao 
-                (documento_id, area_id, utilizador_id, acao, estado, comentario, criado_em)
-                VALUES (?, ?, ?, ?, ?, ?, NOW())";
-
-        $stmt = $db->prepare($sql);
-        $stmt->execute([
-            $doc_id,
-            $area_id ?: null,
-            $user_id,
-            $acao,
-            $estado,
-            $comentario
-        ]);
-
-        return $db->lastInsertId();
+        return self::create([
+            'documento_id' => $doc_id,
+            'area_id' => $area_id ?: null,
+            'utilizador_id' => $user_id,
+            'acao' => $acao,
+            'estado' => $estado,
+            'comentario' => $comentario,
+        ])->id;
     }
 
     /**
@@ -85,9 +76,16 @@ class DocumentoTramitacao
     {
         $db = Conexao::getInstancia();
 
-        file_put_contents(__DIR__ . '/debug_tramitacao.log', print_r($data, true), FILE_APPEND);
+        $documentoId = (int) ($data['documento_id'] ?? 0);
+        $utilizadorId = (int) ($data['utilizador_id'] ?? 0);
+        $acao = trim((string) ($data['acao'] ?? ''));
+        if ($documentoId <= 0 || $utilizadorId <= 0 || $acao === '') {
+            throw new \InvalidArgumentException('Documento, utilizador e ação são obrigatórios no histórico de tramitação.');
+        }
 
-        $data['acao'] = !empty($data['acao']) ? $data['acao'] : 'DESCONHECIDO';
+        $data['documento_id'] = $documentoId;
+        $data['utilizador_id'] = $utilizadorId;
+        $data['acao'] = $acao;
         $data['estado'] = $data['estado'] ?? 'indefinido';
         $data['comentario'] = $data['comentario'] ?? null;
         $data['criado_em'] = $data['criado_em'] ?? date('Y-m-d H:i:s');
@@ -107,7 +105,7 @@ class DocumentoTramitacao
             $data['criado_em']
         ]);
 
-        return (object) ['id' => $db->lastInsertId()];
+        return (object) ['id' => (int) $db->lastInsertId()];
     }
 
     public static function find($id)

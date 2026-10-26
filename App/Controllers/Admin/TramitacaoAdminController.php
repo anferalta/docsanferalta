@@ -27,15 +27,27 @@ use PDO;
 class TramitacaoAdminController extends BaseController
 {
 
-    private function notificar($utilizador_id, $documento_id, $tipo, $mensagem)
+    private function urlTramitacaoDocumento(int $documentoId): string
     {
-        Notificacao::create([
-            'utilizador_id' => $utilizador_id,
-            'documento_id' => $documento_id,
-            'tipo' => $tipo,
-            'mensagem' => $mensagem,
-            'lida' => 0,
-        ]);
+        return "/admin/documentos/editar/{$documentoId}?tab=tramitacao";
+    }
+
+    /** Keep the document's current state and its audit history in sync. */
+    private function transaction(callable $operation)
+    {
+        $db = Conexao::getInstancia();
+        $db->beginTransaction();
+
+        try {
+            $result = $operation();
+            $db->commit();
+            return $result;
+        } catch (\Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
     }
 
     public function documento($id)
@@ -66,27 +78,6 @@ class TramitacaoAdminController extends BaseController
 
         $anexos = DocumentoFicheiro::anexosDoDocumento($id);
         $historico = DocumentoTramitacao::porDocumento($id);
-
-        foreach ($historico as $h) {
-
-            $h->anexos = DocumentoTramitacaoAnexo::anexosPorHistorico($h->id);
-
-            if (!empty($h->estado)) {
-
-                $estado = DocumentoEstado::findByCodigo($h->estado);
-
-                if ($estado) {
-                    $h->estado_nome = $estado->nome;
-                    $h->estado_codigo = $estado->codigo;
-                } else {
-                    $h->estado_nome = strtoupper(str_replace('_', ' ', $h->estado));
-                    $h->estado_codigo = $h->estado;
-                }
-            } else {
-                $h->estado_nome = null;
-                $h->estado_codigo = null;
-            }
-        }
 
         $areas = DocumentoArea::all();
         $estados = DocumentoEstado::all();
@@ -122,27 +113,28 @@ class TramitacaoAdminController extends BaseController
 
             $estado = EstadoService::validarOuFalhar('em_tramitacao');
 
-            $documento->update([
-                'area_atual_id' => $nova_area,
-                'estado_atual' => $estado,
-                'area_atual_desde' => date('Y-m-d H:i:s'),
-                    ], "id = {$id}");
+            $mov = $this->transaction(function () use ($documento, $id, $nova_area, $estado, $comentario, $user) {
+                $documento->update([
+                    'area_atual_id' => $nova_area,
+                    'estado_atual' => $estado,
+                    'area_atual_desde' => date('Y-m-d H:i:s'),
+                ], "id = {$id}");
 
-            $mov = DocumentoTramitacao::create([
-                'documento_id' => $id,
-                'area_id' => $nova_area,
-                'utilizador_id' => $user->id,
-                'acao' => 'ENCAMINHADO',
-                'estado' => $estado,
-                'comentario' => $comentario ?: null,
-                'criado_em' => date('Y-m-d H:i:s'),
-            ]);
+                return DocumentoTramitacao::create([
+                    'documento_id' => $id,
+                    'area_id' => $nova_area,
+                    'utilizador_id' => $user->id,
+                    'acao' => 'ENCAMINHADO',
+                    'estado' => $estado,
+                    'comentario' => $comentario ?: null,
+                ]);
+            });
 
             // ⭐ AGORA SIM: grava anexos da tramitação
             DocumentoTramitacaoAnexo::guardarAnexos($mov->id);
 
             Sessao::flash('sucesso', 'Documento encaminhado com sucesso.');
-            return $this->redirect("/admin/tramitacao/{$id}");
+            return $this->redirect($this->urlTramitacaoDocumento($id));
         } catch (\Exception $e) {
             return $this->error(500, $e->getMessage());
         }
@@ -186,12 +178,12 @@ class TramitacaoAdminController extends BaseController
                 'documento_id' => $documento->id,
                 'tipo' => 'comentario',
                 'mensagem' => "O documento '{$documento->titulo}' recebeu um comentário.",
-                'url' => "/admin/tramitacao/{$documento->id}",
+                'url' => $this->urlTramitacaoDocumento((int) $documento->id),
                 'criado_em' => date('Y-m-d H:i:s'),
             ]);
 
             Sessao::flash('sucesso', 'Comentário adicionado.');
-            return $this->redirect("/admin/tramitacao/{$documento->id}");
+            return $this->redirect($this->urlTramitacaoDocumento((int) $documento->id));
         } catch (\Exception $e) {
             return $this->error(500, $e->getMessage());
         }
@@ -218,33 +210,36 @@ class TramitacaoAdminController extends BaseController
 
             $comentario = trim($_POST['comentario'] ?? '');
 
-            $mov = DocumentoTramitacao::create([
-                'documento_id' => $documento->id,
-                'utilizador_id' => $user->id,
-                'acao' => 'ESTADO',
-                'area_id' => $documento->area_atual_id,
-                'comentario' => $comentario ?: null,
-                'estado' => $estado,
-                'criado_em' => date('Y-m-d H:i:s'),
-            ]);
+            $mov = $this->transaction(function () use ($documento, $estado, $comentario, $user) {
+                $movimento = DocumentoTramitacao::create([
+                    'documento_id' => $documento->id,
+                    'utilizador_id' => $user->id,
+                    'acao' => 'ESTADO',
+                    'area_id' => $documento->area_atual_id,
+                    'comentario' => $comentario ?: null,
+                    'estado' => $estado,
+                ]);
+
+                $documento->update([
+                    'estado_atual' => $estado,
+                ], "id = {$documento->id}");
+
+                return $movimento;
+            });
 
             DocumentoTramitacaoAnexo::guardarAnexos($mov->id);
-
-            $documento->update([
-                'estado_atual' => $estado,
-                    ], "id = {$documento->id}");
 
             Notificacao::create([
                 'utilizador_id' => $documento->criado_por,
                 'documento_id' => $documento->id,
                 'tipo' => 'estado',
                 'mensagem' => "O estado do documento '{$documento->titulo}' foi alterado para '{$estado}'.",
-                'url' => "/admin/tramitacao/{$documento->id}",
+                'url' => $this->urlTramitacaoDocumento((int) $documento->id),
                 'criado_em' => date('Y-m-d H:i:s'),
             ]);
 
             Sessao::flash('sucesso', 'Estado alterado.');
-            return $this->redirect("/admin/tramitacao/{$documento->id}");
+            return $this->redirect($this->urlTramitacaoDocumento((int) $documento->id));
         } catch (\Exception $e) {
             return $this->error(500, $e->getMessage());
         }
@@ -263,35 +258,10 @@ class TramitacaoAdminController extends BaseController
             $tipo = DocumentoTipo::find($documento->tipo_id);
             $criador = Utilizador::find($documento->criado_por);
 
-            // CORREÇÃO CRÍTICA
-            $ficheiros = (new DocumentoFicheiro())
-                    ->where('documento_id', '=', $id)
-                    ->get();
+            $ficheiros = DocumentoFicheiro::anexosDoDocumento($id);
 
             // CORREÇÃO CRÍTICA — faltava isto!
             $historico = DocumentoTramitacao::porDocumento($id);
-
-            foreach ($historico as $h) {
-
-                $h->anexos = DocumentoTramitacaoAnexo::anexosPorHistorico($h->id);
-                $h->area = DocumentoArea::find($h->area_id);
-                $h->utilizador = Utilizador::find($h->utilizador_id);
-
-                if (!empty($h->estado)) {
-                    $estado = DocumentoEstado::findByCodigo($h->estado);
-
-                    if ($estado) {
-                        $h->estado_nome = $estado->nome;
-                        $h->estado_codigo = $estado->codigo;
-                    } else {
-                        $h->estado_nome = strtoupper(str_replace('_', ' ', $h->estado));
-                        $h->estado_codigo = $h->estado;
-                    }
-                } else {
-                    $h->estado_nome = null;
-                    $h->estado_codigo = null;
-                }
-            }
 
             return $this->view('@admin/documentos/editar.twig', [
                         'documento' => $documento,
@@ -374,7 +344,7 @@ class TramitacaoAdminController extends BaseController
         }
 
         $ext = strtolower(pathinfo((string) $anexo->ficheiro, PATHINFO_EXTENSION));
-        if (!in_array($ext, ['doc', 'docx'], true)) {
+        if (!in_array($ext, ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'], true)) {
             http_response_code(404);
             exit('Preview PDF não disponível para este tipo de ficheiro.');
         }
@@ -446,6 +416,10 @@ class TramitacaoAdminController extends BaseController
             $sql .= " AND LOWER(TRIM(d.estado_atual)) IN ($placeholders) ";
             $params = array_merge($params, $codigosEstados);
         }
+
+        // O arquivo é terminal e não pode voltar a aparecer na tramitação,
+        // mesmo que a configuração de estados inclua acidentalmente esse código.
+        $sql .= " AND LOWER(TRIM(COALESCE(d.estado_atual, ''))) <> 'arquivado' ";
 
         if ($estado !== '') {
             $sql .= " AND d.estado_atual = ? ";
@@ -576,35 +550,33 @@ class TramitacaoAdminController extends BaseController
             return $this->error(500, "Falha ao arquivar o ficheiro.");
         }
 
-        // Criar registo arquivado
-        DocumentosArquivados::create([
-            'documento_id' => $documento->id,
-            'ficheiro' => $ficheiro->ficheiro,
-            'caminho' => $subpasta,
-            'mime_type' => $ficheiro->mime_type,
-            'tamanho' => $ficheiro->tamanho,
-            'arquivado_em' => date('Y-m-d H:i:s'),
-            'arquivado_por' => $user->id
-        ]);
+        $this->transaction(function () use ($documento, $ficheiro, $subpasta, $user) {
+            DocumentosArquivados::create([
+                'documento_id' => $documento->id,
+                'ficheiro' => $ficheiro->ficheiro,
+                'caminho' => $subpasta,
+                'mime_type' => $ficheiro->mime_type,
+                'tamanho' => $ficheiro->tamanho,
+                'arquivado_em' => date('Y-m-d H:i:s'),
+                'arquivado_por' => $user->id
+            ]);
 
-        // Atualizar documento (CORRIGIDO)
-        $documento->update([
-            'estado_atual' => 'arquivado',
-            'arquivado_em' => date('Y-m-d H:i:s'),
-            'arquivado_por_id' => $user->id,
-            'area_atual_id' => null
-                ], "id = {$documento->id}");
+            $documento->update([
+                'estado_atual' => 'arquivado',
+                'arquivado_em' => date('Y-m-d H:i:s'),
+                'arquivado_por_id' => $user->id,
+                'area_atual_id' => null
+            ], "id = {$documento->id}");
 
-        // Histórico
-        DocumentoTramitacao::create([
-            'documento_id' => $documento->id,
-            'area_id' => null,
-            'utilizador_id' => $user->id,
-            'acao' => 'ARQUIVADO',
-            'estado' => 'arquivado',
-            'comentario' => 'Documento arquivado.',
-            'criado_em' => date('Y-m-d H:i:s')
-        ]);
+            DocumentoTramitacao::create([
+                'documento_id' => $documento->id,
+                'area_id' => null,
+                'utilizador_id' => $user->id,
+                'acao' => 'ARQUIVADO',
+                'estado' => 'arquivado',
+                'comentario' => 'Documento arquivado.',
+            ]);
+        });
 
         Sessao::flash('sucesso', 'Documento arquivado com sucesso.');
         return $this->redirect('/admin/documentos/arquivados');

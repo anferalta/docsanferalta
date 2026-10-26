@@ -43,7 +43,7 @@ class Auth
             return false;
         }
 
-        $_SESSION['user_id'] = $user->id;
+        self::establishSession($user);
         $user->registarLogin();
 
         return $user;
@@ -77,13 +77,23 @@ class Auth
     public static function login(Utilizador $user): void
     {
         self::startSession();
+        self::establishSession($user);
+    }
 
-        // ❌ REMOVIDO: session_regenerate_id(true)
-        // Isto estava a invalidar o cookie antes do redirect
-        // Se quiseres regenerar, usa:
-        // session_regenerate_id(false);
+    /** Establish an authenticated session and rotate its security tokens. */
+    private static function establishSession(Utilizador $user): void
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            self::startSession();
+        }
+
+        // Prevent session fixation, then issue a token tied to the new session.
+        if (!session_regenerate_id(true)) {
+            throw new \RuntimeException('Não foi possível renovar a sessão.');
+        }
 
         $_SESSION['user_id'] = $user->id;
+        CSRF::regenerate();
     }
 
     /**

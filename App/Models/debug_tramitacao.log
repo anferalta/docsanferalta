@@ -4138,3 +4138,13 @@ Array
     [estado] => analise
     [criado_em] => 2026-09-01 11:33:37
 )
+Array
+(
+    [documento_id] => 7
+    [utilizador_id] => 3
+    [acao] => ESTADO
+    [area_id] => 
+    [comentario] => 
+    [estado] => concluido
+    [criado_em] => 2026-10-25 17:38:17
+)

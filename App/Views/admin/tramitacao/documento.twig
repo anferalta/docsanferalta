@@ -77,12 +77,12 @@
                                         data-bs-target="#previewModal"
                                         data-url="/admin/documentos/anexo/abrir/{{ f.id }}"
                                         data-ext="{{ f.ficheiro_original|lower|split('.')|last }}"
-                                        data-preview-url="{% if f.ficheiro_original|lower|split('.')|last in ['doc','docx'] %}/admin/documentos/preview-pdf/{{ f.id }}{% endif %}"
+                                        data-preview-url="{% if f.ficheiro_original|lower|split('.')|last in ['doc','docx','xls','xlsx','ppt','pptx'] %}/admin/documentos/preview-pdf/{{ f.id }}{% endif %}"
                                         data-mime="{{ f.mime_type }}">
                                     <i class="fa fa-eye me-1"></i> Preview
                                 </button>
 
-                                <a href="/admin/documentos/anexo/abrir/{{ f.id }}"
+                                <a href="/admin/documentos/preview/{{ f.id }}"
                                    target="_blank"
                                    class="btn btn-sm btn-primary">
                                     Abrir
@@ -168,12 +168,12 @@
                                                             data-bs-target="#previewModal"
                                                             data-url="/admin/tramitacao/anexo/abrir/{{ a.id }}"
                                                             data-ext="{{ a.ficheiro_original|lower|split('.')|last }}"
-                                                            data-preview-url="{% if a.ficheiro|lower|split('.')|last in ['doc','docx'] %}/admin/tramitacao/anexo/preview-pdf/{{ a.id }}{% endif %}"
+                                                            data-preview-url="{% if a.ficheiro|lower|split('.')|last in ['doc','docx','xls','xlsx','ppt','pptx'] %}/admin/tramitacao/anexo/preview-pdf/{{ a.id }}{% endif %}"
                                                             data-mime="{{ a.mime_type }}">
                                                         <i class="fa fa-eye me-1"></i> Preview
                                                     </button>
 
-                                                    <a href="/admin/tramitacao/anexo/abrir/{{ a.id }}"
+                                                    <a href="{% if a.ficheiro|lower|split('.')|last in ['doc','docx','xls','xlsx','ppt','pptx'] %}/admin/tramitacao/anexo/preview-pdf/{{ a.id }}{% else %}/admin/tramitacao/anexo/abrir/{{ a.id }}{% endif %}"
                                                        target="_blank"
                                                        class="btn btn-sm btn-primary">
                                                         Abrir
@@ -249,7 +249,12 @@ document.addEventListener('DOMContentLoaded', function () {
             const url = button.getAttribute('data-url') || '';
             const previewUrl = button.getAttribute('data-preview-url') || '';
             const ext = (button.getAttribute('data-ext') || '').toLowerCase();
-            frame.src = ['doc', 'docx'].includes(ext) && previewUrl ? previewUrl : url;
+            if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext) && previewUrl) {
+                frame.src = previewUrl;
+                return;
+            }
+
+            frame.src = url;
         });
     });
 

@@ -28,9 +28,8 @@
                         <tr>
                             <td>{{ doc.titulo }}</td>
 
-                            {# TIPO — vem de documento_tipos.nome #}
                             <td>
-                                {{ doc.nome ? doc.nome : '—' }}
+                                {{ doc.tipo_nome ? doc.tipo_nome : '—' }}
                             </td>
 
                             {# DATA — só mostra se existir #}

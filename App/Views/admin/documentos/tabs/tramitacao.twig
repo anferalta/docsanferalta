@@ -49,14 +49,14 @@
         			data-bs-target="#previewModal"
         			data-url="{{ url }}"
 				data-ext="{{ ext }}"
-                                data-preview-url="{% if ext in ['doc','docx'] %}/admin/documentos/preview-pdf/{{ f.id }}{% endif %}">
+                                data-preview-url="{% if ext in ['doc','docx','xls','xlsx','ppt','pptx'] %}/admin/documentos/preview-pdf/{{ f.id }}{% endif %}">
     				<i class="fa fa-eye me-1"></i> Preview
 			    </button>
 
-                            <a href="{{ url }}"
+                            <a href="/admin/documentos/preview/{{ f.id }}"
                                target="_blank"
                                class="btn btn-sm btn-primary">
-                                <i class="fa fa-download me-1"></i> Abrir
+                                <i class="fa fa-external-link-alt me-1"></i> Abrir
                             </a>
 
                         </div>
@@ -92,6 +92,10 @@
                     {% set nomeAnexo = a.ficheiro_original|default(a.ficheiro|default('')) %}
                     {% set ext = nomeAnexo|lower|split('.')|last %}
                     {% set url = "/admin/tramitacao/anexo/abrir/" ~ a.id %}
+                    {% set abrirUrl = url %}
+                    {% if ext in ['doc','docx','xls','xlsx','ppt','pptx'] %}
+                        {% set abrirUrl = "/admin/tramitacao/anexo/preview-pdf/" ~ a.id %}
+                    {% endif %}
 
                     <li class="list-group-item d-flex justify-content-between align-items-center">
 
@@ -122,15 +126,15 @@
                                     data-bs-target="#previewModal"
                                     data-url="{{ url }}"
                                     data-ext="{{ ext }}"
-                                    data-preview-url="{% if ext in ['doc','docx'] %}/admin/tramitacao/anexo/preview-pdf/{{ a.id }}{% endif %}"
+                                    data-preview-url="{% if ext in ['doc','docx','xls','xlsx','ppt','pptx'] %}/admin/tramitacao/anexo/preview-pdf/{{ a.id }}{% endif %}"
                                     data-mime="{{ a.mime_type }}">
                                 <i class="fa fa-eye me-1"></i> Preview
                             </button>
 
-                            <a href="{{ url }}"
+                            <a href="{{ abrirUrl }}"
                                target="_blank"
                                class="btn btn-sm btn-primary">
-                                <i class="fa fa-download me-1"></i> Abrir
+                                <i class="fa fa-external-link-alt me-1"></i> Abrir
                             </a>
 
                         </div>
@@ -163,8 +167,22 @@
                     </h6>
 
                     <p class="mb-2">
-                        <strong>Área:</strong> {{ h.area ? h.area.nome : '—' }}<br>
-                        <strong>Utilizador:</strong> {{ h.utilizador ? h.utilizador.nome : '—' }}
+                        <strong>Área:</strong>
+                        {% if h.area is defined and h.area %}
+                            {{ h.area.nome }}
+                        {% elseif h.area_nome is defined and h.area_nome %}
+                            {{ h.area_nome }}
+                        {% else %}
+                            —
+                        {% endif %}<br>
+                        <strong>Utilizador:</strong>
+                        {% if h.utilizador is defined and h.utilizador %}
+                            {{ h.utilizador.nome }}
+                        {% elseif h.utilizador_nome is defined and h.utilizador_nome %}
+                            {{ h.utilizador_nome }}
+                        {% else %}
+                            —
+                        {% endif %}
                     </p>
 
                     {% if h.comentario %}
@@ -184,6 +202,10 @@
                                     {% set nomeAnexo = a.ficheiro_original|default(a.ficheiro|default('')) %}
                                     {% set ext = nomeAnexo|lower|split('.')|last %}
                                     {% set url = "/admin/tramitacao/anexo/abrir/" ~ a.id %}
+                                    {% set abrirUrl = url %}
+                                    {% if ext in ['doc','docx','xls','xlsx','ppt','pptx'] %}
+                                        {% set abrirUrl = "/admin/tramitacao/anexo/preview-pdf/" ~ a.id %}
+                                    {% endif %}
 
                                     <li class="list-group-item d-flex justify-content-between align-items-center">
 
@@ -214,15 +236,15 @@
         				      data-bs-target="#previewModal"
         				      data-url="{{ url }}"
 		      data-ext="{{ ext }}"
-                                              data-preview-url="{% if ext in ['doc','docx'] %}/admin/tramitacao/anexo/preview-pdf/{{ a.id }}{% endif %}"
+                                              data-preview-url="{% if ext in ['doc','docx','xls','xlsx','ppt','pptx'] %}/admin/tramitacao/anexo/preview-pdf/{{ a.id }}{% endif %}"
                                               data-mime="{{ a.mime_type }}">
     						<i class="fa fa-eye me-1"></i> Preview
 					    </button>
 
-                                            <a href="{{ url }}"
+                                            <a href="{{ abrirUrl }}"
                                                target="_blank"
                                                class="btn btn-sm btn-primary">
-                                                <i class="fa fa-download me-1"></i> Abrir
+                                                <i class="fa fa-external-link-alt me-1"></i> Abrir
                                             </a>
 
                                         </div>

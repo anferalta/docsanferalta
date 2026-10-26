@@ -65,7 +65,18 @@ class CSRF
         }
 
         // Comparação segura
-        return hash_equals($stored, $sent);
+        return self::validateToken((string) $sent);
+    }
+
+    /** Valida um token fornecido diretamente pelo código da aplicação. */
+    public static function validateToken(string $token): bool
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+
+        $stored = $_SESSION[self::SESSION_KEY] ?? null;
+        return $token !== '' && is_string($stored) && hash_equals($stored, $token);
     }
 
     /**

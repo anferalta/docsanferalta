@@ -49,12 +49,7 @@ class Sessao
     public static function csrfToken(): string
     {
         self::start();
-
-        if (!isset($_SESSION['csrf_token'])) {
-            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-        }
-
-        return $_SESSION['csrf_token'];
+        return CSRF::token();
     }
 
     /**
@@ -63,12 +58,7 @@ class Sessao
     public static function validarCsrf(string $token): bool
     {
         self::start();
-
-        if (!isset($_SESSION['csrf_token'])) {
-            return false;
-        }
-
-        return hash_equals($_SESSION['csrf_token'], $token);
+        return CSRF::validateToken($token);
     }
 
     // ============================================================

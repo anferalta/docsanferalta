@@ -425,7 +425,7 @@ WHERE 1=1
 
         $ext = strtolower(pathinfo($anexo->ficheiro, PATHINFO_EXTENSION));
 
-        if (in_array($ext, ['doc', 'docx'], true)) {
+        if (in_array($ext, ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'], true)) {
             $pdfPreview = $this->caminhoPreviewPdf($anexo, $path);
             if ($this->converterDocxParaPdf($path, $pdfPreview)) {
                 return $this->render('@admin/documentos/preview.twig', [
@@ -437,21 +437,12 @@ WHERE 1=1
             }
         }
 
-        // O Office Viewer só consegue abrir uma URL pública e acessível pela internet.
-        $officeUrl = null;
-        $host = strtolower($_SERVER['HTTP_HOST'] ?? '');
-        if (in_array($ext, ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'], true)
-            && in_array($host, ['anferalta.com', 'www.anferalta.com'], true)) {
-            $publicUrl = "https://anferalta.com/public/documentos/" . $idAnexo;
-            $officeUrl = "https://view.officeapps.live.com/op/view.aspx?src=" . urlencode($publicUrl);
-        }
-
         return $this->render('@admin/documentos/preview.twig', [
             'nome'    => $anexo->ficheiro,
             'ext'     => $ext,
             'caminho' => "/admin/documentos/anexo/abrir/" . $idAnexo
                 . (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true) ? '?inline=1' : ''),
-            'office'  => $officeUrl
+            'office'  => null
         ]);
     }
 
@@ -679,7 +670,7 @@ WHERE 1=1
         }
 
         $ext = strtolower(pathinfo((string) $anexo->ficheiro, PATHINFO_EXTENSION));
-        if (!in_array($ext, ['doc', 'docx'], true)) {
+        if (!in_array($ext, ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'], true)) {
             http_response_code(404);
             exit('Preview PDF não disponível para este tipo de ficheiro.');
         }
@@ -841,20 +832,32 @@ WHERE 1=1
     public function arquivados()
     {
         $this->authorize('admin.documentos.arquivados.ver');
-
-        $docModel = new Documento();
-
-        $docModel->leftJoin(
-            'documento_tipos',
-            'documento_tipos.tipo_id',
-            '=',
-            'documentos.tipo_id'
-        );
-
-        $docModel->where('documentos.estado_atual', '=', 'arquivado');
-        $docModel->orderBy('documentos.arquivado_em', 'DESC');
-
-        $documentos = $docModel->get();
+        // Selecionar explicitamente os campos evita colisões entre os nomes
+        // comuns das tabelas (por exemplo, `id` e `tipo_id`) nos joins.
+        $db = Conexao::getInstancia();
+        $sql = <<<'SQL'
+            SELECT
+                d.*,
+                t.nome AS tipo_nome,
+                COALESCE(d.arquivado_em, da.arquivado_em, h.arquivado_em) AS arquivado_em
+            FROM documentos d
+            LEFT JOIN documento_tipos t ON t.tipo_id = d.tipo_id
+            LEFT JOIN (
+                SELECT documento_id, MAX(arquivado_em) AS arquivado_em
+                FROM documentos_arquivados
+                GROUP BY documento_id
+            ) da ON da.documento_id = d.id
+            LEFT JOIN (
+                SELECT documento_id, MAX(criado_em) AS arquivado_em
+                FROM documento_tramitacao
+                WHERE UPPER(acao) = 'ARQUIVADO'
+                GROUP BY documento_id
+            ) h ON h.documento_id = d.id
+            WHERE LOWER(TRIM(COALESCE(d.estado_atual, ''))) = 'arquivado'
+            ORDER BY COALESCE(d.arquivado_em, da.arquivado_em, h.arquivado_em) DESC, d.id DESC
+            SQL;
+        $stmt = $db->query($sql);
+        $documentos = $stmt->fetchAll(PDO::FETCH_OBJ);
 
         return $this->render('@admin/documentos/arquivados.twig', [
             'documentos' => $documentos
@@ -863,27 +866,81 @@ WHERE 1=1
 
     public function verArquivado($id)
     {
-        // 1. Verificar se o documento existe na tabela principal
+        $id = (int) $id;
         $documento = Documento::find($id);
 
-        if (!$documento) {
-            Sessao::flash('erro', 'Este documento já não existe — foi eliminado.');
-            return $this->redirect('/admin/documentos/arquivados');
-        }
-
-        // 2. Verificar se está arquivado
-        $arquivo = DocumentosArquivados::porDocumento($id);
-
-        if (!$arquivo) {
+        if (!$documento || strtolower(trim((string) $documento->estado_atual)) !== 'arquivado') {
             Sessao::flash('erro', 'Este documento não está arquivado ou foi removido.');
             return $this->redirect('/admin/documentos/arquivados');
         }
 
-        // 3. Renderizar normalmente
+        $arquivo = DocumentosArquivados::porDocumento($id);
+        $ficheiro = $this->ficheiroDoDocumentoArquivado($id, $documento, $arquivo);
+        if (!$ficheiro) {
+            Sessao::flash('erro', 'O documento está arquivado, mas não foi encontrado nenhum ficheiro associado.');
+            return $this->redirect('/admin/documentos/arquivados');
+        }
+
+        $tipo = DocumentoTipo::find($documento->tipo_id);
+        $documento->tipo_nome = $tipo->nome ?? null;
+        $historico = DocumentoTramitacao::porDocumento($id);
+        if (empty($documento->arquivado_em)) {
+            foreach ($historico as $movimento) {
+                if (strtoupper((string) $movimento->acao) === 'ARQUIVADO') {
+                    $documento->arquivado_em = $movimento->criado_em;
+                }
+            }
+        }
+
         return $this->render('@admin/documentos/ver_arquivado.twig', [
             'documento' => $documento,
-            'arquivo' => $arquivo
+            'arquivo' => $arquivo,
+            'historico' => $historico,
         ]);
+    }
+
+    /** Resolve metadados e caminho de ficheiros arquivados e de registos legados. */
+    private function ficheiroDoDocumentoArquivado(int $id, ?Documento $documento = null, ?DocumentosArquivados $arquivo = null): ?array
+    {
+        $documento ??= Documento::find($id);
+        $arquivo ??= DocumentosArquivados::porDocumento($id);
+
+        if ($arquivo) {
+            $path = $arquivo->caminhoAbsoluto();
+            if (is_file($path)) {
+                return [
+                    'ficheiro' => $arquivo->ficheiro,
+                    'mime_type' => $arquivo->mime_type,
+                    'tamanho' => $arquivo->tamanho,
+                    'path' => $path,
+                    'arquivo' => $arquivo,
+                ];
+            }
+        }
+
+        $anexo = DocumentoFicheiro::query()
+            ->where('documento_id', '=', $id)
+            ->orderBy('criado_em', 'DESC')
+            ->first();
+
+        $ficheiro = $anexo->ficheiro ?? $documento?->ficheiro;
+        $caminho = $anexo->caminho ?? $documento?->caminho;
+        if (!$ficheiro) {
+            return null;
+        }
+
+        $path = rtrim(STORAGE_DOCUMENTOS, '/') . '/' . trim((string) $caminho, '/') . '/' . basename($ficheiro);
+        if (!is_file($path)) {
+            return null;
+        }
+
+        return [
+            'ficheiro' => basename($ficheiro),
+            'mime_type' => $anexo->mime_type ?? $anexo->mime ?? $documento?->mime_type,
+            'tamanho' => $anexo->tamanho ?? $documento?->tamanho,
+            'path' => $path,
+            'arquivo' => $arquivo,
+        ];
     }
 
     /** Elimina definitivamente um documento arquivado, mesmo que o ficheiro já não exista. */
@@ -1148,25 +1205,24 @@ WHERE 1=1
     {
         PathGuardService::init();
 
+        $id = (int) $id;
+        $documento = Documento::find($id);
+        if (!$documento || strtolower(trim((string) $documento->estado_atual)) !== 'arquivado') {
+            return $this->error(404, 'Documento arquivado não encontrado.');
+        }
+
         $arquivo = DocumentosArquivados::porDocumento($id);
-
-        if (!$arquivo) {
-            throw new \Exception("Registo de arquivo não encontrado.");
+        $ficheiro = $this->ficheiroDoDocumentoArquivado($id, $documento, $arquivo);
+        if (!$ficheiro) {
+            return $this->error(404, 'Ficheiro arquivado não encontrado.');
         }
 
-        // Caminho completo correto
-        $path = STORAGE_ARQUIVADOS . '/' . trim($arquivo->caminho, '/') . '/' . $arquivo->ficheiro;
-
+        $path = $ficheiro['path'];
         PathGuardService::proteger($path);
-
-        if (!is_file($path)) {
-            throw new \Exception("Ficheiro arquivado não existe no servidor.");
-        }
-
-        $mime = $arquivo->mime_type ?? mime_content_type($path);
+        $mime = $ficheiro['mime_type'] ?? mime_content_type($path);
 
         header("Content-Type: {$mime}");
-        header('Content-Disposition: inline; filename="' . $arquivo->ficheiro . '"');
+        header('Content-Disposition: inline; filename="' . basename($ficheiro['ficheiro']) . '"');
         header('Content-Length: ' . filesize($path));
 
         readfile($path);
@@ -1213,35 +1269,6 @@ WHERE 1=1
             // ✔ Histórico da tramitação
             $historico = DocumentoTramitacao::porDocumento($id);
 
-            // ✔ Enriquecer histórico (área, utilizador, estado, anexos)
-            foreach ($historico as $h) {
-
-                // Área
-                $h->area = DocumentoArea::find($h->area_id);
-
-                // Utilizador
-                $h->utilizador = Utilizador::find($h->utilizador_id);
-
-                // Estado
-                if (!empty($h->estado)) {
-                    $estado = DocumentoEstado::findByCodigo($h->estado);
-
-                    if ($estado) {
-                        $h->estado_nome   = $estado->nome;
-                        $h->estado_codigo = $estado->codigo;
-                    } else {
-                        $h->estado_nome   = strtoupper(str_replace('_', ' ', $h->estado));
-                        $h->estado_codigo = $h->estado;
-                    }
-                } else {
-                    $h->estado_nome   = null;
-                    $h->estado_codigo = null;
-                }
-
-                // ✔ Anexos da tramitação
-                $h->anexos = DocumentoTramitacaoAnexo::anexosPorHistorico($h->id);
-            }
-
             // ✔ Renderizar página completa (com layout e tabs)
             return $this->view('@admin/documentos/editar.twig', [
                 'documento' => $documento,
@@ -1262,64 +1289,88 @@ WHERE 1=1
         $this->authorize('admin.documentos.arquivados.recuperar');
         PathGuardService::init();
 
+        $id = (int) $id;
         $documento = Documento::find($id);
 
-        if (!$documento || $documento->estado_atual !== 'arquivado') {
-            http_response_code(404);
-            exit("Documento arquivado não encontrado.");
+        if (!$documento || strtolower(trim((string) $documento->estado_atual)) !== 'arquivado') {
+            Sessao::flash('erro', 'Documento arquivado não encontrado.');
+            return $this->redirect('/admin/documentos/arquivados');
         }
 
         $arquivo = DocumentosArquivados::porDocumento($id);
-
-        if (!$arquivo) {
-            Sessao::flash('erro', 'Nenhum ficheiro arquivado encontrado para este documento.');
-            return $this->redirect("/admin/documentos/editar/{$id}");
+        $ficheiro = $this->ficheiroDoDocumentoArquivado($id, $documento, $arquivo);
+        if (!$ficheiro) {
+            Sessao::flash('erro', 'Não foi encontrado o ficheiro arquivado nem o anexo original do documento.');
+            return $this->redirect('/admin/documentos/arquivados');
         }
 
-        $real = realpath($arquivo->caminho);
-
-        if (!$real || !file_exists($real)) {
-            Sessao::flash('erro', 'O ficheiro arquivado não existe no servidor.');
-            return $this->redirect("/admin/documentos/editar/{$id}");
+        $subpasta = date('Y') . '/' . date('m') . '/' . date('d');
+        $pastaDestino = rtrim(STORAGE_DOCUMENTOS, '/') . '/' . $subpasta;
+        if (!is_dir($pastaDestino) && !mkdir($pastaDestino, 0775, true) && !is_dir($pastaDestino)) {
+            Sessao::flash('erro', 'Não foi possível criar a pasta de destino do documento.');
+            return $this->redirect('/admin/documentos/arquivados');
         }
 
-        PathGuardService::proteger($real);
-
-        // Caminho destino (produção)
-        $destino = STORAGE_DOCUMENTOS . '/' . $arquivo->ficheiro;
-
+        $nomeFicheiro = basename($ficheiro['ficheiro']);
+        $destino = $pastaDestino . '/' . $nomeFicheiro;
+        PathGuardService::proteger($ficheiro['path']);
         PathGuardService::proteger($destino);
 
-        if (!copy($real, $destino)) {
+        if (realpath($ficheiro['path']) !== realpath($destino) && !copy($ficheiro['path'], $destino)) {
             Sessao::flash('erro', 'Falha ao recuperar o ficheiro para produção.');
-            return $this->redirect("/admin/documentos/editar/{$id}");
+            return $this->redirect('/admin/documentos/arquivados');
         }
 
-        // Atualizar documento original
-        $documento->ficheiro   = $arquivo->ficheiro;
-        $documento->caminho    = date('Y') . '/' . date('m') . '/' . date('d') . '/'; // ✔ subpasta correta
-        $documento->mime_type  = $arquivo->mime_type;
-        $documento->tamanho    = $arquivo->tamanho;
+        $areaAnterior = null;
+        $db = Conexao::getInstancia();
+        $db->beginTransaction();
+        try {
+            $stmt = $db->prepare("\n                UPDATE documentos\n                SET ficheiro = :ficheiro, caminho = :caminho, mime_type = :mime_type,\n                    tamanho = :tamanho, estado_atual = 'novo', estado = 1,\n                    arquivado_em = NULL, arquivado_por_id = NULL, area_atual_id = :area_id\n                WHERE id = :id\n            ");
+            $stmt->execute([
+                'ficheiro' => $nomeFicheiro,
+                'caminho' => $subpasta . '/',
+                'mime_type' => $ficheiro['mime_type'],
+                'tamanho' => $ficheiro['tamanho'] ?? filesize($destino),
+                'area_id' => $areaAnterior,
+                'id' => $id,
+            ]);
 
-        $areaAnterior = $documento->area_atual_id;
+            $anexo = DocumentoFicheiro::query()
+                ->where('documento_id', '=', $id)
+                ->orderBy('criado_em', 'DESC')
+                ->first();
+            if ($anexo) {
+                // A tabela de produção não tem a coluna `mime`; o MIME
+                // canónico do documento é atualizado na tabela documentos.
+                $stmt = $db->prepare('UPDATE documento_ficheiros SET ficheiro = :ficheiro, caminho = :caminho, tamanho = :tamanho WHERE id = :id');
+                $stmt->execute([
+                    'ficheiro' => $nomeFicheiro,
+                    'caminho' => $subpasta . '/',
+                    'tamanho' => $ficheiro['tamanho'] ?? filesize($destino),
+                    'id' => $anexo->id,
+                ]);
+            }
 
-        $documento->estado_atual = 'novo';
-        $documento->arquivado_em = null;
-        $documento->arquivado_por_id = null;
-        $documento->area_atual_id = $areaAnterior;
-        $documento->save();
+            if ($arquivo) {
+                $stmt = $db->prepare("UPDATE documentos_arquivados SET recuperado_em = NOW(), recuperado_por = :user_id WHERE documento_id = :id AND recuperado_em IS NULL ORDER BY arquivado_em DESC LIMIT 1");
+                $stmt->execute(['user_id' => Auth::id(), 'id' => $id]);
+            }
 
-        DocumentosArquivados::marcarRecuperado($id, Auth::id());
-
-        DocumentoTramitacao::create([
-            'documento_id' => $id,
-            'area_id' => $areaAnterior,
-            'utilizador_id' => Auth::id(),
-            'acao' => 'RECUPERAR',
-            'estado' => 'recuperado',
-            'comentario' => 'Documento recuperado do arquivo para produção.',
-            'criado_em' => date('Y-m-d H:i:s')
-        ]);
+            DocumentoTramitacao::create([
+                'documento_id' => $id,
+                'area_id' => null,
+                'utilizador_id' => Auth::id(),
+                'acao' => 'RECUPERAR',
+                'estado' => 'novo',
+                'comentario' => 'Documento recuperado do arquivo para produção.',
+            ]);
+            $db->commit();
+        } catch (\Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
 
         Sessao::flash('sucesso', 'Documento recuperado com sucesso.');
         return $this->redirect("/admin/documentos/editar/{$id}");

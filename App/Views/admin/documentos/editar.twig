@@ -119,7 +119,7 @@
                                 {% set nomeAnexo = f.ficheiro_original|default(f.ficheiro|default('')) %}
                                 {% set ext = nomeAnexo|lower|split('.')|last %}
                                 {% set url = "/admin/documentos/anexo/abrir/" ~ f.id %}
-                                {% set previewUrl = ext in ['doc', 'docx'] ? "/admin/documentos/preview-pdf/" ~ f.id : '' %}
+                                {% set previewUrl = ext in ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'] ? "/admin/documentos/preview-pdf/" ~ f.id : '' %}
 
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
 
@@ -158,8 +158,8 @@
    					 <i class="fa fa-eye me-1"></i> Preview
 					</button>
 
-                                        <a href="{{ url }}" target="_blank" class="btn btn-sm btn-primary">
-                                            <i class="fa fa-download me-1"></i> Abrir
+                                        <a href="/admin/documentos/preview/{{ f.id }}" target="_blank" class="btn btn-sm btn-primary">
+                                            <i class="fa fa-external-link-alt me-1"></i> Abrir
                                         </a>
 
                                     </div>
@@ -201,6 +201,18 @@
             <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalEstado">
                 <i class="fa fa-flag me-1"></i> Alterar Estado
             </button>
+        {% endif %}
+
+        {% if tab == 'tramitacao'
+            and user.hasPermissao('admin.tramitacao.estado')
+            and documento.estado_atual in ['pendente','analise','em_tramitacao','concluido'] %}
+            <form action="/admin/tramitacao/arquivar" method="post" class="d-inline">
+                {{ csrf_field() }}
+                <input type="hidden" name="documento_id" value="{{ documento.id }}">
+                <button type="submit" class="btn btn-dark">
+                    <i class="fa fa-archive me-1"></i> Arquivar documento
+                </button>
+            </form>
         {% endif %}
 
     </div>
@@ -272,19 +284,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         if (['doc','docx','xls','xlsx','ppt','pptx'].includes(ext)) {
-            if (['doc', 'docx'].includes(ext) && previewUrl) {
+            if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext) && previewUrl) {
                 previewContainer.innerHTML = `
                     <iframe src="${previewUrl}" style="width:100%;height:100%;border:0"></iframe>`;
                 return;
             }
-
-            const officeUrl =
-                "https://view.officeapps.live.com/op/view.aspx?src=" +
-                encodeURIComponent(url);
-
-            previewContainer.innerHTML = `
-                <iframe src="${officeUrl}" style="width:100%;height:100%;border:0"></iframe>`;
-            return;
         }
 
         previewContainer.innerHTML = `

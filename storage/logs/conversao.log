@@ -32,3 +32,5 @@ Array
 )
 
 
+2026-10-25 18:57:35 Comando LibreOffice terminou com código 0: convert C:\wamp\www\anferalta\anferaltadocs\storage\documentos\2026\10\25\6ade5106b8e4e_19.docx as a Writer document -> C:\wamp\www\anferalta\anferaltadocs\storage\temp\documentos_preview\25-36423c47c23867f4be5238cf16ed0f8c6eb43dd05e068335509dc335667fad67\6ade5106b8e4e_19.pdf using filter : writer_pdf_Export
+Could not find platform independent libraries <prefix>

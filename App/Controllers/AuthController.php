@@ -28,26 +28,19 @@ class AuthController extends BaseController
     {
         try {
             $email = Utilizador::normalizeEmail($_POST['email'] ?? '');
-            $password = trim($_POST['password'] ?? '');
+            $password = (string) ($_POST['password'] ?? '');
 
-            $user = Utilizador::findByEmail($email);
-
-            if (!$user || !password_verify($password, $user->password)) {
+            $user = Auth::attempt($email, $password);
+            if ($user === false) {
                 Sessao::flash('erro', 'Credenciais inválidas.');
                 return Helpers::redirect('/login');
             }
 
-            if ($user->ativo == 0 && $user->aprovado_em === null) {
+            if ($user === null) {
                 Sessao::flash('erro', 'A sua conta está pendente de aprovação.');
                 return Helpers::redirect('/login');
             }
 
-            if ($user->ativo == 0 && $user->aprovado_em !== null) {
-                Sessao::flash('erro', 'A sua conta está bloqueada.');
-                return Helpers::redirect('/login');
-            }
-
-            Auth::login($user);
             Auditoria::registar('login', $user->id);
 
             if ($user->hasPermissao('admin.dashboard.ver')) {
