@@ -433,6 +433,27 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    // DETALHES DO DOCUMENTO
+    const detalhesModalEl = document.getElementById('detalhesModal');
+    const detalhesModal = detalhesModalEl && window.bootstrap
+        ? new bootstrap.Modal(detalhesModalEl)
+        : null;
+
+    document.querySelectorAll('.btn-ver-detalhes').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (!detalhesModal) return;
+
+            document.getElementById('detDocTitulo').textContent = btn.dataset.titulo || '';
+            document.getElementById('detDocTipo').textContent = btn.dataset.tipo || '';
+            document.getElementById('detDocEstado').textContent = btn.dataset.estado || '';
+            document.getElementById('detDocArea').textContent = btn.dataset.area || '-';
+            document.getElementById('detDocCriado').textContent = btn.dataset.criado || '';
+            document.getElementById('detDocCriador').textContent = btn.dataset.criador || '-';
+
+            detalhesModal.show();
+        });
+    });
+
 });
 </script>
 {% endblock %}

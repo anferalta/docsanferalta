@@ -163,8 +163,21 @@
                 <div class="timeline-content">
 
                     <h6 class="fw-bold mb-1">
-                        {{ h.acao }} — {{ h.criado_em|date("d/m/Y H:i") }}
+                        {% if h.acao == 'ENCAMINHADO' %}
+                            Encaminhado{% if h.area is defined and h.area %} para {{ h.area.nome }}{% elseif h.area_nome is defined and h.area_nome %} para {{ h.area_nome }}{% endif %}
+                        {% elseif h.acao == 'ESTADO' %}
+                            Estado alterado para {{ h.estado_nome|default(h.estado|default('indefinido')|replace({'_':' '})|upper) }}
+                        {% elseif h.acao == 'COMENTARIO' %}
+                            Comentário
+                        {% elseif h.acao == 'ARQUIVADO' %}
+                            Documento arquivado
+                        {% elseif h.acao == 'RECUPERAR' %}
+                            Documento recuperado
+                        {% else %}
+                            {{ h.acao|replace({'_':' '})|capitalize }}
+                        {% endif %}
                     </h6>
+                    <small class="text-muted d-block mb-2">{{ h.criado_em|date("d/m/Y H:i") }}</small>
 
                     <p class="mb-2">
                         <strong>Área:</strong>

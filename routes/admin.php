@@ -172,6 +172,14 @@
         $router->post('/documento-estados/editar/{id:\d+}', 'Admin\DocumentoEstadosAdminController@editarPost', ['csrf']);
         $router->post('/documento-estados/apagar/{id:\d+}', 'Admin\DocumentoEstadosAdminController@apagar', ['csrf']);
 
+        // Alias curto usado pelos links existentes na gestão de estados.
+        $router->get('/estados', 'Admin\DocumentoEstadosAdminController@index');
+        $router->get('/estados/criar', 'Admin\DocumentoEstadosAdminController@criar');
+        $router->post('/estados/criar', 'Admin\DocumentoEstadosAdminController@criarPost', ['csrf']);
+        $router->get('/estados/editar/{id:\d+}', 'Admin\DocumentoEstadosAdminController@editar');
+        $router->post('/estados/editar/{id:\d+}', 'Admin\DocumentoEstadosAdminController@editarPost', ['csrf']);
+        $router->post('/estados/apagar/{id:\d+}', 'Admin\DocumentoEstadosAdminController@apagar', ['csrf']);
+
         // Tramitação
         $router->get('/tramitacao/dashboard', 'Admin\TramitacaoAdminController@dashboard')->name('admin.tramitacao.dashboard');
         $router->get('/tramitacao', 'Admin\TramitacaoAdminController@lista')->name('admin.tramitacao.lista');
