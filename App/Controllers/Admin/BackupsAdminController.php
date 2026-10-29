@@ -142,10 +142,31 @@ class BackupsAdminController extends BaseController
         // Verificação de integridade avançada
         $integridade = (new \App\Services\BackupIntegrityService())->analisar($path, $tipo);
 
-        return $this->render('admin/backups/restaurar_confirmar_avancado.twig', [
+        return $this->render('admin/backups/restaurar_confirmar.twig', [
                     'ficheiro' => $ficheiro,
                     'tipo' => $tipo,
                     'detalhes' => $integridade
+        ]);
+    }
+
+    public function restaurarFilesConfirmar(string $ficheiro)
+    {
+        $this->authorize('admin.backups.files.restaurar');
+
+        $ficheiro = $this->decodePath($ficheiro);
+        $path = $this->resolverCaminho($ficheiro);
+
+        if (!$path || !str_starts_with(str_replace('\\', '/', $path), $this->dirFiles)) {
+            Sessao::flash('erro', 'Backup de ficheiros não encontrado.');
+            return $this->redirect('/admin/backups');
+        }
+
+        $integridade = (new \App\Services\BackupIntegrityService())->analisar($path, 'files');
+
+        return $this->render('admin/backups/restaurar_confirmar.twig', [
+            'ficheiro' => $ficheiro,
+            'tipo' => 'files',
+            'detalhes' => $integridade,
         ]);
     }
 
@@ -296,16 +317,27 @@ class BackupsAdminController extends BaseController
     {
         $this->authorize('admin.backups.bd.restaurar.executar');
 
+        return $this->executarRestauro($ficheiro, 'bd');
+    }
+
+    public function restaurarFilesExecutar(string $ficheiro)
+    {
+        $this->authorize('admin.backups.files.restaurar');
+
+        return $this->executarRestauro($ficheiro, 'files');
+    }
+
+    private function executarRestauro(string $ficheiro, string $tipo)
+    {
+
         $ficheiro = $this->decodePath($ficheiro);
         $path = $this->resolverCaminho($ficheiro);
 
-        if (!$path) {
+        $diretorioEsperado = $tipo === 'bd' ? $this->dirBD : $this->dirFiles;
+        if (!$path || !str_starts_with(str_replace('\\', '/', $path), $diretorioEsperado)) {
             Sessao::flash('erro', 'Ficheiro não encontrado.');
             return $this->redirect('/admin/backups');
         }
-
-        // Detectar tipo
-        $tipo = str_contains($path, '/BaseDados/') ? 'bd' : 'files';
 
         // Verificação de integridade
         $integridade = (new \App\Services\BackupIntegrityService())->analisar($path, $tipo);
@@ -333,6 +365,9 @@ class BackupsAdminController extends BaseController
 
             if ($tipo === 'bd') {
                 $restore->restaurarBD($path);
+                // O restauro iniciado nesta página já apresenta o resultado
+                // ao utilizador; não invalidar a sessão no pedido seguinte.
+                unset($_SESSION['restauro_bd_feito']);
             } else {
                 $restore->restaurarFiles($path);
             }

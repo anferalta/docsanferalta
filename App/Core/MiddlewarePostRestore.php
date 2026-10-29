@@ -22,8 +22,8 @@ class MiddlewarePostRestore
             session_start();
 
             // Mensagem de segurança
-            $_SESSION['flash_sucesso'] = 
-                "A base de dados foi restaurada. Por segurança, terá de iniciar sessão novamente.";
+            $_SESSION['flash']['sucesso'] =
+                "A base de dados foi restaurada. Por segurança, inicie sessão novamente.";
 
             // Redirecionar para login
             header("Location: /login");

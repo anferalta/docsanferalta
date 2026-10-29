@@ -56,6 +56,7 @@ return [
     ['codigo' => 'admin.backups.files.criar', 'descricao' => 'Criar backup de ficheiros'],
     ['codigo' => 'admin.backups.files.download', 'descricao' => 'Descarregar backup de ficheiros'],
     ['codigo' => 'admin.backups.files.apagar', 'descricao' => 'Apagar backup de ficheiros'],
+    ['codigo' => 'admin.backups.files.restaurar', 'descricao' => 'Restaurar backup de ficheiros'],
 
 
     // ============================================
