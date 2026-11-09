@@ -1,677 +1,83 @@
 <?php
-
 namespace App\Controllers\Admin;
 
-use App\Core\BaseController;
-use App\Core\Conexao;
-use App\Core\Sessao;
-use App\Core\Helpers;
 use App\Core\Auth;
-use App\Services\UserEmailService;
-use App\Services\EmailService;
+use App\Core\BaseController;
+use App\Core\Sessao;
+use App\Services\UtilizadoresService;
+use DomainException;
+use InvalidArgumentException;
+use PDOException;
 
 class UtilizadoresAdminController extends BaseController
 {
+    protected function servico():UtilizadoresService{return new UtilizadoresService();}
+    public function index(){$this->listagem('todos');}
+    public function ativos(){$this->listagem('ativos');}
+    public function pendentes(){$this->listagem('pendentes');}
+    public function bloqueados(){$this->listagem('bloqueados');}
 
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
-    /**
-     * LISTAGEM COM FILTROS + PAGINAÇÃO
-     */
-    public function index()
+    private function listagem(string $grupo):void
     {
         $this->authorize('admin.utilizadores.ver');
-
-        $db = Conexao::getInstancia();
-
-        // Filtros
-        $nome = $_GET['nome'] ?? '';
-        $email = $_GET['email'] ?? '';
-        $ativo = $_GET['ativo'] ?? '';
-
-        // Paginação
-        $pagina = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
-        $porPagina = 10;
-        $offset = ($pagina - 1) * $porPagina;
-
-        // Construção dinâmica da query
-        $where = [];
-        $params = [];
-
-        if ($nome !== '') {
-            $where[] = "u.nome LIKE :nome";
-            $params[':nome'] = "%{$nome}%";
-        }
-
-        if ($email !== '') {
-            $where[] = "u.email LIKE :email";
-            $params[':email'] = "%{$email}%";
-        }
-
-        if ($ativo !== '') {
-            $where[] = "u.ativo = :ativo";
-            $params[':ativo'] = (int) $ativo;
-        }
-
-        $whereSql = $where ? "WHERE " . implode(" AND ", $where) : "";
-
-        // Total de registos
-        $stmtTotal = $db->prepare("
-            SELECT COUNT(*) 
-            FROM utilizadores u
-            $whereSql
-        ");
-        $stmtTotal->execute($params);
-        $totalRegistos = $stmtTotal->fetchColumn();
-
-        $totalPaginas = max(1, ceil($totalRegistos / $porPagina));
-
-        // Query principal
-        $sql = "
-            SELECT u.*, p.nome AS perfil_nome
-            FROM utilizadores u
-            LEFT JOIN perfis p ON p.id = u.perfil_id
-            $whereSql
-            ORDER BY u.id DESC
-            LIMIT :limit OFFSET :offset
-        ";
-
-        $stmt = $db->prepare($sql);
-
-        // Bind dos filtros
-        foreach ($params as $key => $value) {
-            $stmt->bindValue($key, $value);
-        }
-
-        // Bind da paginação
-        $stmt->bindValue(':limit', $porPagina, \PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
-
-        $stmt->execute();
-        $utilizadores = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-
-        return $this->render('admin/utilizadores/index.twig', [
-                    'utilizadores' => $utilizadores,
-                    'pagina' => $pagina,
-                    'total_paginas' => $totalPaginas,
-                    'nome' => $nome,
-                    'email' => $email,
-                    'ativo' => $ativo
-        ]);
+        try{$dados=$this->servico()->listar($_GET,$grupo);}catch(InvalidArgumentException $e){$this->erro($e->getMessage(),422);return;}
+        $actor=Auth::user();
+        $this->render('@admin/utilizadores/'.($grupo==='todos'?'index':$grupo).'.twig',$dados+['perfis'=>$this->servico()->perfis($actor->id),'actorId'=>$actor->id,'actorAdmin'=>$actor->isAdmin()]);
     }
 
-    /**
-     * FORMULÁRIO DE CRIAÇÃO
-     */
     public function criar()
     {
-        $this->authorize('admin.utilizadores.criar');
-
-        $db = Conexao::getInstancia();
-        $perfis = $db->query("SELECT id, nome FROM perfis ORDER BY nome ASC")
-                ->fetchAll(\PDO::FETCH_ASSOC);
-
-        return $this->render('admin/utilizadores/criar.twig', [
-                    'perfis' => $perfis
-        ]);
+        $this->authorize('admin.utilizadores.criar');$this->formulario();
     }
-
-    /**
-     * SUBMISSÃO DE CRIAÇÃO
-     */
-    public function criarSubmit()
-    {
-        $this->authorize('admin.utilizadores.criar');
-
-        $dados = $_POST;
-
-        if (empty($dados['nome']) || empty($dados['email']) || empty($dados['password']) || empty($dados['perfil_id'])) {
-            Sessao::flash('erro', 'Preencha todos os campos obrigatórios.');
-            Helpers::redirect('/admin/utilizadores/criar');
-        }
-
-        $db = Conexao::getInstancia();
-
-        // Verificar duplicação de email
-        $stmt = $db->prepare("SELECT id FROM utilizadores WHERE email = ?");
-        $stmt->execute([$dados['email']]);
-
-        if ($stmt->fetch()) {
-            Sessao::flash('erro', 'O email já está registado. Escolha outro.');
-            Helpers::redirect('/admin/utilizadores/criar');
-        }
-
-        // Inserção
-        $stmt = $db->prepare("
-        INSERT INTO utilizadores (nome, email, password, ativo, perfil_id)
-        VALUES (:nome, :email, :password, :ativo, :perfil_id)
-    ");
-
-        $stmt->execute([
-            ':nome' => $dados['nome'],
-            ':email' => $dados['email'],
-            ':password' => password_hash($dados['password'], PASSWORD_DEFAULT),
-            ':ativo' => 1,
-            ':perfil_id' => $dados['perfil_id']
-        ]);
-
-        // Buscar utilizador recém-criado
-        $user = \App\Models\Utilizador::findByEmail($dados['email']);
-
-        // Enviar email com link para definir password
-        \App\Services\UserEmailService::enviarLinkPassword(
-                $user,
-                'emails/utilizador_criado.twig',
-                'A sua conta foi criada'
-        );
-
-        Sessao::flash('sucesso', 'Utilizador criado com sucesso.');
-        Helpers::redirect('/admin/utilizadores');
-    }
-
-    /**
-     * APAGAR UTILIZADOR
-     */
-    public function eliminar($id)
-    {
-        $this->authorize('admin.utilizadores.apagar');
-
-        // Impedir que um utilizador apague a si próprio
-        if (Auth::user()->id == $id) {
-            Sessao::flash('erro', 'Não pode apagar o seu próprio utilizador.');
-            Helpers::redirect('/admin/utilizadores');
-        }
-
-        // Buscar utilizador
-        $utilizador = \App\Models\Utilizador::find($id);
-
-        if (!$utilizador) {
-            http_response_code(404);
-            echo "Utilizador não encontrado.";
-            return;
-        }
-
-        // Impedir apagar perfis superiores
-        $this->bloquearEdicaoDePerfisSuperiores($utilizador);
-
-        // APAGAR COM AUDITORIA
-        $utilizadorModel = new \App\Models\Utilizador();
-        $utilizadorModel->delete($id);
-
-        Sessao::flash('sucesso', 'Utilizador apagado com sucesso.');
-        Helpers::redirect('/admin/utilizadores');
-    }
-
-    /**
-     * LISTAR UTILIZADORES PENDENTES
-     */
-    public function pendentes()
-    {
-        $this->authorize('admin.utilizadores.ver');
-
-        $db = Conexao::getInstancia();
-
-        // Filtros
-        $nome = $_GET['nome'] ?? '';
-        $email = $_GET['email'] ?? '';
-
-        $pagina = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
-        $porPagina = 10;
-        $offset = ($pagina - 1) * $porPagina;
-
-        // Pendentes = ativo = 0 AND aprovado_em IS NULL
-        $where = ["u.ativo = 0", "u.aprovado_em IS NULL"];
-        $params = [];
-
-        if ($nome !== '') {
-            $where[] = "u.nome LIKE :nome";
-            $params[':nome'] = "%{$nome}%";
-        }
-
-        if ($email !== '') {
-            $where[] = "u.email LIKE :email";
-            $params[':email'] = "%{$email}%";
-        }
-
-        $whereSql = "WHERE " . implode(" AND ", $where);
-
-        // Total
-        $stmtTotal = $db->prepare("
-        SELECT COUNT(*) 
-        FROM utilizadores u
-        $whereSql
-    ");
-        $stmtTotal->execute($params);
-        $total = $stmtTotal->fetchColumn();
-        $totalPaginas = max(1, ceil($total / $porPagina));
-
-        // Query principal
-        $sql = "
-        SELECT u.*, 
-               p.nome AS perfil_nome,
-               a.nome AS aprovado_por_nome
-        FROM utilizadores u
-        LEFT JOIN perfis p ON p.id = u.perfil_id
-        LEFT JOIN utilizadores a ON a.id = u.aprovado_por
-        $whereSql
-        ORDER BY u.id DESC
-        LIMIT :limit OFFSET :offset
-    ";
-
-        $stmt = $db->prepare($sql);
-
-        foreach ($params as $k => $v) {
-            $stmt->bindValue($k, $v);
-        }
-
-        $stmt->bindValue(':limit', $porPagina, \PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
-
-        $stmt->execute();
-
-        // 🟩 ESTA LINHA FALTAVA!
-        $pendentes = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-
-        // Perfis para o modal
-        $perfis = $db->query("SELECT id, nome FROM perfis ORDER BY nome")->fetchAll(\PDO::FETCH_ASSOC);
-
-        return $this->render('@admin/utilizadores/pendentes.twig', [
-                    'pendentes' => $pendentes,
-                    'pagina' => $pagina,
-                    'total_paginas' => $totalPaginas,
-                    'nome' => $nome,
-                    'email' => $email,
-                    'perfis' => $perfis
-        ]);
-    }
-
-    /**
-     * APROVAR UTILIZADOR
-     */
-    public function aprovar($id)
-    {
-        $perfil = $_POST['perfil_id'] ?? null;
-
-        if (!$perfil) {
-            Sessao::flash('erro', 'Selecione um perfil.');
-            Helpers::redirect('/admin/utilizadores/pendentes');
-        }
-
-        $db = Conexao::getInstancia();
-
-        // Buscar utilizador antes de atualizar
-        $user = \App\Models\Utilizador::find($id);
-
-        if (!$user) {
-            Sessao::flash('erro', 'Utilizador não encontrado.');
-            Helpers::redirect('/admin/utilizadores/pendentes');
-        }
-
-        // Atualizar estado
-        $stmt = $db->prepare("
-        UPDATE utilizadores
-        SET ativo = 1,
-            aprovado_em = NOW(),
-            aprovado_por = :admin,
-            perfil_id = :perfil
-        WHERE id = :id
-    ");
-
-        $stmt->execute([
-            ':id' => $id,
-            ':admin' => Auth::id(),
-            ':perfil' => $perfil
-        ]);
-
-        // Enviar email de aprovação com link de password
-        UserEmailService::enviarLinkPassword($user, 'utilizador_aprovado', 'A sua conta foi aprovada');
-
-        Sessao::flash('sucesso', 'Utilizador aprovado com sucesso.');
-        Helpers::redirect('/admin/utilizadores/pendentes');
-    }
-
-    /**
-     * REJEITAR UTILIZADOR (APAGAR)
-     */
-    public function rejeitar($id)
-    {
-        $this->authorize('admin.utilizadores.apagar');
-
-        $db = Conexao::getInstancia();
-
-        // Buscar utilizador antes de apagar
-        $user = \App\Models\Utilizador::find($id);
-
-        if ($user) {
-            EmailService::enviar(
-                    $user->email,
-                    'Conta rejeitada',
-                    'utilizador_rejeitado',
-                    ['nome' => $user->nome]
-            );
-        }
-
-        // Apagar utilizador
-        $stmt = $db->prepare("DELETE FROM utilizadores WHERE id = ?");
-        $stmt->execute([$id]);
-
-        Sessao::flash('sucesso', 'Utilizador rejeitado e removido.');
-        Helpers::redirect('/admin/utilizadores/pendentes');
-    }
-
-    /**
-     * BLOQUEAR UTILIZADOR
-     */
-    public function bloquear($id)
+    public function editar($id)
     {
         $this->authorize('admin.utilizadores.editar');
+        try{$user=$this->servico()->editavel($id,Auth::id());}catch(InvalidArgumentException $e){$this->erro($e->getMessage(),422);return;}catch(DomainException $e){$this->erro($e->getMessage(),$e->getCode()===404?404:403);return;}
+        $this->formulario($user);
+    }
+    public function criarSubmit(){$this->operacao('criar');}
+    public function editarSubmit($id){$this->operacao('editar',$id);}
+    public function aprovar($id){$this->operacao('aprovar',$id);}
+    public function rejeitar($id){$this->operacao('rejeitar',$id);}
+    public function eliminar($id){$this->operacao('eliminar',$id);}
+    public function bloquear($id){$this->operacao('bloquear',$id);}
+    public function desbloquear($id){$this->operacao('desbloquear',$id);}
+    public function reativar($id){$this->desbloquear($id);}
 
-        $db = Conexao::getInstancia();
-
-        // Buscar utilizador
-        $user = \App\Models\Utilizador::find($id);
-
-        if (!$user) {
-            $this->flash('erro', 'Utilizador não encontrado.');
-            return $this->redirect('/admin/utilizadores');
+    private function operacao(string $acao,mixed $id=null):void
+    {
+        $this->authorize(UtilizadoresService::PERMISSOES[$acao]);
+        $autor=Auth::id();if(!$autor){$this->acessoNegado();return;}
+        try{$resultado=$this->servico()->alterar($acao,$id,$_POST,$autor);}
+        catch(InvalidArgumentException $e){
+            if(in_array($acao,['criar','editar'],true)){
+                try{$user=$acao==='editar'?$this->servico()->editavel($id,$autor):null;}catch(DomainException|InvalidArgumentException $falha){$codigo=$falha instanceof InvalidArgumentException?422:($falha->getCode()===404?404:403);$this->erro($falha->getMessage(),$codigo);return;}
+                http_response_code(422);$this->formulario($user,$e->getMessage());
+            }else{$this->erro($e->getMessage(),422);}return;
         }
-
-        // Verificar se o email existe no servidor de correio
-        if (!EmailService::destinatarioExiste($user->email)) {
-            $this->flash('erro', 'O email do utilizador não existe no servidor de correio.');
-            return $this->redirect('/admin/utilizadores');
-        }
-
-        // Enviar email
-        EmailService::enviar(
-                $user->email,
-                'Conta bloqueada',
-                'conta_bloqueada',
-                ['nome' => $user->nome]
-        );
-
-        // Bloquear utilizador
-        $stmt = $db->prepare("
-        UPDATE utilizadores
-        SET ativo = 0
-        WHERE id = :id
-    ");
-        $stmt->execute([':id' => $id]);
-
-        Sessao::flash('sucesso', 'Utilizador bloqueado.');
-        return $this->redirect('/admin/utilizadores/ativos');
+        catch(DomainException $e){$this->erro($e->getMessage(),$e->getCode()===404?404:409);return;}
+        catch(PDOException $e){$this->erro('Não foi possível concluir a alteração. Tente novamente ou contacte o administrador.',500);return;}
+        Sessao::flash('sucesso','Operação concluída com sucesso.');
+        if(!$resultado['notificado']){Sessao::flash('aviso','A alteração foi guardada, mas a notificação por email falhou.');}
+        $this->redirect(in_array($acao,['aprovar','rejeitar'],true)?'/admin/utilizadores/pendentes':'/admin/utilizadores');
     }
 
-    public function reativar($id)
+    private function formulario(?array $user=null,?string $erro=null):void
     {
-        $this->authorize('admin.utilizadores.editar');
-
-        $db = Conexao::getInstancia();
-
-        $user = \App\Models\Utilizador::find($id);
-
-        if ($user) {
-            EmailService::enviar(
-                    $user->email,
-                    'Conta reativada',
-                    'emails/conta_desbloqueada.twig',
-                    ['nome' => $user->nome]
-            );
-        }
-
-        $stmt = $db->prepare("
-        UPDATE utilizadores
-        SET ativo = 1
-        WHERE id = :id
-    ");
-
-        $stmt->execute([':id' => $id]);
-
-        Sessao::flash('sucesso', 'Utilizador reativado.');
-        $this->redirect('/admin/utilizadores/bloqueados');
-    }
-
-    /**
-     * DESBLOQUEAR UTILIZADOR
-     */
-    public function desbloquear($id)
-    {
-        $this->authorize('admin.utilizadores.editar');
-
-        $db = Conexao::getInstancia();
-
-        $user = \App\Models\Utilizador::find($id);
-
-        if ($user) {
-            EmailService::enviar(
-                    $user->email,
-                    'Conta desbloqueada',
-                    'emails/conta_desbloqueada.twig',
-                    ['nome' => $user->nome]
-            );
-        }
-
-        $stmt = $db->prepare("UPDATE utilizadores SET ativo = 1 WHERE id = ?");
-        $stmt->execute([$id]);
-
-        Sessao::flash('sucesso', 'Utilizador desbloqueado.');
-        Helpers::redirect('/admin/utilizadores');
-    }
-
-    public function ativos()
-    {
-        $this->authorize('admin.utilizadores.ver');
-
-        $db = Conexao::getInstancia();
-
-        // Filtros
-        $nome = $_GET['nome'] ?? '';
-        $email = $_GET['email'] ?? '';
-
-        $pagina = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
-        $porPagina = 10;
-        $offset = ($pagina - 1) * $porPagina;
-
-        $where = ["u.ativo = 1"];
-        $params = [];
-
-        if ($nome !== '') {
-            $where[] = "u.nome LIKE :nome";
-            $params[':nome'] = "%{$nome}%";
-        }
-
-        if ($email !== '') {
-            $where[] = "u.email LIKE :email";
-            $params[':email'] = "%{$email}%";
-        }
-
-        $whereSql = "WHERE " . implode(" AND ", $where);
-
-        // Total
-        $stmtTotal = $db->prepare("SELECT COUNT(*) FROM utilizadores u $whereSql");
-        $stmtTotal->execute($params);
-        $total = $stmtTotal->fetchColumn();
-        $totalPaginas = max(1, ceil($total / $porPagina));
-
-        // Query principal
-        $sql = "
-        SELECT u.*, p.nome AS perfil_nome
-        FROM utilizadores u
-        LEFT JOIN perfis p ON p.id = u.perfil_id
-        $whereSql
-        ORDER BY u.id DESC
-        LIMIT :limit OFFSET :offset
-    ";
-
-        $stmt = $db->prepare($sql);
-
-        foreach ($params as $k => $v) {
-            $stmt->bindValue($k, $v);
-        }
-
-        $stmt->bindValue(':limit', $porPagina, \PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
-
-        $stmt->execute();
-        $ativos = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-
-        return $this->render('admin/utilizadores/ativos.twig', [
-                    'ativos' => $ativos,
-                    'pagina' => $pagina,
-                    'total_paginas' => $totalPaginas,
-                    'nome' => $nome,
-                    'email' => $email
-        ]);
-    }
-
-    public function bloqueados()
-    {
-        $this->authorize('admin.utilizadores.ver');
-
-        $db = Conexao::getInstancia();
-
-        $stmt = $db->query("
-        SELECT u.*, p.nome AS perfil_nome
-        FROM utilizadores u
-        LEFT JOIN perfis p ON p.id = u.perfil_id
-        WHERE u.ativo = 0 AND u.aprovado_em IS NOT NULL
-        ORDER BY u.id DESC
-    ");
-
-        $bloqueados = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-
-        return $this->render('admin/utilizadores/bloqueados.twig', [
-                    'bloqueados' => $bloqueados
-        ]);
+        $dados=$user??['nome'=>'','email'=>'','perfil_id'=>'','ativo'=>1];
+        if($erro!==null){foreach(['nome','email','perfil_id','ativo']as$campo){$dados[$campo]=is_string($_POST[$campo]??null)?$_POST[$campo]:'';}}
+        unset($dados['password']);
+        $actor=Auth::user();
+        $this->render($user===null?'@admin/utilizadores/criar.twig':'@admin/utilizadores/editar.twig',['utilizador'=>$user,'dados'=>$dados,'erro'=>$erro,'perfis'=>$this->servico()->perfis($actor->id),'actorId'=>$actor->id]);
     }
 
     public function exportarCSV()
     {
         $this->authorize('admin.utilizadores.ver');
-
-        $db = Conexao::getInstancia();
-        $dados = $db->query("SELECT id, nome, email, ativo, criado_em FROM utilizadores ORDER BY id DESC")
-                ->fetchAll(\PDO::FETCH_ASSOC);
-
-        header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename="utilizadores.csv"');
-
-        $f = fopen('php://output', 'w');
-        fputcsv($f, ['ID', 'Nome', 'Email', 'Ativo', 'Criado em']);
-
-        foreach ($dados as $linha) {
-            fputcsv($f, $linha);
-        }
-
-        exit;
+        $grupo=$_GET['grupo']??'todos';if(!is_string($grupo)){$this->erro('Lista inválida.',422);return;}
+        try{$rows=$this->servico()->exportar($_GET,$grupo);}catch(InvalidArgumentException $e){$this->erro($e->getMessage(),422);return;}
+        header('Content-Type: text/csv; charset=UTF-8');header('Content-Disposition: attachment; filename="utilizadores.csv"');header('Cache-Control: private, no-store');
+        $stream=fopen('php://output','wb');try{UtilizadoresService::escreverCSV($stream,$rows);}finally{fclose($stream);}
     }
-
-    /**
-     * FORMULÁRIO DE EDIÇÃO
-     */
-    public function editar($id)
-    {
-        $this->authorize('admin.utilizadores.editar');
-
-        $db = Conexao::getInstancia();
-
-        $stm = $db->prepare("SELECT * FROM utilizadores WHERE id = ?");
-        $stm->execute([$id]);
-        $utilizador = $stm->fetch();
-
-        if (!$utilizador) {
-            http_response_code(404);
-            echo "Utilizador não encontrado.";
-            return;
-        }
-
-        $this->bloquearEdicaoDePerfisSuperiores($utilizador);
-
-        $stmPerfis = $db->query("SELECT id, nome FROM perfis ORDER BY nome ASC");
-        $perfis = $stmPerfis->fetchAll();
-
-        return $this->render('admin/utilizadores/editar.twig', [
-                    'utilizador' => $utilizador,
-                    'perfis' => $perfis
-        ]);
-    }
-
-    /**
-     * SUBMISSÃO DE EDIÇÃO
-     */
-    public function editarSubmit($id)
-    {
-        $this->authorize('admin.utilizadores.editar');
-
-        $db = Conexao::getInstancia();
-
-        $stm = $db->prepare("SELECT * FROM utilizadores WHERE id = ?");
-        $stm->execute([$id]);
-        $utilizador = $stm->fetch();
-
-        if (!$utilizador) {
-            http_response_code(404);
-            echo "Utilizador não encontrado.";
-            return;
-        }
-
-        $this->bloquearEdicaoDePerfisSuperiores($utilizador);
-
-        $nome = $_POST['nome'] ?? '';
-        $email = $_POST['email'] ?? '';
-        $perfil_id = $_POST['perfil_id'] ?? null;
-        $ativo = isset($_POST['ativo']) ? (int) $_POST['ativo'] : 1;
-
-        // Verificar duplicação de email
-        $check = $db->prepare("SELECT id FROM utilizadores WHERE email = :email AND id != :id");
-        $check->execute([
-            ':email' => $email,
-            ':id' => $id
-        ]);
-
-        if ($check->fetch()) {
-            Sessao::flash('erro', 'Já existe um utilizador com este email.');
-            $this->redirect("/admin/utilizadores/editar/$id");
-            return;
-        }
-
-        // Atualizar utilizador
-        $sql = "UPDATE utilizadores 
-                SET nome = :nome,
-                    email = :email,
-                    perfil_id = :perfil_id,
-                    ativo = :ativo
-                WHERE id = :id";
-
-        $stm = $db->prepare($sql);
-
-        $stm->execute([
-            ':nome' => $nome,
-            ':email' => $email,
-            ':perfil_id' => $perfil_id,
-            ':ativo' => $ativo,
-            ':id' => $id
-        ]);
-
-        Sessao::flash('sucesso', 'Utilizador atualizado com sucesso.');
-        $this->redirect('/admin/utilizadores');
-    }
-
-    /**
-     * BLOQUEAR EDIÇÃO/APAGAR PERFIS SUPERIORES
-     */
-    private function bloquearEdicaoDePerfisSuperiores($utilizador)
-    {
-        $user = Auth::user();
-
-        if (empty($user->is_admin) || !$user->is_admin) {
-            if (!empty($utilizador->is_admin) && $utilizador->is_admin) {
-                http_response_code(403);
-                die("Acesso negado.");
-            }
-        }
-    }
+    private function erro(string $mensagem,int $codigo):void{http_response_code($codigo);$this->render('@admin/utilizadores/erro.twig',['mensagem'=>$mensagem]);}
 }

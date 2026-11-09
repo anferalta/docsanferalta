@@ -31,7 +31,7 @@ class Auth
             return false;
         }
 
-        if (!password_verify($password, $user->password)) {
+        if (!is_string($user->password) || $user->password === '' || !password_verify($password, $user->password)) {
             return false;
         }
 
@@ -110,7 +110,8 @@ class Auth
         // Carrega o utilizador COMPLETO
         $u = Utilizador::find($_SESSION['user_id']);
 
-        if (!$u) {
+        if (!$u || $u->ativo !== 1) {
+            unset($_SESSION['user_id'], $_SESSION['utilizador_id']);
             return null;
         }
 

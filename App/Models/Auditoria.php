@@ -29,7 +29,7 @@ class Auditoria extends Model {
 
         // Limitar tamanho dos detalhes
         if ($detalhes !== null && strlen($detalhes) > 2000) {
-            $detalhes = substr($detalhes, 0, 2000) . '... [TRUNCADO]';
+            $detalhes = mb_strcut($detalhes, 0, 2000, 'UTF-8') . '... [TRUNCADO]';
         }
 
         // IP seguro
@@ -91,7 +91,7 @@ class Auditoria extends Model {
     }
 
     public static function graficoPorAcao() {
-        $db = static::db();
+        $db = Conexao::getInstancia();
 
         $stmt = $db->query("
         SELECT acao, COUNT(*) AS total
@@ -103,7 +103,7 @@ class Auditoria extends Model {
     }
 
     public static function graficoPorDia() {
-        $db = static::db();
+        $db = Conexao::getInstancia();
 
         $stmt = $db->query("
         SELECT DATE(criado_em) AS dia, COUNT(*) AS total

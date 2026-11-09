@@ -89,15 +89,15 @@
         $router->get('/utilizadores', 'Admin\UtilizadoresAdminController@index')->name('admin.users.index');
         $router->get('/utilizadores/criar', 'Admin\UtilizadoresAdminController@criar')->name('admin.users.create');
         $router->post('/utilizadores/criar', 'Admin\UtilizadoresAdminController@criarSubmit', ['csrf']);
-        $router->get('/utilizadores/editar/{id:\d+}', 'Admin\UtilizadoresAdminController@editar')->name('admin.users.edit');
-        $router->post('/utilizadores/editar/{id:\d+}', 'Admin\UtilizadoresAdminController@editarSubmit', ['csrf']);
-        $router->post('/utilizadores/eliminar/{id:\d+}', 'Admin\UtilizadoresAdminController@eliminar', ['csrf']);
+        $router->get('/utilizadores/editar/{id}', 'Admin\UtilizadoresAdminController@editar')->name('admin.users.edit');
+        $router->post('/utilizadores/editar/{id}', 'Admin\UtilizadoresAdminController@editarSubmit', ['csrf']);
+        $router->post('/utilizadores/eliminar/{id}', 'Admin\UtilizadoresAdminController@eliminar', ['csrf']);
 
         $router->get('/utilizadores/pendentes', 'Admin\UtilizadoresAdminController@pendentes')->name('admin.users.pending');
-        $router->post('/utilizadores/aprovar/{id:\d+}', 'Admin\UtilizadoresAdminController@aprovar', ['csrf']);
-        $router->post('/utilizadores/rejeitar/{id:\d+}', 'Admin\UtilizadoresAdminController@rejeitar', ['csrf']);
-        $router->post('/utilizadores/bloquear/{id:\d+}', 'Admin\UtilizadoresAdminController@bloquear', ['csrf']);
-        $router->post('/utilizadores/desbloquear/{id:\d+}', 'Admin\UtilizadoresAdminController@desbloquear', ['csrf']);
+        $router->post('/utilizadores/aprovar/{id}', 'Admin\UtilizadoresAdminController@aprovar', ['csrf']);
+        $router->post('/utilizadores/rejeitar/{id}', 'Admin\UtilizadoresAdminController@rejeitar', ['csrf']);
+        $router->post('/utilizadores/bloquear/{id}', 'Admin\UtilizadoresAdminController@bloquear', ['csrf']);
+        $router->post('/utilizadores/desbloquear/{id}', 'Admin\UtilizadoresAdminController@desbloquear', ['csrf']);
 
         $router->get('/utilizadores/ativos', 'Admin\UtilizadoresAdminController@ativos')->name('admin.users.active');
         $router->get('/utilizadores/bloqueados', 'Admin\UtilizadoresAdminController@bloqueados')->name('admin.users.blocked');
@@ -106,12 +106,12 @@
         // Perfis
         $router->get('/perfis', 'Admin\PerfisAdminController@index')->name('admin.roles.index');
         $router->get('/perfis/criar', 'Admin\PerfisAdminController@criar')->name('admin.roles.create');
-        $router->post('/perfis/criar', 'Admin\PerfisAdminController@crriarSubmit', ['csrf']);
-        $router->get('/perfis/editar/{id:\d+}', 'Admin\PerfisAdminController@editar')->name('admin.roles.edit');
-        $router->post('/perfis/editar/{id:\d+}', 'Admin\PerfisAdminController@editarSubmit', ['csrf']);
-        $router->get('/perfis/permissoes/{id:\d+}', 'Admin\PerfisAdminController@permissoes')->name('admin.roles.permissions');
-        $router->post('/perfis/permissoes/{id:\d+}', 'Admin\PerfisAdminController@permissoesSubmit', ['csrf']);
-        $router->post('/perfis/apagar/{id:\d+}', 'Admin\PerfisAdminController@apagar', ['csrf']);
+        $router->post('/perfis/criar', 'Admin\PerfisAdminController@criarSubmit', ['csrf']);
+        $router->get('/perfis/editar/{id}', 'Admin\PerfisAdminController@editar')->name('admin.roles.edit');
+        $router->post('/perfis/editar/{id}', 'Admin\PerfisAdminController@editarSubmit', ['csrf']);
+        $router->get('/perfis/permissoes/{id}', 'Admin\PerfisAdminController@permissoes')->name('admin.roles.permissions');
+        $router->post('/perfis/permissoes/{id}', 'Admin\PerfisAdminController@permissoesSubmit', ['csrf']);
+        $router->post('/perfis/apagar/{id}', 'Admin\PerfisAdminController@apagar', ['csrf']);
 
         // Documentos Admin
         $router->get('/documentos', 'Admin\DocumentosAdminController@index')->name('admin.documentos.ver');
@@ -210,13 +210,14 @@
 
         // Logs
         $router->get('/logs', 'Admin\LogsSistemaAdminController@index')->name('admin.logs.index');
-        $router->get('/logs/{id:\d+}', 'Admin\LogsSistemaAdminController@detalhes')->name('admin.logs.details');
+        $router->get('/logs/exportar', 'Admin\LogsSistemaAdminController@exportar')->name('admin.logs.exportar');
+        $router->get('/logs/{id}', 'Admin\LogsSistemaAdminController@detalhes')->name('admin.logs.details');
 
         // Auditoria
         $router->get('/auditoria', 'Admin\AuditoriaAdminController@index')->name('admin.auditoria.index');
         $router->get('/auditoria/exportar', 'Admin\AuditoriaAdminController@exportar')->name('admin.auditoria.exportar');
         $router->get('/auditoria/dashboard', 'Admin\AuditoriaAdminController@dashboardAuditoria')->name('admin.auditoria.dashboard');
-        $router->get('/auditoria/{id:\d+}', 'Admin\AuditoriaAdminController@detalhes')->name('admin.auditoria.details');
+        $router->get('/auditoria/{id}', 'Admin\AuditoriaAdminController@detalhes')->name('admin.auditoria.details');
 
         // Backups
         $router->get('/backups', 'Admin\BackupsAdminController@index')->name('admin.backups.index');

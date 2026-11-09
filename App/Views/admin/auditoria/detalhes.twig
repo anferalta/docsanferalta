@@ -1,41 +1,17 @@
 {% extends "@admin/layout.twig" %}
-
+{% block title %}Detalhes da Auditoria{% endblock %}
 {% block content %}
 <h3 class="mb-4">Detalhes da Auditoria</h3>
-
-<div class="card shadow-sm">
-    <div class="card-body">
-
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <p><strong>ID do Registo:</strong><br>{{ log.id }}</p>
-            </div>
-            <div class="col-md-6">
-                <p><strong>Utilizador:</strong><br>{{ user ? user.nome : 'N/A' }}</p>
-            </div>
-        </div>
-
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <p><strong>Ação:</strong><br>{{ log.acao }}</p>
-            </div>
-            <div class="col-md-6">
-                <p><strong>IP:</strong><br>{{ log.ip }}</p>
-            </div>
-        </div>
-
-        <div class="mb-3">
-            <p><strong>Data:</strong><br>{{ log.criado_em }}</p>
-        </div>
-
-        {% if log.detalhes %}
-        <div class="mb-3">
-            <p><strong>Detalhes:</strong></p>
-            <pre class="p-3 bg-light border rounded">{{ log.detalhes }}</pre>
-        </div>
-        {% endif %}
-
-        <a href="/admin/auditoria" class="btn btn-secondary mt-3">Voltar</a>
-    </div>
-</div>
+<div class="card shadow-sm"><div class="card-body">
+    <dl class="row">
+        <dt class="col-sm-3">ID do registo</dt><dd class="col-sm-9">{{ log.id }}</dd>
+        <dt class="col-sm-3">Origem</dt><dd class="col-sm-9">{{ log.origem == 'auditoria' ? 'Geral' : 'Eliminação' }}</dd>
+        <dt class="col-sm-3">Utilizador</dt><dd class="col-sm-9">{{ log.utilizador_nome ?: 'N/A' }}</dd>
+        <dt class="col-sm-3">Ação</dt><dd class="col-sm-9">{{ log.acao ?: 'N/A' }}</dd>
+        <dt class="col-sm-3">IP</dt><dd class="col-sm-9">{{ log.ip ?: '—' }}</dd>
+        <dt class="col-sm-3">Data</dt><dd class="col-sm-9">{{ log.criado_em ?: '—' }}</dd>
+    </dl>
+    <h5>Detalhes</h5><pre class="p-3 bg-light border rounded" style="white-space:pre-wrap;overflow-wrap:anywhere">{{ log.detalhes ?: 'Sem detalhes adicionais.' }}</pre>
+    <a href="/admin/auditoria" class="btn btn-secondary">Voltar</a>
+</div></div>
 {% endblock %}

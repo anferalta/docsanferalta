@@ -1,131 +1,43 @@
 {% extends "@admin/layout.twig" %}
-
 {% block title %}Gestão de Utilizadores{% endblock %}
-{% block page_title %}Gestão de Utilizadores{% endblock %}
-
 {% block content %}
-
-    <div class="page-content-inner">
-
-        <!-- TÍTULO + BOTÃO -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h3 class="fw-bold">Utilizadores</h3>
-
-            {% if acl.has('admin.utilizadores.criar') %}
-                <a href="/admin/utilizadores/criar" class="btn btn-primary">
-                    <i class="bi bi-plus-circle me-1"></i> Novo Utilizador
-                </a>
-            {% endif %}
-        </div>
-
-        <!-- FILTROS -->
-        <form method="get" class="row g-3 mb-4">
-
-            <div class="col-md-3">
-                <input type="text" name="nome" class="form-control"
-                       placeholder="Nome"
-                       value="{{ nome }}">
-            </div>
-
-            <div class="col-md-3">
-                <input type="text" name="email" class="form-control"
-                       placeholder="Email"
-                       value="{{ email }}">
-            </div>
-
-            <div class="col-md-3">
-                <select name="ativo" class="form-select">
-                    <option value="">Estado</option>
-                    <option value="1" {{ ativo == '1' ? 'selected' }}>Ativo</option>
-                    <option value="0" {{ ativo == '0' ? 'selected' }}>Inativo</option>
-                </select>
-            </div>
-
-            <div class="col-md-3">
-                <button class="btn btn-primary w-100">Filtrar</button>
-            </div>
-
-        </form>
-
-        <!-- TABELA -->
-        <div class="card shadow-sm">
-            <div class="card-body">
-
-                <!-- WRAPPER RESPONSIVO (CORREÇÃO CRÍTICA) -->
-                <div class="table-responsive">
-
-                    <table class="table table-striped table-hover align-middle">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>ID</th>
-                                <th>Nome</th>
-                                <th>Email</th>
-                                <th>Perfil</th>
-                                <th>Estado</th>
-                                <th class="text-end">Ações</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {% for u in utilizadores %}
-                                <tr>
-                                    <td>{{ u.id }}</td>
-                                    <td>{{ u.nome }}</td>
-                                    <td>{{ u.email }}</td>
-                                    <td>{{ u.perfil_nome ?? '—' }}</td>
-
-                                    <td>
-                                        {% if u.ativo == 1 %}
-                                            <span class="badge bg-success">Ativo</span>
-                                        {% else %}
-                                            <span class="badge bg-danger">Inativo</span>
-                                        {% endif %}
-                                    </td>
-
-                                    <td class="text-end">
-
-                                        <a href="{{ url('admin/utilizadores/editar/' ~ u.id) }}"
-                                           class="btn btn-sm btn-warning">
-                                            Editar
-                                        </a>
-
-                                        <form action="{{ url('admin/utilizadores/eliminar/' ~ u.id) }}"
-                                              method="post"
-                                              class="d-inline"
-                                              onsubmit="return confirm('Tem a certeza que deseja apagar?')">
-
-                                            {{ csrf_field() }}
-
-                                            <button class="btn btn-sm btn-danger">
-                                                Apagar
-                                            </button>
-                                        </form>
-
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-
-                </div> <!-- /table-responsive -->
-
-                <!-- PAGINAÇÃO -->
-                <nav>
-                    <ul class="pagination justify-content-center">
-                        {% for p in 1..total_paginas %}
-                            <li class="page-item {{ p == pagina ? 'active' : '' }}">
-                                <a class="page-link"
-                                   href="?page={{ p }}&nome={{ nome }}&email={{ email }}&ativo={{ ativo }}">
-                                    {{ p }}
-                                </a>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </nav>
-
-            </div>
-        </div>
-
-    </div>
-
+{% set podeCriar=isGranted('admin.utilizadores.criar') %}{% set podeEditar=isGranted('admin.utilizadores.editar') %}{% set podeApagar=isGranted('admin.utilizadores.apagar') %}{% set podeAprovar=isGranted('admin.utilizadores.aprovar') %}
+{% set destino=grupo=='todos'?'/admin/utilizadores':'/admin/utilizadores/'~grupo %}
+<h3 class="mb-3">Utilizadores — {{ grupo|capitalize }}</h3>
+<nav class="d-flex flex-wrap gap-2 mb-3" aria-label="Listas de utilizadores">
+{% for chave,rotulo in {'todos':'Todos','ativos':'Ativos','pendentes':'Pendentes','bloqueados':'Bloqueados'} %}<a class="btn btn-sm {{ grupo==chave?'btn-primary':'btn-outline-primary' }}" href="{{ chave=='todos'?'/admin/utilizadores':'/admin/utilizadores/'~chave }}">{{ rotulo }}</a>{% endfor %}
+{% if podeCriar %}<a href="/admin/utilizadores/criar" class="btn btn-sm btn-success">Novo utilizador</a>{% endif %}
+</nav>
+<form method="get" action="{{ destino }}" class="row g-3 mb-3">
+{% for campo,rotulo in {'nome':'Nome','email':'Email'} %}<div class="col-md-4"><label for="user_{{ campo }}" class="form-label">{{ rotulo }}</label><input id="user_{{ campo }}" name="{{ campo }}" value="{{ filtros[campo] }}" maxlength="{{ campo=='nome'?100:120 }}" class="form-control"></div>{% endfor %}
+{% if grupo=='todos' %}<div class="col-md-2"><label for="user_ativo" class="form-label">Estado</label><select id="user_ativo" name="ativo" class="form-select"><option value="">Todos</option><option value="1" {{ filtros.ativo=='1'?'selected':'' }}>Ativo</option><option value="0" {{ filtros.ativo=='0'?'selected':'' }}>Inativo</option></select></div>{% endif %}
+<div class="col-md-2 align-self-end"><button type="submit" class="btn btn-primary">Filtrar</button> <a href="{{ destino }}" class="btn btn-secondary">Limpar</a></div>
+</form>
+<div class="d-flex justify-content-between flex-wrap gap-2 mb-3"><p class="text-muted mb-0">{{ total }} registo(s). Página {{ pagina }} de {{ total_paginas }}.</p><a class="btn btn-sm btn-outline-success" href="/admin/utilizadores/exportar?{{ filtros|merge({'grupo':grupo})|url_encode }}">Exportar CSV</a></div>
+<div class="table-responsive"><table class="table table-striped align-middle"><thead><tr><th>ID</th><th>Nome</th><th>Email</th><th>Perfil</th><th>Estado</th><th>Criado em</th><th>Ações</th></tr></thead><tbody>
+{% for u in utilizadores %}
+{% set pendente=u.ativo==0 and u.aprovado_em is null %}{% set permitido=actorAdmin or u.perfil_id!=1 %}{% set proprio=u.id==actorId %}
+<tr><td>{{ u.id }}</td><td>{{ u.nome }}</td><td style="overflow-wrap:anywhere">{{ u.email }}</td><td>{{ u.perfil_nome ?: '—' }}</td>
+<td><span class="badge {{ u.ativo==1?'bg-success':(pendente?'bg-warning text-dark':'bg-secondary') }}">{{ u.ativo==1?'Ativo':(pendente?'Pendente':'Bloqueado') }}</span></td>
+<td class="text-nowrap">{{ u.criado_em ?: '—' }}</td><td><div class="d-flex flex-wrap gap-2">
+{% if permitido %}
+    {% if podeEditar %}<a href="/admin/utilizadores/editar/{{ u.id }}" class="btn btn-sm btn-outline-primary">Editar</a>{% endif %}
+    {% if pendente and podeAprovar and not proprio %}<form method="post" action="/admin/utilizadores/aprovar/{{ u.id }}" class="d-flex gap-1">{{ csrf_field() }}<select name="perfil_id" required class="form-select form-select-sm" aria-label="Perfil para aprovação"><option value="">Selecione o perfil</option>{% for p in perfis %}<option value="{{ p.id }}">{{ p.nome }}</option>{% endfor %}</select><button type="submit" class="btn btn-sm btn-success">Aprovar</button></form>{% endif %}
+    {% if podeEditar and not proprio and not pendente %}<form method="post" action="/admin/utilizadores/{{ u.ativo==1?'bloquear':'desbloquear' }}/{{ u.id }}" onsubmit="return confirm('Confirma a alteração do estado desta conta?')">{{ csrf_field() }}<button type="submit" class="btn btn-sm btn-outline-warning">{{ u.ativo==1?'Bloquear':'Desbloquear' }}</button></form>{% endif %}
+    {% if podeApagar and not proprio %}<form method="post" action="/admin/utilizadores/{{ pendente?'rejeitar':'eliminar' }}/{{ u.id }}" onsubmit="return confirm('Confirma a remoção desta conta?')">{{ csrf_field() }}<button type="submit" class="btn btn-sm btn-outline-danger">{{ pendente?'Rejeitar':'Apagar' }}</button></form>{% endif %}
+{% else %}<span class="text-muted">Conta de Administrador protegida</span>{% endif %}
+{% if proprio %}<span class="text-muted small">A sua conta</span>{% endif %}
+</div></td></tr>
+{% else %}<tr><td colspan="7" class="text-center text-muted">Nenhum utilizador encontrado.</td></tr>{% endfor %}
+</tbody></table></div>
+{% if total_paginas>1 %}<nav aria-label="Páginas de utilizadores"><ul class="pagination flex-wrap">
+{% if pagina>1 %}<li class="page-item"><a class="page-link" href="?{{ filtros|merge({'page':pagina-1})|url_encode }}">Anterior</a></li>{% endif %}
+{% set inicio=max(1,pagina-2) %}{% set fim=min(total_paginas,pagina+2) %}
+{% if inicio>1 %}<li class="page-item"><a class="page-link" href="?{{ filtros|merge({'page':1})|url_encode }}">1</a></li>{% endif %}
+{% if inicio>2 %}<li class="page-item disabled"><span class="page-link">…</span></li>{% endif %}
+{% for p in inicio..fim %}<li class="page-item {{ p==pagina?'active':'' }}"><a class="page-link" {% if p==pagina %}aria-current="page"{% endif %} href="?{{ filtros|merge({'page':p})|url_encode }}">{{ p }}</a></li>{% endfor %}
+{% if fim<total_paginas-1 %}<li class="page-item disabled"><span class="page-link">…</span></li>{% endif %}
+{% if fim<total_paginas %}<li class="page-item"><a class="page-link" href="?{{ filtros|merge({'page':total_paginas})|url_encode }}">{{ total_paginas }}</a></li>{% endif %}
+{% if pagina<total_paginas %}<li class="page-item"><a class="page-link" href="?{{ filtros|merge({'page':pagina+1})|url_encode }}">Seguinte</a></li>{% endif %}
+</ul></nav>{% endif %}
 {% endblock %}

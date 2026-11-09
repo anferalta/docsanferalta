@@ -2,60 +2,56 @@
 
 namespace App\Services;
 
-use App\Services\SLAService;
-use App\Services\EmailService;
-use Dompdf\Dompdf;
+use Closure;
+use RuntimeException;
 
 class RelatorioSLAEmailService
 {
-    private string $emailSistema = 'geral@anferalta.com';
+    private RelatorioSLAService $relatorios;
+    private Closure $enviar;
+
+    public function __construct(?RelatorioSLAService $relatorios = null, ?Closure $enviar = null)
+    {
+        $this->relatorios = $relatorios ?? new RelatorioSLAService();
+        $this->enviar = $enviar ?? Closure::fromCallable([EmailService::class, 'enviar']);
+    }
 
     public function gerarPDF(): string
     {
-        $dados = SLAService::gerarRelatorio();
-
-        $html = view('admin/relatorios/pdf_template', [
-            'dados' => $dados,
-            'gerado_em' => date('d/m/Y H:i')
-        ]);
-
-        $dompdf = new Dompdf();
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
-
-        $filename = 'relatorio_sla_' . date('Y-m-d_H-i') . '.pdf';
-        $path = dirname(__DIR__, 2) . '/storage/temp/relatorios/' . $filename;
-
-        if (!is_dir(dirname($path))) {
-            mkdir(dirname($path), 0777, true);
+        $conteudo = (new RelatorioSLAExportService())->pdf($this->relatorios->gerar());
+        $diretorio = dirname(__DIR__, 2) . '/storage/temp/relatorios';
+        if (!is_dir($diretorio) && !mkdir($diretorio, 0770, true) && !is_dir($diretorio)) {
+            throw new RuntimeException('Não foi possível criar o diretório dos relatórios SLA.');
         }
-
-        file_put_contents($path, $dompdf->output());
-
+        $path = $diretorio . '/relatorio_sla_' . date('Y-m-d_H-i-s') . '_' . bin2hex(random_bytes(8)) . '.pdf';
+        if (file_put_contents($path, $conteudo, LOCK_EX) !== strlen($conteudo)) {
+            if (is_file($path)) {
+                unlink($path);
+            }
+            throw new RuntimeException('Não foi possível guardar o relatório SLA.');
+        }
         return $path;
     }
 
     public function enviarEmail(string $periodo = 'diário'): void
     {
         $pdf = $this->gerarPDF();
-
-        // Lista de supervisores (podes puxar da BD mais tarde)
-        $destinatarios = [
-            'geral@anferalta.com'
-        ];
-
-        $assunto = "Relatório SLA - $periodo - " . date('d/m/Y');
-        $mensagem = "Segue em anexo o relatório SLA ($periodo).";
-
-        foreach ($destinatarios as $email) {
-            EmailService::enviarComAnexo(
-                $email,
-                $assunto,
-                $mensagem,
-                $pdf,
-                $this->emailSistema // remetente oficial
+        try {
+            $enviado = ($this->enviar)(
+                'geral@anferalta.com',
+                'Relatório SLA - ' . $periodo . ' - ' . date('d/m/Y'),
+                'relatorio_sla',
+                ['periodo' => $periodo],
+                [$pdf]
             );
+            if (!$enviado) {
+                throw new RuntimeException('O envio do relatório SLA não foi confirmado.');
+            }
+        } finally {
+            // Remove apenas o anexo temporário criado nesta execução.
+            if (is_file($pdf)) {
+                unlink($pdf);
+            }
         }
     }
 }

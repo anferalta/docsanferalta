@@ -1,124 +1,18 @@
 {% extends "@admin/layout.twig" %}
-
-{% block header %} Gestão de Logs {% endblock %}
-{% block title %} Detalhes do Log {% endblock %}
-
+{% block title %}Detalhes do Log{% endblock %}
+{% block header %}Gestão de Logs{% endblock %}
 {% block content %}
-<h3 class="mb-4">Detalhes do Log</h3>
-
-<div class="card shadow-sm">
-    <div class="card-body">
-
-        <div class="row mb-3">
-            <div class="col-md-3 text-muted">Tipo</div>
-            <div class="col-md-9">
-                <span class="badge bg-{{
-                    log.tipo in ['erro','fatal'] ? 'danger' :
-                    log.tipo == 'excecao' ? 'warning' :
-                    log.tipo == 'aviso' ? 'info' :
-                    log.tipo == 'debug' ? 'secondary' : 'primary'
-                }}">
-                    {{ log.tipo }}
-                </span>
-            </div>
-        </div>
-
-        <div class="row mb-3">
-            <div class="col-md-3 text-muted">Mensagem</div>
-            <div class="col-md-9">
-                <strong>{{ log.mensagem }}</strong>
-            </div>
-        </div>
-
-        {% if log.ficheiro %}
-        <div class="row mb-3">
-            <div class="col-md-3 text-muted">Ficheiro</div>
-            <div class="col-md-9">
-                <code>{{ log.ficheiro }}</code>
-            </div>
-        </div>
-        {% endif %}
-
-        {% if log.linha %}
-        <div class="row mb-3">
-            <div class="col-md-3 text-muted">Linha</div>
-            <div class="col-md-9">
-                <span class="badge bg-dark">{{ log.linha }}</span>
-            </div>
-        </div>
-        {% endif %}
-
-        <div class="row mb-3">
-            <div class="col-md-3 text-muted">IP</div>
-            <div class="col-md-9">
-                <span class="badge bg-light text-dark">{{ log.ip }}</span>
-            </div>
-        </div>
-
-        <div class="row mb-3">
-            <div class="col-md-3 text-muted">Data</div>
-            <div class="col-md-9">
-                {{ log.criado_em|date("d M Y H:i:s") }}
-            </div>
-        </div>
-
-        {% if log.url %}
-        <div class="row mb-3">
-            <div class="col-md-3 text-muted">URL</div>
-            <div class="col-md-9">
-                <code>{{ log.url }}</code>
-            </div>
-        </div>
-        {% endif %}
-
-        {% if log.metodo %}
-        <div class="row mb-3">
-            <div class="col-md-3 text-muted">Método HTTP</div>
-            <div class="col-md-9">
-                <span class="badge bg-secondary">{{ log.metodo }}</span>
-            </div>
-        </div>
-        {% endif %}
-
-        {% if log.utilizador_id %}
-        <div class="row mb-3">
-            <div class="col-md-3 text-muted">Utilizador</div>
-            <div class="col-md-9">
-                ID {{ log.utilizador_id }}
-            </div>
-        </div>
-        {% endif %}
-
-        {% if log.user_agent %}
-        <div class="row mb-3">
-            <div class="col-md-3 text-muted">User Agent</div>
-            <div class="col-md-9">
-                <small class="text-muted">{{ log.user_agent }}</small>
-            </div>
-        </div>
-        {% endif %}
-
-        {% if log.detalhes %}
-        <div class="row mb-3">
-            <div class="col-md-3 text-muted">Detalhes</div>
-            <div class="col-md-9">
-                <pre class="p-3 bg-light border rounded" style="max-height: 300px; overflow-y: auto;">
-{{ log.detalhes }}
-                </pre>
-            </div>
-        </div>
-        {% endif %}
-
-        <div class="mt-4 d-flex justify-content-between">
-            <a href="/admin/logs?{{ app.request.queryString }}" class="btn btn-outline-secondary">
-                Voltar aos resultados
-            </a>
-
-            <a href="/admin/logs/exportar?id={{ log.id }}" class="btn btn-success">
-                Exportar este log
-            </a>
-        </div>
-
-    </div>
+<h3 class="mb-4">Detalhes do Log #{{ log.id }}</h3>
+<div class="card shadow-sm"><div class="card-body">
+<dl class="row" style="overflow-wrap:anywhere">
+    {% for campo, rotulo in {'tipo':'Tipo','mensagem':'Mensagem','ficheiro':'Ficheiro','linha':'Linha','ip':'IP','criado_em':'Data','url':'URL','metodo':'Método HTTP','utilizador_id':'Utilizador ID','user_agent':'User Agent'} %}
+        <dt class="col-md-3 text-muted">{{ rotulo }}</dt><dd class="col-md-9">{{ log[campo] is not null and log[campo] != '' ? log[campo] : '—' }}</dd>
+    {% endfor %}
+</dl>
+<h5>Detalhes</h5><pre class="p-3 bg-light border rounded" style="max-height:400px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere">{{ log.detalhes ?: 'Sem detalhes adicionais.' }}</pre>
+<div class="mt-4 d-flex flex-wrap justify-content-between gap-2">
+    <a href="/admin/logs?{{ filtros|merge({'p':pagina})|url_encode }}" class="btn btn-outline-secondary">Voltar aos resultados</a>
+    {% if isGranted('admin.logs.exportar') %}<a href="/admin/logs/exportar?id={{ log.id }}" class="btn btn-success">Exportar este log</a>{% endif %}
 </div>
+</div></div>
 {% endblock %}

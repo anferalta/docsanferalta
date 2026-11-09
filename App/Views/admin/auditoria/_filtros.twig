@@ -1,0 +1,20 @@
+<form method="get" action="{{ destino }}" class="row g-3 mb-4">
+    <input type="hidden" name="ordem" value="{{ ordem }}"><input type="hidden" name="dir" value="{{ dir }}">
+    {% for campo, rotulo in {'utilizador':'Utilizador','ip':'IP','acao':'Ação'} %}
+    <div class="col-md-3"><label for="auditoria_{{ campo }}" class="form-label">{{ rotulo }}</label>
+        <input type="text" id="auditoria_{{ campo }}" name="{{ campo }}" value="{{ filtros[campo] }}" maxlength="{{ campo == 'ip' ? 45 : 255 }}" class="form-control">
+    </div>
+    {% endfor %}
+    <div class="col-md-3"><label for="auditoria_origem" class="form-label">Origem</label>
+        <select id="auditoria_origem" name="origem" class="form-select">
+            <option value="">Todas</option><option value="auditoria" {{ filtros.origem == 'auditoria' ? 'selected' : '' }}>Geral</option>
+            <option value="eliminacao" {{ filtros.origem == 'eliminacao' ? 'selected' : '' }}>Eliminação</option>
+        </select>
+    </div>
+    {% for campo, rotulo in {'data_inicio':'Data início','data_fim':'Data fim'} %}
+    <div class="col-md-3"><label for="auditoria_{{ campo }}" class="form-label">{{ rotulo }}</label>
+        <input type="date" id="auditoria_{{ campo }}" name="{{ campo }}" value="{{ filtros[campo] }}" class="form-control">
+    </div>
+    {% endfor %}
+    <div class="col-12"><button type="submit" class="btn btn-primary">Filtrar</button> <a href="{{ destino }}" class="btn btn-secondary">Limpar</a></div>
+</form>

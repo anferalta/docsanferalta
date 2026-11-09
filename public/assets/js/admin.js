@@ -3,6 +3,9 @@
 ============================================================ */
 
 document.addEventListener('DOMContentLoaded', () => {
+    const readStorage = key => { try { return localStorage.getItem(key); } catch { return null; } };
+    const saveStorage = (key, value) => { try { localStorage.setItem(key, value); } catch {} };
+    const allowedThemes = ['theme-blue', 'theme-green', 'theme-gray'];
 
     /* ============================================================
        1) DARK MODE TOGGLE
@@ -13,11 +16,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnDark) {
         btnDark.addEventListener('click', () => {
             document.body.classList.toggle('dark-mode');
-            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+            btnDark.setAttribute('aria-pressed', String(document.body.classList.contains('dark-mode')));
+            saveStorage('darkMode', document.body.classList.contains('dark-mode'));
         });
 
-        if (localStorage.getItem('darkMode') === 'true') {
+        if (readStorage('darkMode') === 'true') {
             document.body.classList.add('dark-mode');
+            btnDark.setAttribute('aria-pressed', 'true');
         }
     }
 
@@ -31,16 +36,17 @@ document.addEventListener('DOMContentLoaded', () => {
     themeButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const theme = btn.dataset.theme;
+            if (!allowedThemes.includes(theme)) return;
 
             document.body.classList.remove('theme-blue', 'theme-green', 'theme-gray');
             document.body.classList.add(theme);
 
-            localStorage.setItem('theme', theme);
+            saveStorage('theme', theme);
         });
     });
 
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
+    const savedTheme = readStorage('theme');
+    if (allowedThemes.includes(savedTheme)) {
         document.body.classList.add(savedTheme);
     }
 
@@ -108,40 +114,5 @@ document.addEventListener('DOMContentLoaded', () => {
     if (filtroArea) filtroArea.addEventListener('change', aplicarFiltros);
     if (filtroEstado) filtroEstado.addEventListener('change', aplicarFiltros);
 
-
-    /* ============================================================
-       5) ANIMAÇÕES JS SUAVES
-    ============================================================ */
-
-    document.body.style.opacity = 0;
-    setTimeout(() => {
-        document.body.style.transition = "opacity .5s ease";
-        document.body.style.opacity = 1;
-    }, 30);
-
-    const cards = document.querySelectorAll('.card');
-    cards.forEach(card => {
-        card.style.transition = "transform .15s ease, box-shadow .15s ease";
-        card.addEventListener('mouseenter', () => {
-            card.style.transform = "translateY(-2px)";
-        });
-        card.addEventListener('mouseleave', () => {
-            card.style.transform = "translateY(0)";
-        });
-    });
-
-
-    /* ============================================================
-       6) SIDEBAR MOBILE
-    ============================================================ */
-
-    const btnSidebar = document.getElementById('btnToggleSidebar');
-    const sidebarWrapper = document.getElementById('sidebar-wrapper');
-
-    if (btnSidebar && sidebarWrapper) {
-        btnSidebar.addEventListener('click', () => {
-            sidebarWrapper.classList.toggle('open');
-        });
-    }
 
 });

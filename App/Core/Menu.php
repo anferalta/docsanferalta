@@ -1,55 +1,12 @@
 <?php
-
 namespace App\Core;
 
-use App\Core\Conexao;
+use App\Services\DashboardService;
 
 class Menu
 {
-
-    public function getMenu(): array
+    public function getMenu():array
     {
-        $db = Conexao::getInstancia();
-
-        // ============================
-        // CONTADORES DE UTILIZADORES
-        // ============================
-        $totalUsers = $db->query("SELECT COUNT(*) FROM utilizadores")->fetchColumn();
-        $usersAtivos = $db->query("SELECT COUNT(*) FROM utilizadores WHERE ativo = 1")->fetchColumn();
-        $usersPendentes = $db->query("SELECT COUNT(*) FROM utilizadores WHERE ativo = 0 AND aprovado_em IS NULL")->fetchColumn();
-        $usersBloqueados = $db->query("SELECT COUNT(*) FROM utilizadores WHERE ativo = 0 AND aprovado_em IS NOT NULL")->fetchColumn();
-
-        // ============================
-        // CONTADORES DE DOCUMENTOS
-        // ============================
-        $docsTotal = $db->query("SELECT COUNT(*) FROM documentos")->fetchColumn();
-        $docsPendentes = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'pendente'")->fetchColumn();
-        $docsAnalise = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'analise'")->fetchColumn();
-
-// ⭐ CORREÇÃO — contar TODOS os documentos em fluxo ativo
-        $docsTram = $db->query("
-    SELECT COUNT(*) 
-    FROM documentos 
-    WHERE estado_atual IN (
-        'novo',
-        'pendente',
-        'analise',
-        'em_tramitacao',
-        'concluido'
-    )
-")->fetchColumn();
-
-        $docsConcl = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'concluido'")->fetchColumn();
-        $docsArquiv = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'arquivado'")->fetchColumn();
-        $docsDevolvidos = $db->query("SELECT COUNT(*) FROM documentos WHERE estado_atual = 'devolvido'")->fetchColumn();
-
-        // ============================
-        // CONTADORES EXTRA
-        // ============================
-        $docsTipos = $db->query("SELECT COUNT(*) FROM documento_tipos")->fetchColumn();
-        $docsAreas = $db->query("SELECT COUNT(*) FROM documento_areas")->fetchColumn();
-        $docsEstados = $db->query("SELECT COUNT(*) FROM documento_estados")->fetchColumn();
-
         return [
             // ============================
             // GERAL
@@ -71,29 +28,29 @@ class Menu
                 'icone' => 'bi-people',
                 'url' => '/admin/utilizadores',
                 'permissao' => 'admin.utilizadores.ver',
-                'badge' => $totalUsers,
+                'contador' => 'users.total',
                 'principal' => true
             ],
             [
                 'titulo' => 'Pendentes',
                 'icone' => 'bi-hourglass-split',
                 'url' => '/admin/utilizadores/pendentes',
-                'permissao' => 'admin.utilizadores.aprovar',
-                'badge' => $usersPendentes
+                'permissao' => 'admin.utilizadores.ver',
+                'contador' => 'users.pendentes'
             ],
             [
                 'titulo' => 'Ativos',
                 'icone' => 'bi-person-check',
                 'url' => '/admin/utilizadores/ativos',
                 'permissao' => 'admin.utilizadores.ver',
-                'badge' => $usersAtivos
+                'contador' => 'users.ativos'
             ],
             [
                 'titulo' => 'Bloqueados',
                 'icone' => 'bi-person-x',
                 'url' => '/admin/utilizadores/bloqueados',
-                'permissao' => 'admin.utilizadores.bloquear',
-                'badge' => $usersBloqueados
+                'permissao' => 'admin.utilizadores.ver',
+                'contador' => 'users.bloqueados'
             ],
             [
                 'titulo' => 'Criar Utilizador',
@@ -110,7 +67,7 @@ class Menu
                 'icone' => 'bi-folder',
                 'url' => '/admin/documentos',
                 'permissao' => 'admin.documentos.ver',
-                'badge' => $docsTotal,
+                'contador' => 'docs.total',
                 'principal' => true
             ],
             [
@@ -118,14 +75,14 @@ class Menu
                 'icone' => 'bi-diagram-2',
                 'url' => '/admin/documento-tipos',
                 'permissao' => 'admin.documento-tipos.ver',
-                'badge' => $docsTipos
+                'contador' => 'catalogo.tipos'
             ],
             [
                 'titulo' => 'Arquivados',
                 'icone' => 'bi-archive',
                 'url' => '/admin/documentos/arquivados',
                 'permissao' => 'admin.documentos.arquivados.ver',
-                'badge' => $docsArquiv
+                'contador' => 'docs.arquivado'
             ],
             // ============================
             // TRAMITAÇÃO
@@ -142,7 +99,7 @@ class Menu
                 'icone' => 'bi-diagram-3',
                 'url' => '/admin/tramitacao',
                 'permissao' => 'admin.tramitacao.ver',
-                'badge' => $docsTram,
+                'contador' => 'docs.fluxo',
                 'principal' => true
             ],
             [
@@ -150,7 +107,7 @@ class Menu
                 'icone' => 'bi-diagram-2',
                 'url' => '/admin/documento-areas',
                 'permissao' => 'admin.tramitacao.areas.ver',
-                'badge' => $docsAreas
+                'contador' => 'catalogo.areas'
             ],
             // ⭐ NOVO ITEM — DOCUMENTO ESTADOS
             [
@@ -158,7 +115,7 @@ class Menu
                 'icone' => 'bi-flag',
                 'url' => '/admin/documento-estados',
                 'permissao' => 'admin.tramitacao.estados.ver',
-                'badge' => $docsEstados
+                'contador' => 'catalogo.estados'
             ],
             // ============================
             // SISTEMA
@@ -198,45 +155,58 @@ class Menu
                 'titulo' => 'Backups',
                 'icone' => 'bi-hdd-stack',
                 'url' => '/admin/backups',
-                'permissao' => 'admin.backups.bd.ver'
+                'permissoes' => ['admin.backups.bd.ver','admin.backups.files.ver','admin.backups.agendamentos.ver']
             ],
         ];
     }
 
-    public function filtrarMenu(array $menu): array
+    public function filtrarMenu(array $menu):array
     {
-        $uid = $_SESSION['user_id'] ?? null;
-        if (!$uid)
-            return [];
-
-        $user = \App\Core\Auth::user();
-        $resultado = [];
-
-        foreach ($menu as $item) {
-
-            // Headers aparecem sempre
-            if (isset($item['header'])) {
-                $resultado[] = $item;
-                continue;
+        $user=Auth::user();if(!$user){return [];}
+        $permissoes=$user->isAdmin()?[]:$user->permissoes();
+        $permitido=static function(array $item)use($user,$permissoes):bool{
+            if($user->isAdmin()){return true;}
+            $necessarias=$item['permissoes']??(isset($item['permissao'])?[$item['permissao']]:[]);
+            return (bool)array_intersect($necessarias,$permissoes);
+        };
+        $filtrar=function(array $itens)use(&$filtrar,$permitido):array{
+            $resultado=[];$cabecalho=null;
+            foreach($itens as$item){
+                if(isset($item['header'])){$cabecalho=$item;continue;}
+                if(!$permitido($item)){continue;}
+                if(isset($item['sub'])){$item['sub']=$filtrar($item['sub']);}
+                if($cabecalho!==null){$resultado[]=$cabecalho;$cabecalho=null;}
+                $resultado[]=$item;
             }
-
-            // Admin vê tudo
-            if ($user && $user->isAdmin()) {
-                $resultado[] = $item;
-                continue;
+            return $resultado;
+        };
+        $resultado=$filtrar($menu);$service=new DashboardService();$cache=[];
+        $perfil=strtolower(trim($user->perfil->nome??''));
+        $todos=$user->isAdmin()||in_array($perfil,['admin','gestor','supervisor'],true)||in_array('admin.documentos.ver_todos',$permissoes,true);
+        $contar=function(array $itens)use(&$contar,&$cache,$service,$user,$todos):array{
+            foreach($itens as&$item){
+                if(isset($item['contador'])){
+                    [$grupo,$chave]=explode('.',$item['contador'],2);
+                    if($grupo==='users'){$cache['users']??=$service->utilizadores();$item['badge']=$cache['users'][$chave];}
+                    elseif($grupo==='docs'){$cache['docs']??=$service->documentos($todos?null:$user->id);$item['badge']=$cache['docs'][$chave];}
+                    else{$cache['catalogo'][$chave]??=$service->catalogo($chave);$item['badge']=$cache['catalogo'][$chave];}
+                }
+                if(isset($item['sub'])){$item['sub']=$contar($item['sub']);}
             }
+            unset($item);return $itens;
+        };
+        return $this->marcarAtivo($contar($resultado),$_SERVER['REQUEST_URI']??'/');
+    }
 
-            // Se não tiver permissão definida → não mostrar
-            if (!isset($item['permissao']))
-                continue;
-
-            // 🔥 CORREÇÃO CRÍTICA — usar permissões do perfil
-            if (!$user->hasPermissao($item['permissao']))
-                continue;
-
-            $resultado[] = $item;
-        }
-
-        return $resultado;
+    public function marcarAtivo(array $menu,string $uri):array
+    {
+        $path=rtrim(parse_url($uri,PHP_URL_PATH)?:'/','/')?:'/';if($path==='/admin'){$path='/admin/dashboard';}
+        $melhor=null;$tamanho=-1;
+        $procurar=function(array $itens)use(&$procurar,$path,&$melhor,&$tamanho):void{
+            foreach($itens as$item){if(isset($item['url'])){$url=rtrim($item['url'],'/');if(($path===$url||str_starts_with($path,$url.'/'))&&strlen($url)>$tamanho){$melhor=$item['url'];$tamanho=strlen($url);}}if(isset($item['sub'])){$procurar($item['sub']);}}
+        };$procurar($menu);
+        $marcar=function(array $itens)use(&$marcar,$melhor):array{
+            foreach($itens as&$item){if(isset($item['url'])){$item['ativo']=$item['url']===$melhor;}if(isset($item['sub'])){$item['sub']=$marcar($item['sub']);$item['aberto']=(bool)array_filter($item['sub'],static fn($sub)=>$sub['ativo']??false);}}unset($item);return $itens;
+        };return $marcar($menu);
     }
 }

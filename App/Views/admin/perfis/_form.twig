@@ -1,0 +1,24 @@
+{% if erro %}<div class="alert alert-danger" role="alert">{{ erro }}</div>{% endif %}
+<form method="post" action="{{ perfil ? '/admin/perfis/editar/' ~ perfil.id : '/admin/perfis/criar' }}">
+    {{ csrf_field() }}
+    <div class="mb-3">
+        <label for="perfil_nome" class="form-label">Nome</label>
+        <input id="perfil_nome" type="text" name="nome" class="form-control" value="{{ dados.nome }}" maxlength="50" required autocomplete="off">
+    </div>
+    <div class="mb-3">
+        <label for="perfil_descricao" class="form-label">Descrição</label>
+        <input id="perfil_descricao" type="text" name="descricao" class="form-control" value="{{ dados.descricao }}" maxlength="255" list="descricoes_perfis" aria-describedby="descricao_ajuda">
+        <datalist id="descricoes_perfis">
+            {% set descricoes = [] %}
+            {% for p in perfis %}
+                {% if p.descricao and p.descricao not in descricoes %}
+                    <option value="{{ p.descricao }}"></option>
+                    {% set descricoes = descricoes|merge([p.descricao]) %}
+                {% endif %}
+            {% endfor %}
+        </datalist>
+        <div id="descricao_ajuda" class="form-text">Descreva o perfil ou escolha uma descrição existente.</div>
+    </div>
+    <button type="submit" class="btn btn-primary">Guardar</button>
+    <a href="/admin/perfis" class="btn btn-secondary">Cancelar</a>
+</form>

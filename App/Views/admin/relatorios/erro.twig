@@ -1,0 +1,8 @@
+{% extends "@admin/layout.twig" %}
+{% block content %}
+<div class="alert alert-warning" role="alert">
+    <h4 class="alert-heading">Filtros inválidos</h4>
+    <p>{{ mensagem }}</p>
+    <a href="/admin/relatorios" class="btn btn-secondary">Voltar aos relatórios SLA</a>
+</div>
+{% endblock %}

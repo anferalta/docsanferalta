@@ -20,7 +20,7 @@ class Conexao
                 $password = Env::get('DB_PASS', '');
 
                 self::$instancia = new PDO(
-                    "mysql:host={$host};dbname={$dbname};charset=utf8",
+                    "mysql:host={$host};dbname={$dbname};charset=utf8mb4",
                     $user,
                     $password,
                     [

@@ -66,13 +66,7 @@ Middleware::register('perm', function ($permission = null) {
 });
 
 Middleware::register('csrf', function () {
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        if (!CSRF::validateFromRequest()) {
-            Sessao::flash('erro', 'Token CSRF inválido.');
-            Helpers::redirect('/recuperar');
-            exit;
-        }
-    }
+    CSRF::exigirTokenValido();
     return true;
 });
 

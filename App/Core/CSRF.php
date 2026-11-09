@@ -48,7 +48,7 @@ class CSRF
         }
 
         // GET nunca falha
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        if (strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
             return true;
         }
 
@@ -60,12 +60,12 @@ class CSRF
             ?? null;
         $stored = $_SESSION[self::SESSION_KEY] ?? null;
 
-        if (!$sent || !$stored) {
+        if (!is_string($sent) || !is_string($stored) || $sent === '' || $stored === '') {
             return false;
         }
 
         // Comparação segura
-        return self::validateToken((string) $sent);
+        return self::validateToken($sent);
     }
 
     /** Valida um token fornecido diretamente pelo código da aplicação. */
@@ -91,5 +91,21 @@ class CSRF
             self::FIELD_NAME,
             htmlspecialchars($token, ENT_QUOTES, 'UTF-8')
         );
+    }
+
+    /** Interrompe pedidos inválidos sem executar a ação nem expor uma stack trace. */
+    public static function exigirTokenValido(): void
+    {
+        if (self::validateFromRequest()) {
+            return;
+        }
+        http_response_code(419);
+        header('Content-Type: text/html; charset=UTF-8');
+        header('Cache-Control: no-store, private');
+        echo '<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Formulário expirado</title></head><body>';
+        echo '<main style="max-width:40rem;margin:3rem auto;padding:1rem;font-family:system-ui,sans-serif"><h1>O formulário expirou</h1>';
+        echo '<p>A sessão mudou ou o formulário já não é válido. Volte a abrir a página e tente novamente.</p><p>A operação não foi executada.</p>';
+        echo '<p><a href="/login">Iniciar sessão</a> · <a href="/admin">Voltar ao painel</a></p></main></body></html>';
+        exit;
     }
 }

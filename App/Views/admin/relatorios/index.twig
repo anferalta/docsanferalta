@@ -15,8 +15,8 @@
             <form method="get" class="row g-3">
 
                 <div class="col-md-3">
-                    <label class="form-label">Área</label>
-                    <select name="area" class="form-select">
+                    <label for="sla_area" class="form-label">Área</label>
+                    <select id="sla_area" name="area" class="form-select">
                         <option value="">Todas</option>
                         {% for a in areas %}
                             <option value="{{ a }}" {{ filtros.area == a ? 'selected' : '' }}>
@@ -27,8 +27,8 @@
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label">Estado</label>
-                    <select name="estado" class="form-select">
+                    <label for="sla_estado" class="form-label">Estado</label>
+                    <select id="sla_estado" name="estado" class="form-select">
                         <option value="">Todos</option>
                         {% for e in estados %}
                             <option value="{{ e }}" {{ filtros.estado == e ? 'selected' : '' }}>
@@ -39,14 +39,14 @@
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label">Data Inicial</label>
-                    <input type="date" name="data_inicio" class="form-control"
+                    <label for="sla_data_inicio" class="form-label">Data Inicial</label>
+                    <input type="date" id="sla_data_inicio" name="data_inicio" class="form-control"
                            value="{{ filtros.data_inicio }}">
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label">Data Final</label>
-                    <input type="date" name="data_fim" class="form-control"
+                    <label for="sla_data_fim" class="form-label">Data Final</label>
+                    <input type="date" id="sla_data_fim" name="data_fim" class="form-control"
                            value="{{ filtros.data_fim }}">
                 </div>
 
@@ -85,21 +85,26 @@
 
             <div class="row text-center">
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <span class="badge bg-success" style="font-size: 16px;">
                         OK: {{ totais.ok }}
                     </span>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <span class="badge bg-warning text-dark" style="font-size: 16px;">
                         Alerta: {{ totais.alerta }}
                     </span>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <span class="badge bg-danger" style="font-size: 16px;">
                         Atrasado: {{ totais.atrasado }}
+                    </span>
+                </div>
+                <div class="col-md-3">
+                    <span class="badge bg-secondary" style="font-size: 16px;">
+                        Indefinido: {{ totais.indefinido }}
                     </span>
                 </div>
 
@@ -112,6 +117,7 @@
     <div class="card">
         <div class="card-body">
 
+            <div class="table-responsive">
             <table class="table table-striped align-middle">
                 <thead>
                     <tr>
@@ -141,17 +147,20 @@
                                 {% elseif d.sla == 'atrasado' %}
                                     <span class="badge bg-danger">Atrasado</span>
                                 {% else %}
-                                    <span class="badge bg-secondary">—</span>
+                                    <span class="badge bg-secondary">Indefinido</span>
                                 {% endif %}
                             </td>
 
                             <td>{{ d.dias_parado ?? '—' }}</td>
                             <td>{{ d.criado_em|date("d/m/Y") }}</td>
                         </tr>
+                    {% else %}
+                        <tr><td colspan="7" class="text-center text-muted">Nenhum documento encontrado para os filtros selecionados.</td></tr>
                     {% endfor %}
                 </tbody>
 
             </table>
+            </div>
 
         </div>
     </div>

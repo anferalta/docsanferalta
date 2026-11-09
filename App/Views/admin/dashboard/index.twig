@@ -1,219 +1,30 @@
-{% extends "@admin/layout.twig" %}
-
+{% extends '@admin/layout.twig' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
 {% block content %}
-
-<div class="container-fluid">
-
-    <!-- TÍTULO -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="mb-0">
-            <i class="fa fa-chart-line me-2"></i> Dashboard Administrativo
-        </h4>
-    </div>
-
-    {% if isAdmin %}
-
-    <!-- ============================================================
-         CARTÕES DE SLA
-    ============================================================ -->
-    <div class="row mb-4">
-
-        <div class="col-md-4">
-            <div class="card border-success shadow-sm">
-                <div class="card-body text-center">
-                    <h5 class="text-success">Dentro do Prazo</h5>
-                    <p class="display-5 text-success fw-bold">{{ slaOk }}</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card border-warning shadow-sm">
-                <div class="card-body text-center">
-                    <h5 class="text-warning">A Expirar</h5>
-                    <p class="display-5 text-warning fw-bold">{{ slaAlerta }}</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card border-danger shadow-sm">
-                <div class="card-body text-center">
-                    <h5 class="text-danger">Atrasados</h5>
-                    <p class="display-5 text-danger fw-bold">{{ slaAtrasado }}</p>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- ============================================================
-         GRÁFICO DE SLA
-    ============================================================ -->
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body">
-            <h5 class="mb-3"><i class="fa fa-chart-pie me-2"></i>Distribuição SLA</h5>
-            <canvas id="graficoSLA" height="120"></canvas>
-        </div>
-    </div>
-
-    <!-- ============================================================
-         RANKING DE ÁREAS
-    ============================================================ -->
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body">
-            <h5 class="mb-3"><i class="fa fa-trophy me-2"></i>Ranking de Áreas (SLA)</h5>
-
-            <table class="table table-striped table-bordered align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>Área</th>
-                        <th>Total</th>
-                        <th>Dentro do Prazo</th>
-                        <th>Atrasados</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for r in rankingAreas %}
-                        <tr>
-                            <td>{{ r.area }}</td>
-                            <td>{{ r.total }}</td>
-                            <td><span class="badge bg-success">{{ r.dentro_prazo }}</span></td>
-                            <td><span class="badge bg-danger">{{ r.atrasados }}</span></td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="4" class="text-center text-muted">Nenhuma área encontrada.</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-
-        </div>
-    </div>
-
-    <!-- ============================================================
-         OUTRAS ESTATÍSTICAS (UTILIZADORES E DOCUMENTOS)
-    ============================================================ -->
-    <div class="row">
-
-        <div class="col-md-6">
-            <div class="card shadow-sm mb-4">
-                <div class="card-body">
-                    <h5 class="mb-3"><i class="fa fa-users me-2"></i>Utilizadores</h5>
-
-                    <ul class="list-group">
-                        <li class="list-group-item d-flex justify-content-between">
-                            Total <span class="fw-bold">{{ totalUtilizadores }}</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between">
-                            Ativos <span class="fw-bold text-success">{{ totalAtivos }}</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between">
-                            Pendentes <span class="fw-bold text-warning">{{ totalPendentes }}</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between">
-                            Bloqueados <span class="fw-bold text-danger">{{ totalBloqueados }}</span>
-                        </li>
-                    </ul>
-
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <div class="card shadow-sm mb-4">
-                <div class="card-body">
-                    <h5 class="mb-3"><i class="fa fa-file-alt me-2"></i>Documentos</h5>
-
-                    <ul class="list-group">
-
-                        <!-- NOVO CARD: TRAMITAÇÃO (FLUXO ATIVO) -->
-                        <li class="list-group-item d-flex justify-content-between">
-                            Tramitação (Fluxo Ativo)
-                            <span class="fw-bold text-secondary">{{ tramitacaoFluxo }}</span>
-                        </li>
-
-                        <li class="list-group-item d-flex justify-content-between">
-                            Total <span class="fw-bold">{{ totalDocumentos }}</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between">
-                            Pendentes <span class="fw-bold text-warning">{{ totalDocsPendentes }}</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between">
-                            Em Tramitação <span class="fw-bold text-primary">{{ totalDocsTramitacao }}</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between">
-                            Em Análise <span class="fw-bold text-info">{{ totalDocsAnalise }}</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between">
-                            Concluídos <span class="fw-bold text-success">{{ totalDocsConcluidos }}</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between">
-                            Arquivados <span class="fw-bold text-secondary">{{ totalDocsArquivados }}</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between">
-                            Devolvidos <span class="fw-bold text-danger">{{ totalDocsDevolvidos }}</span>
-                        </li>
-                    </ul>
-
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    {% else %}
-
-    <!-- ============================================================
-         DASHBOARD DO UTILIZADOR NORMAL
-    ============================================================ -->
-
-    <div class="row">
-
-        <div class="col-md-6">
-            <div class="card border-primary shadow-sm mb-4">
-                <div class="card-body text-center">
-                    <h5 class="text-primary">Documentos Criados</h5>
-                    <p class="display-5 fw-bold">{{ totalDocsDoUtilizador }}</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <div class="card border-warning shadow-sm mb-4">
-                <div class="card-body text-center">
-                    <h5 class="text-warning">Pendentes</h5>
-                    <p class="display-5 fw-bold">{{ docsUserPendentes }}</p>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    {% endif %}
-
+<div class="d-flex flex-wrap justify-content-between gap-2 align-items-center mb-4"><div><h3 class="mb-1">{{ isAdmin?'Dashboard administrativo':'O seu dashboard' }}</h3><p class="text-muted mb-0">{{ isAdmin?'Visão global dos utilizadores, documentos e prazos.':'Resumo dos documentos criados pela sua conta.' }}</p></div><small class="text-muted">Atualizado em {{ geradoEm|date('d/m/Y H:i') }}</small></div>
+{% if isAdmin %}
+<section class="mb-4" aria-labelledby="titulo_sla"><h4 id="titulo_sla">Prazos SLA</h4><p class="text-muted small">Fluxo ativo: novo, pendente, análise, em tramitação e concluído. Alerta nos dois dias após o prazo.</p>
+<div class="row g-3">
+{% for chave,rotulo in {'ok':'Dentro do prazo','alerta':'Alerta','atrasado':'Atrasado','indefinido':'Indefinido'} %}<div class="col-6 col-xl-3"><div class="card h-100"><div class="card-body"><h5 class="fs-6">{{ rotulo }}</h5><strong class="display-6">{{ sla[chave] }}</strong><meter class="dashboard-meter" min="0" max="{{ max(1,documentos.fluxo) }}" value="{{ sla[chave] }}" aria-label="{{ rotulo }}">{{ sla[chave] }}</meter></div></div></div>{% endfor %}
+</div></section>
+<div class="row g-3 mb-4">
+<section class="col-lg-6"><div class="card h-100"><div class="card-body"><h4 class="h5">Utilizadores</h4><dl class="dashboard-stats mb-0">{% for chave,rotulo in {'total':'Total','ativos':'Ativos','pendentes':'Pendentes','bloqueados':'Bloqueados'} %}<div><dt>{{ rotulo }}</dt><dd>{{ utilizadores[chave] }}</dd></div>{% endfor %}</dl><a href="/admin/utilizadores" class="btn btn-sm btn-outline-primary mt-3">Gerir utilizadores</a></div></div></section>
+<section class="col-lg-6"><div class="card h-100"><div class="card-body"><h4 class="h5">Documentos</h4><dl class="dashboard-stats mb-0">{% for chave,rotulo in {'total':'Total','fluxo':'Tramitação — fluxo ativo','novo':'Novos','pendente':'Pendentes','analise':'Em análise','em_tramitacao':'Em tramitação','concluido':'Concluídos','arquivado':'Arquivados','devolvido':'Devolvidos'} %}<div><dt>{{ rotulo }}</dt><dd>{{ documentos[chave] }}</dd></div>{% endfor %}</dl></div></div></section>
 </div>
-
-{% endblock %}
-
-{% block scripts %}
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<script>
-const ctx = document.getElementById('graficoSLA');
-
-new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-        labels: ['Dentro do Prazo', 'A Expirar', 'Atrasados'],
-        datasets: [{
-            data: [{{ slaOk }}, {{ slaAlerta }}, {{ slaAtrasado }}],
-            backgroundColor: ['#28a745', '#ffc107', '#dc3545']
-        }]
-    }
-});
-</script>
-
+<section class="card mb-4"><div class="card-body"><h4 class="h5">Áreas e SLA</h4><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Área</th><th>Total</th><th>Dentro do prazo</th><th>Alerta</th><th>Atrasado</th><th>Indefinido</th></tr></thead><tbody>
+{% for area in rankingAreas %}<tr><th scope="row">{{ area.area }}</th>{% for chave in ['total','ok','alerta','atrasado','indefinido'] %}<td>{{ area[chave] }}</td>{% endfor %}</tr>{% else %}<tr><td colspan="6">Sem documentos no fluxo ativo.</td></tr>{% endfor %}
+</tbody></table></div><a href="/admin/relatorios" class="btn btn-sm btn-outline-primary">Abrir relatórios SLA</a></div></section>
+<section class="card mb-4"><div class="card-body"><h4 class="h5">Novos utilizadores — últimos 12 meses</h4><div class="dashboard-months">{% for mes in meses %}<div><span class="small">{{ mes.mes }}</span><meter min="0" max="{{ maxRegistos }}" value="{{ mes.total }}" aria-label="Registos em {{ mes.mes }}">{{ mes.total }}</meter><strong>{{ mes.total }}</strong></div>{% endfor %}</div></div></section>
+<div class="row g-3">
+{% for tipo,titulo in {'ultimosDocs':'Documentos recentes','ultimosUsers':'Utilizadores recentes','ultimosLogs':'Auditoria recente'} %}
+<section class="col-xl-4"><div class="card h-100"><div class="card-body"><h4 class="h5">{{ titulo }}</h4><ul class="list-group list-group-flush">{% set lista=tipo=='ultimosDocs'?ultimosDocs:(tipo=='ultimosUsers'?ultimosUsers:ultimosLogs) %}{% for item in lista %}<li class="list-group-item dashboard-recent"><span>{{ tipo=='ultimosDocs'?item.titulo:(tipo=='ultimosUsers'?item.nome:item.acao) }}</span><small class="text-muted d-block">{{ item.criado_em ?: 'Sem data' }}</small></li>{% else %}<li class="list-group-item">Sem registos.</li>{% endfor %}</ul></div></div></section>
+{% endfor %}
+</div>
+{% else %}
+<div class="row g-3">
+{% for chave,rotulo in {'total':'Documentos criados','pendente':'Pendentes','concluido':'Concluídos'} %}<div class="col-md-4"><div class="card h-100"><div class="card-body"><h4 class="h6">{{ rotulo }}</h4><strong class="display-5">{{ documentos[chave] }}</strong></div></div></div>{% endfor %}
+</div>
+{% if isGranted('admin.documentos.ver') %}<a href="/admin/documentos" class="btn btn-primary mt-4">Abrir documentos</a>{% endif %}
+{% endif %}
 {% endblock %}

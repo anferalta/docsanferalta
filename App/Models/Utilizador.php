@@ -55,28 +55,23 @@ class Utilizador extends Model
     public static function findByEmail(string $email): ?Utilizador
     {
         $email = self::normalizeEmail($email);
-
         $db = Conexao::getInstancia();
-        $stmt = $db->prepare("SELECT * FROM utilizadores");
-        $stmt->execute();
-        $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-
-        foreach ($rows as $row) {
-            $dbEmail = self::normalizeEmail($row['email'] ?? '');
-
-            if ($dbEmail === $email) {
-                $u = new Utilizador();
-
-                foreach ($row as $key => $value) {
-                    if (property_exists($u, $key)) {
-                        $u->$key = $value;
-                    }
-                }
-
-                return $u;
+        // Caminho habitual: usa o índice único de email.
+        $stmt = $db->prepare('SELECT * FROM utilizadores WHERE email = ? LIMIT 1');
+        $stmt->execute([$email]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        $stmt->closeCursor();
+        if ($row && self::normalizeEmail($row['email']) === $email) {
+            return new static($row);
+        }
+        // Compatibilidade com endereços antigos contendo espaços ou caracteres invisíveis.
+        $stmt = $db->query('SELECT * FROM utilizadores');
+        while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+            if (self::normalizeEmail($row['email'] ?? '') === $email) {
+                $stmt->closeCursor();
+                return new static($row);
             }
         }
-
         return null;
     }
 

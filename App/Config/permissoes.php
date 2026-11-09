@@ -14,6 +14,7 @@ return [
     ['codigo' => 'admin.utilizadores.ver', 'descricao' => 'Listar utilizadores'],
     ['codigo' => 'admin.utilizadores.criar', 'descricao' => 'Criar utilizadores'],
     ['codigo' => 'admin.utilizadores.editar', 'descricao' => 'Editar utilizadores'],
+    ['codigo' => 'admin.utilizadores.aprovar', 'descricao' => 'Aprovar utilizadores'],
     ['codigo' => 'admin.utilizadores.apagar', 'descricao' => 'Apagar utilizadores'],
 
 
@@ -92,6 +93,7 @@ return [
     // LOGS
     // ============================================
     ['codigo' => 'admin.logs.ver', 'descricao' => 'Ver logs do sistema'],
+    ['codigo' => 'admin.logs.exportar', 'descricao' => 'Exportar logs do sistema'],
     ['codigo' => 'admin.logs.apagar', 'descricao' => 'Apagar logs do sistema'],
 
 

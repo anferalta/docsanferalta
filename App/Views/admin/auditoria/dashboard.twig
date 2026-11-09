@@ -1,68 +1,29 @@
 {% extends "@admin/layout.twig" %}
-
+{% block title %}Dashboard da Auditoria{% endblock %}
 {% block content %}
-<h3 class="mb-4">Dashboard da Auditoria</h3>
-
-<a href="/admin/auditoria" class="btn btn-secondary mb-4">Voltar</a>
-
-<div class="row">
-    <div class="col-md-6">
-        <h5>Ações</h5>
-        <canvas id="graficoAcoes" height="150"></canvas>
-    </div>
-
-    <div class="col-md-6">
-        <h5>Registos por Dia</h5>
-        <canvas id="graficoDias" height="150"></canvas>
-    </div>
+{% set query = filtros|merge({'ordem':ordem,'dir':dir}) %}
+<h3 class="mb-3">Dashboard da Auditoria</h3>
+<div class="mb-3"><a href="/admin/auditoria?{{ query|url_encode }}" class="btn btn-secondary">Ver registos</a>
+    <a href="/admin/auditoria/exportar?{{ query|url_encode }}" class="btn btn-success">Exportar CSV</a></div>
+{% include '@admin/auditoria/_filtros.twig' with {'destino':'/admin/auditoria/dashboard'} %}
+<div class="row g-3 mb-4">
+    {% for chave, rotulo in {'total':'Total de registos','gerais':'Registos gerais','eliminacoes':'Eliminações'} %}
+        <div class="col-md-4"><div class="card"><div class="card-body"><h5>{{ rotulo }}</h5><strong class="fs-3">{{ resumo[chave] }}</strong></div></div></div>
+    {% endfor %}
 </div>
-
-<script>
-// ----------------------
-// GRÁFICO POR AÇÃO
-// ----------------------
-new Chart(document.getElementById('graficoAcoes'), {
-    type: 'pie',
-    data: {
-        labels: [
-            {% for item in porAcao %}
-                "{{ item.acao }}"{% if not loop.last %},{% endif %}
-            {% endfor %}
-        ],
-        datasets: [{
-            data: [
-                {% for item in porAcao %}
-                    {{ item.total }}{% if not loop.last %},{% endif %}
-                {% endfor %}
-            ],
-            backgroundColor: ['#22c55e', '#facc15', '#ef4444', '#3b82f6', '#a855f7']
-        }]
-    }
-});
-
-// ----------------------
-// GRÁFICO POR DIA
-// ----------------------
-new Chart(document.getElementById('graficoDias'), {
-    type: 'line',
-    data: {
-        labels: [
-            {% for item in porDia %}
-                "{{ item.dia }}"{% if not loop.last %},{% endif %}
-            {% endfor %}
-        ],
-        datasets: [{
-            label: 'Registos por dia',
-            data: [
-                {% for item in porDia %}
-                    {{ item.total }}{% if not loop.last %},{% endif %}
-                {% endfor %}
-            ],
-            borderColor: '#0d6efd',
-            tension: 0.3
-        }]
-    }
-});
-</script>
-
+{% if resumo.total == 0 %}<div class="alert alert-info">Nenhum registo encontrado para os filtros selecionados.</div>{% endif %}
+<div class="row g-4">
+    <section class="col-lg-6"><h5>20 ações mais frequentes</h5>
+        <div class="table-responsive"><table class="table"><thead><tr><th>Ação</th><th>Total</th></tr></thead><tbody>
+        {% for item in porAcao %}<tr><td style="overflow-wrap:anywhere">{{ item.acao ?: 'N/A' }}</td><td><meter min="0" max="{{ maxAcao }}" value="{{ item.total }}" aria-label="Frequência da ação">{{ item.total }}</meter> {{ item.total }}</td></tr>
+        {% else %}<tr><td colspan="2">Sem ações para apresentar.</td></tr>{% endfor %}
+        </tbody></table></div>
+    </section>
+    <section class="col-lg-6"><h5>Registos por dia</h5>
+        <div class="table-responsive"><table class="table"><thead><tr><th>Dia</th><th>Total</th></tr></thead><tbody>
+        {% for item in porDia %}<tr><td>{{ item.dia ?: 'Sem data' }}</td><td><meter min="0" max="{{ maxDia }}" value="{{ item.total }}" aria-label="Registos do dia">{{ item.total }}</meter> {{ item.total }}</td></tr>
+        {% else %}<tr><td colspan="2">Sem registos para apresentar.</td></tr>{% endfor %}
+        </tbody></table></div>
+    </section>
+</div>
 {% endblock %}

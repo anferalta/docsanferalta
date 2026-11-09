@@ -1,0 +1,14 @@
+{% if erro %}<div class="alert alert-danger" role="alert">{{ erro }}</div>{% endif %}
+{% set proprio=utilizador and utilizador.id==actorId %}
+<form method="post" action="{{ utilizador?'/admin/utilizadores/editar/'~utilizador.id:'/admin/utilizadores/criar' }}">
+{{ csrf_field() }}
+{% for campo,rotulo in {'nome':'Nome','email':'Email'} %}<div class="mb-3"><label for="form_{{ campo }}" class="form-label">{{ rotulo }}</label><input id="form_{{ campo }}" type="{{ campo=='email'?'email':'text' }}" name="{{ campo }}" value="{{ dados[campo] }}" maxlength="{{ campo=='nome'?100:120 }}" class="form-control" required></div>{% endfor %}
+<div class="mb-3"><label for="form_perfil" class="form-label">Perfil</label><select id="form_perfil" name="perfil_id" class="form-select" required {% if proprio %}disabled{% endif %}><option value="">Selecione...</option>{% for p in perfis %}<option value="{{ p.id }}" {{ dados.perfil_id==p.id?'selected':'' }}>{{ p.nome }}</option>{% endfor %}</select>{% if proprio %}<input type="hidden" name="perfil_id" value="{{ utilizador.perfil_id }}">{% endif %}</div>
+<div class="mb-3"><label for="form_ativo" class="form-label">Estado</label><select id="form_ativo" name="ativo" class="form-select" {% if proprio %}disabled{% endif %}><option value="1" {{ dados.ativo==1?'selected':'' }} {% if utilizador and utilizador.ativo==0 and utilizador.aprovado_em is null %}disabled{% endif %}>Ativo</option><option value="0" {{ dados.ativo==0?'selected':'' }}>Inativo</option></select>{% if proprio %}<input type="hidden" name="ativo" value="1">{% endif %}</div>
+{% if utilizador and utilizador.ativo==0 and utilizador.aprovado_em is null %}<p class="form-text">Esta conta está pendente. A ativação deve ser feita pela aprovação.</p>{% endif %}
+<fieldset class="mb-3"><legend class="fs-6">{{ utilizador?'Alterar palavra-passe (opcional)':'Palavra-passe' }}</legend>
+<p class="form-text">Mínimo de 6 caracteres e máximo de 72 bytes. {% if utilizador %}Deixe ambos os campos vazios para manter a palavra-passe atual.{% endif %}</p>
+{% for campo,rotulo in {'password':'Palavra-passe','password_confirmation':'Confirmar palavra-passe'} %}<div class="mb-3"><label for="form_{{ campo }}" class="form-label">{{ rotulo }}</label><input id="form_{{ campo }}" type="password" name="{{ campo }}" class="form-control" autocomplete="new-password" minlength="6" maxlength="72" {% if not utilizador %}required{% endif %}></div>{% endfor %}
+</fieldset>
+<button type="submit" class="btn btn-primary">Guardar</button> <a href="/admin/utilizadores" class="btn btn-secondary">Cancelar</a>
+</form>

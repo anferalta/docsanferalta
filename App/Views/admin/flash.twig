@@ -13,3 +13,11 @@
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 </div>
 {% endif %}
+
+{% set aviso = sessao.flash('aviso') %}
+{% if aviso is not empty %}
+<div class="alert alert-warning alert-dismissible fade show mb-3" role="alert">
+    {{ aviso }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+</div>
+{% endif %}

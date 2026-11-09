@@ -6,7 +6,7 @@
 
     <style>
         @page {
-            margin: 25px;
+            margin: 25px 25px 45px;
         }
 
         body {
@@ -36,6 +36,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;
             margin-top: 12px;
             page-break-inside: auto;
         }
@@ -44,6 +45,7 @@
             border: 1px solid #444;
             padding: 6px;
             text-align: left;
+            overflow-wrap: break-word;
         }
 
         table th {
@@ -70,7 +72,7 @@
         }
 
         .footer:after {
-            content: "Página " counter(page) " de " counter(pages);
+            content: "Página " counter(page);
         }
     </style>
 </head>
@@ -79,7 +81,7 @@
     <h2>Relatório SLA — Documentos</h2>
 
     <div class="subtitulo">
-        Gerado em: <?= date('d/m/Y H:i') ?>
+        Gerado em: <?= ($geradoEm ?? new \DateTimeImmutable())->format('d/m/Y H:i') ?>
     </div>
 
     <!-- FILTROS -->
@@ -97,6 +99,7 @@
         OK: <?= $totais['ok'] ?><br>
         ALERTA: <?= $totais['alerta'] ?><br>
         ATRASADO: <?= $totais['atrasado'] ?><br>
+        INDEFINIDO: <?= $totais['indefinido'] ?><br>
     </div>
 
     <!-- GRÁFICO SLA (SVG) -->
@@ -112,7 +115,8 @@
     <div class="box" style="text-align:center;">
         <strong>Gráfico SLA</strong><br><br>
 
-        <svg width="400" height="150">
+        <?php ob_start(); ?>
+        <svg xmlns="http://www.w3.org/2000/svg" width="400" height="150" font-family="DejaVu Sans, sans-serif">
 
             <!-- OK -->
             <rect x="50" y="<?= 120 - ($ok * $scale) ?>" width="60" height="<?= $ok * $scale ?>" fill="#0a7d00"></rect>
@@ -127,23 +131,28 @@
             <text x="300" y="140" font-size="12" text-anchor="middle">Atrasado (<?= $atrasado ?>)</text>
 
         </svg>
+        <?php $grafico = ob_get_clean(); ?>
+        <img src="data:image/svg+xml;base64,<?= base64_encode($grafico) ?>" width="400" height="150" alt="Gráfico SLA">
     </div>
 
     <!-- TABELA -->
     <table>
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Título</th>
-                <th>Área</th>
-                <th>Estado</th>
-                <th>SLA</th>
-                <th>Dias Parado</th>
-                <th>Criado em</th>
+                <th style="width:5%">ID</th>
+                <th style="width:32%">Título</th>
+                <th style="width:15%">Área</th>
+                <th style="width:14%">Estado</th>
+                <th style="width:10%">SLA</th>
+                <th style="width:10%">Dias Parado</th>
+                <th style="width:14%">Criado em</th>
             </tr>
         </thead>
 
         <tbody>
+        <?php if ($docs === []): ?>
+            <tr><td colspan="7">Nenhum documento encontrado para os filtros selecionados.</td></tr>
+        <?php endif; ?>
         <?php foreach ($docs as $d): ?>
             <tr>
                 <td><?= $d['id'] ?></td>
@@ -159,7 +168,7 @@
                     <?php elseif ($d['sla'] === 'atrasado'): ?>
                         <span class="sla-atrasado">ATRASADO</span>
                     <?php else: ?>
-                        <span class="sla-indefinido">—</span>
+                        <span class="sla-indefinido">INDEFINIDO</span>
                     <?php endif; ?>
                 </td>
 

@@ -47,11 +47,11 @@ class LogSistema extends Model
         ?string $detalhes = null
     ) {
         // Sanitização
-        $tipo = substr(trim($tipo), 0, 50);
-        $mensagem = substr(trim($mensagem), 0, 500);
+        $tipo = mb_strcut(trim($tipo), 0, 50, 'UTF-8');
+        $mensagem = mb_strcut(trim($mensagem), 0, 500, 'UTF-8');
 
         if ($detalhes !== null && strlen($detalhes) > 5000) {
-            $detalhes = substr($detalhes, 0, 5000) . '... [TRUNCADO]';
+            $detalhes = mb_strcut($detalhes, 0, 5000, 'UTF-8') . '... [TRUNCADO]';
         }
 
         // IP
@@ -63,14 +63,15 @@ class LogSistema extends Model
         // User Agent
         $ua = $_SERVER['HTTP_USER_AGENT'] ?? null;
         if ($ua !== null && strlen($ua) > 255) {
-            $ua = substr($ua, 0, 255);
+            $ua = mb_strcut($ua, 0, 255, 'UTF-8');
         }
 
         // URL
-        $url = $_SERVER['REQUEST_URI'] ?? null;
+        $url = isset($_SERVER['REQUEST_URI']) ? mb_strcut($_SERVER['REQUEST_URI'], 0, 500, 'UTF-8') : null;
 
         // Método HTTP
-        $metodo = $_SERVER['REQUEST_METHOD'] ?? null;
+        $metodo = isset($_SERVER['REQUEST_METHOD']) ? mb_strcut($_SERVER['REQUEST_METHOD'], 0, 10, 'UTF-8') : null;
+        $ficheiro = $ficheiro !== null ? mb_strcut($ficheiro, 0, 255, 'UTF-8') : null;
 
         // Utilizador autenticado
         $utilizador = Auth::user()?->id ?? null;
@@ -105,8 +106,17 @@ class LogSistema extends Model
      */
     public static function limparAntigos(int $dias = 90): int
     {
-        return static::query()
-            ->where('criado_em', '<', date('Y-m-d H:i:s', strtotime("-{$dias} days")))
-            ->delete();
+        if ($dias < 1) {
+            throw new \InvalidArgumentException('O período de retenção deve ser positivo.');
+        }
+        $agora = new \DateTimeImmutable();
+        try { $limite = $agora->modify("-{$dias} days"); }
+        catch (\Exception $e) { throw new \InvalidArgumentException('Período de retenção inválido.', 0, $e); }
+        if ($limite >= $agora || $limite->format('Y') < '1000') {
+            throw new \InvalidArgumentException('Período de retenção fora do intervalo suportado.');
+        }
+        $stmt = \App\Core\Conexao::getInstancia()->prepare('DELETE FROM logs_sistema WHERE criado_em < ?');
+        $stmt->execute([$limite->format('Y-m-d H:i:s')]);
+        return $stmt->rowCount();
     }
 }
