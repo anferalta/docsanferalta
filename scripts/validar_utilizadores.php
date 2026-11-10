@@ -1,6 +1,15 @@
 <?php
 // php scripts/validar_utilizadores.php — só SQLite em memória e notificações simuladas.
 require dirname(__DIR__).'/vendor/autoload.php';
+$limiterFixture = sys_get_temp_dir() . '/anferaltadocs-auth-' . bin2hex(random_bytes(8));
+mkdir($limiterFixture, 0700);
+define('STORAGE_TEMP', $limiterFixture);
+register_shutdown_function(static function () use ($limiterFixture): void {
+    foreach (glob($limiterFixture . '/login_limits/*.json') as $file) unlink($file);
+    if (is_dir($limiterFixture . '/login_limits')) rmdir($limiterFixture . '/login_limits');
+    rmdir($limiterFixture);
+});
+
 use App\Core\Auth;
 use App\Core\Conexao;
 use App\Core\CSRF;

@@ -153,12 +153,13 @@ try {
     http_response_code(200);
 }
 
+$_ENV['SLA_REPORT_EMAILS'] = 'relatorios@example.test';
 $anexo = null;
 $envios = 0;
 $emailService = new \App\Services\RelatorioSLAEmailService($service, function ($para, $assunto, $template, $dados, $anexos) use (&$anexo, &$envios) {
     $envios++;
     $anexo = $anexos[0];
-    verificar($para === 'geral@anferalta.com' && str_contains($assunto, 'semanal'), 'Envio preserva destinatário e período');
+    verificar($para === ['relatorios@example.test'] && str_contains($assunto, 'semanal'), 'Envio preserva destinatário e período');
     verificar(is_file($anexo) && str_starts_with(file_get_contents($anexo), '%PDF-'), 'Envio recebe anexo PDF válido');
     $mensagem = \App\Core\EmailTemplate::render($template, $dados);
     verificar(str_contains($mensagem, '(semanal)'), 'Template de email existe e renderiza o período');

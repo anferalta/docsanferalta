@@ -26,7 +26,7 @@ class DocumentoZipService
 
         // Garantir que a pasta temporária existe
         if (!is_dir(STORAGE_TEMP)) {
-            mkdir(STORAGE_TEMP, 0777, true);
+            mkdir(STORAGE_TEMP, 0770, true);
             file_put_contents(STORAGE_TEMP . '/.keep', 'sentinel');
         }
 

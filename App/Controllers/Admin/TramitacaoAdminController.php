@@ -298,6 +298,8 @@ class TramitacaoAdminController extends BaseController
 
         $mime = mime_content_type($path);
 
+        if (!in_array(explode(";", $mime)[0], ["application/pdf", "image/jpeg", "image/png", "image/gif", "image/webp", "text/plain"], true)) { $mime = "application/octet-stream"; }
+        header("X-Content-Type-Options: nosniff");
         header("Content-Type: {$mime}");
         header("Content-Disposition: inline; filename=\"" . basename($ficheiro->ficheiro) . "\"");
         header("Content-Length: " . filesize($path));
@@ -331,6 +333,8 @@ class TramitacaoAdminController extends BaseController
 
         $mime = mime_content_type($path);
 
+        if (!in_array(explode(";", $mime)[0], ["application/pdf", "image/jpeg", "image/png", "image/gif", "image/webp", "text/plain"], true)) { $mime = "application/octet-stream"; }
+        header("X-Content-Type-Options: nosniff");
         header("Content-Type: {$mime}");
         header("Content-Disposition: inline; filename=\"" . basename($ficheiro->ficheiro_original ?: $ficheiro->ficheiro) . "\"");
         header("Content-Length: " . filesize($path));
@@ -545,7 +549,7 @@ class TramitacaoAdminController extends BaseController
         $pastaArquivados = rtrim(STORAGE_ARQUIVADOS, '/') . '/' . $subpasta;
 
         if (!is_dir($pastaArquivados)) {
-            mkdir($pastaArquivados, 0777, true);
+            mkdir($pastaArquivados, 0770, true);
         }
 
         // Caminho destino (CORRIGIDO)

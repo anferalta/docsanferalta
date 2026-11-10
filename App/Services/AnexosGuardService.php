@@ -21,7 +21,7 @@ class AnexosGuardService
 
         // Garantir que a pasta base existe
         if (!is_dir($this->baseDir)) {
-            mkdir($this->baseDir, 0777, true);
+            mkdir($this->baseDir, 0770, true);
             file_put_contents($this->baseDir . '/.keep', 'sentinel');
         }
 
@@ -51,7 +51,7 @@ class AnexosGuardService
     {
         if (!is_dir($dir)) {
             $this->log("Pasta não existia, criada: {$dir}");
-            mkdir($dir, 0777, true);
+            mkdir($dir, 0770, true);
             file_put_contents($dir . '/.keep', 'sentinel');
             return;
         }

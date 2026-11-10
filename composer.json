@@ -3,14 +3,25 @@
         "psr-4": {
             "App\\": "App/"
         },
-        "files": ["App/helpers.php"]
+        "files": [
+            "App/helpers.php"
+        ]
     },
     "require": {
-        "twig/twig": "^3.0",
+        "php": "^8.3",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "ext-fileinfo": "*",
+        "ext-zip": "*",
+        "ext-openssl": "*",
+        "twig/twig": "^3.26",
         "vlucas/phpdotenv": "^5.6",
         "phpmailer/phpmailer": "^7.0",
         "phpoffice/phpword": "^1.4",
-        "phpoffice/phpspreadsheet": "*",
-        "dompdf/dompdf": "^3.1"
-    }
+        "phpoffice/phpspreadsheet": "^1.30.7",
+        "dompdf/dompdf": "^3.1.6"
+    },
+    "name": "anferalta/anferaltadocs",
+    "description": "Aplicacao de gestao documental para instalacao independente",
+    "license": "MIT"
 }

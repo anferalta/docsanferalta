@@ -8,8 +8,11 @@ class Sessao
     public static function start(): void
     {
         if (session_status() === PHP_SESSION_NONE) {
-            $secure = (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off')
-                || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+            ini_set('session.use_strict_mode', '1');
+            ini_set('session.use_only_cookies', '1');
+            if (defined('STORAGE_SESSIONS')) session_save_path(STORAGE_SESSIONS);
+            $secure = filter_var(Env::get('SESSION_COOKIE_SECURE', 'false'), FILTER_VALIDATE_BOOLEAN)
+                || (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off');
             $domain = strtolower(ltrim(trim((string) ($_ENV['SESSION_COOKIE_DOMAIN'] ?? '')), '.'));
             $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
             $host = preg_replace('/:\\d+$/', '', $host);

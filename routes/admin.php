@@ -1,4 +1,15 @@
-    <?php
+<?php
+
+    // Also protects older front controllers during the server transition.
+    if (defined('STORAGE_PATH') && !isset($maintenanceLock)) {
+        try {
+            $maintenanceLock = new \App\Core\MaintenanceLock(STORAGE_PATH, false);
+        } catch (\RuntimeException $error) {
+            http_response_code(503);
+            header('Retry-After: 60');
+            exit('Aplicação temporariamente em manutenção.');
+        }
+    }
 
     use App\Core\RouterSingleton;
 
@@ -65,7 +76,7 @@
     //$router->get('/documentos/preview/{id:\d+}', 'DocumentosUserController@preview');
     $router->get('/documentos/preview/{id}', 'DocumentosUserController@preview');
     $router->get('/documentos/preview-pdf/{id:\d+}', 'DocumentosUserController@previewPdf');
-    $router->get('/public/documentos/{id}', 'DocumentosPublicController@abrirPublico');
+    $router->get('/public/documentos/{id}', 'DocumentosPublicController@abrirPublico', ['auth']);
     // ============================================================
     // ROTAS ADMIN (PROTEGIDAS POR AUTH)
     // ============================================================
@@ -221,18 +232,17 @@
 
         // Backups
         $router->get('/backups', 'Admin\BackupsAdminController@index')->name('admin.backups.index');
-        $router->get('/backups/dashboard', 'Admin\BackupsAdminController@dashboard');
-        $router->get('/backups/logs', 'Admin\BackupsAdminController@logs');
+        $router->get('/backups/dashboard', 'Admin\BackupsAdminController@index');
+        $router->get('/backups/logs', 'Admin\BackupsAdminController@index');
 
-        $router->get('/backups/bd/criar', 'Admin\BackupsAdminController@criarBD')->name('admin.backups.bd.criar');
-        $router->get('/backups/bd/restaurar-reiniciar/{ficheiro:.+}', 'Admin\BackupsAdminController@restaurarEReiniciar')->name('admin.backups.bd.restaurar.reiniciar');
+        $router->post('/backups/bd/criar', 'Admin\BackupsAdminController@criarBD', ['csrf'])->name('admin.backups.bd.criar');
         $router->get('/backups/bd/restaurar/{ficheiro:.+}', 'Admin\BackupsAdminController@restaurarConfirmar')->name('admin.backups.bd.restaurar.confirmar');
         $router->post('/backups/bd/restaurar/{ficheiro:.+}', 'Admin\BackupsAdminController@restaurarExecutar', ['csrf'])->name('admin.backups.bd.restaurar.executar');
         $router->get('/backups/bd/download/{ficheiro:.+}', 'Admin\BackupsAdminController@download')->name('admin.backups.bd.download');
         $router->post('/backups/bd/delete/{ficheiro:.+}', 'Admin\BackupsAdminController@delete', ['csrf'])->name('admin.backups.bd.apagar');
 
         // Backup Ficheiros
-        $router->get('/backups/files/criar', 'Admin\BackupsAdminController@criarFiles')->name('admin.backups.files.criar');
+        $router->post('/backups/files/criar', 'Admin\BackupsAdminController@criarFiles', ['csrf'])->name('admin.backups.files.criar');
         $router->get('/backups/files/restaurar/{ficheiro:.+}', 'Admin\BackupsAdminController@restaurarFilesConfirmar')->name('admin.backups.files.restaurar.confirmar');
         $router->post('/backups/files/restaurar/{ficheiro:.+}', 'Admin\BackupsAdminController@restaurarFilesExecutar', ['csrf'])->name('admin.backups.files.restaurar.executar');
         $router->get('/backups/files/download/{ficheiro:.+}', 'Admin\BackupsAdminController@download')->name('admin.backups.files.download');

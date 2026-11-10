@@ -36,9 +36,9 @@
                 <div class="card-body">
 
                     <div class="d-flex justify-content-between mb-3">
-                        <a href="/admin/backups/bd/criar" class="btn btn-primary">
+                        <form method="POST" action="/admin/backups/bd/criar" class="d-inline">{{ csrf_field() }}<button type="submit" class="btn btn-primary">
                             Criar Backup da BD
-                        </a>
+                        </button></form>
 
                         <a href="/admin/agendamentos" class="btn btn-outline-primary">
                             Gerir Agendamentos
@@ -71,25 +71,7 @@
                                     </a>
 
                                     {# RESTAURAR BD — POST #}
-                                    <form method="POST"
-                                          action="/admin/backups/bd/restaurar/{{ b.path|replace({'/':'---'}) }}"
-                                          class="d-inline">
-                                        {{ csrf_field() }}
-                                        <button class="btn btn-sm btn-outline-warning">
-                                            Restaurar
-                                        </button>
-                                    </form>
-
-                                    {# RESTAURAR + REINICIAR — POST #}
-                                    <form method="POST"
-                                          action="/admin/backups/bd/restaurar-reiniciar/{{ b.path|replace({'/':'---'}) }}"
-                                          class="d-inline">
-                                        {{ csrf_field() }}
-                                        <button class="btn btn-sm btn-outline-danger"
-                                                onclick="return confirm('Tem a certeza? Isto vai restaurar a BD e reiniciar o servidor?');">
-                                            Restaurar + Reiniciar
-                                        </button>
-                                    </form>
+                                    <a href="/admin/backups/bd/restaurar/{{ b.path|replace({'/':'---'}) }}" class="btn btn-sm btn-outline-warning">Restaurar</a>
 
                                     {# ELIMINAR BD — POST #}
                                     <form method="POST"
@@ -124,9 +106,9 @@
             <div class="card">
                 <div class="card-body">
 
-                    <a href="/admin/backups/files/criar" class="btn btn-primary mb-3">
+                    <form method="POST" action="/admin/backups/files/criar" class="d-inline">{{ csrf_field() }}<button type="submit" class="btn btn-primary mb-3">
                         Criar Backup dos Ficheiros
-                    </a>
+                    </button></form>
 
                     <table class="table table-hover align-middle">
                         <thead class="table-light">
@@ -154,14 +136,7 @@
                                     </a>
 
                                     {# RESTAURAR FICHEIROS — POST #}
-                                    <form method="POST"
-                                          action="/admin/backups/files/restaurar/{{ b.path|replace({'/':'---'}) }}"
-                                          class="d-inline">
-                                        {{ csrf_field() }}
-                                        <button class="btn btn-sm btn-outline-warning">
-                                            Restaurar
-                                        </button>
-                                    </form>
+                                    <a href="/admin/backups/files/restaurar/{{ b.path|replace({'/':'---'}) }}" class="btn btn-sm btn-outline-warning">Restaurar</a>
 
                                     {# ELIMINAR FICHEIROS — POST #}
                                     <form method="POST"

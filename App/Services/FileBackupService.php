@@ -33,7 +33,7 @@ class FileBackupService
     PathGuardService::proteger($this->baseDir);
 
     if (!is_dir($this->baseDir)) {
-        mkdir($this->baseDir, 0777, true);
+        mkdir($this->baseDir, 0770, true);
         file_put_contents($this->baseDir . '/.keep', 'sentinel');
     }
 
@@ -58,7 +58,7 @@ class FileBackupService
         PathGuardService::proteger($dir);
 
         if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
+            mkdir($dir, 0770, true);
             file_put_contents($dir . '/.keep', 'sentinel');
         }
 

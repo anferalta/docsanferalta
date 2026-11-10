@@ -16,13 +16,7 @@
                     {# HEADER #}
                     {% if item.header is defined %}
                         <li class="menu-header">{{ item.header }}</li>
-                        {% continue %}
-                    {% endif %}
-
-                    {# PERMISSÕES #}
-                    {% if not auth.user.isAdmin() and not auth.user.hasPermissao(item.permissao) %}
-                        {% continue %}
-                    {% endif %}
+                    {% elseif auth.user and (auth.user.isAdmin() or auth.user.hasPermissao(item.permissao)) %}
 
                     {# ACTIVE STATE #}
                     {% set active = (app.request.path starts with item.url) ? 'active' : '' %}
@@ -70,6 +64,7 @@
 
                     </li>
 
+                    {% endif %}
                 {% endfor %}
 
             </ul>

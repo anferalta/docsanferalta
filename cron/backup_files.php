@@ -1,6 +1,6 @@
 <?php
 
-require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ . '/../App/bootstrap/cli.php';
 
 use App\Services\FileBackupService;
 use App\Services\BackupLogger;
@@ -10,8 +10,9 @@ try {
 
     // Registar sucesso
     BackupLogger::registar('FILES', $ficheiro, true, "Backup automático de ficheiros concluído.");
-} catch (\Exception $e) {
+} catch (\Throwable $e) {
 
     // Registar erro
     BackupLogger::registar('FILES', '', false, "Backup automático de ficheiros falhou: " . $e->getMessage());
+    exit(1);
 }

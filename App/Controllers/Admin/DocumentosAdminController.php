@@ -544,7 +544,7 @@ WHERE 1=1
         PathGuardService::proteger($base);
 
         if (!is_dir($base)) {
-            mkdir($base, 0777, true);
+            mkdir($base, 0770, true);
             file_put_contents($base . '/.keep', 'sentinel');
         }
 
@@ -555,6 +555,7 @@ WHERE 1=1
         $destino = $base . $nomeGuardado;
         PathGuardService::proteger($destino);
 
+        \App\Services\UploadPolicy::validarUpload($tmp, $nomeOriginal);
         if (!move_uploaded_file($tmp, $destino)) {
             throw new \Exception("Erro ao guardar o ficheiro: {$nomeOriginal}");
         }
@@ -1277,6 +1278,8 @@ WHERE 1=1
         PathGuardService::proteger($path);
         $mime = $ficheiro['mime_type'] ?? mime_content_type($path);
 
+        if (!in_array(explode(";", $mime)[0], ["application/pdf", "image/jpeg", "image/png", "image/gif", "image/webp", "text/plain"], true)) { $mime = "application/octet-stream"; }
+        header("X-Content-Type-Options: nosniff");
         header("Content-Type: {$mime}");
         header('Content-Disposition: inline; filename="' . basename($ficheiro['ficheiro']) . '"');
         header('Content-Length: ' . filesize($path));
@@ -1482,7 +1485,7 @@ WHERE 1=1
         $pastaArquivados = STORAGE_ARQUIVADOS . '/' . $subpasta;
 
         if (!is_dir($pastaArquivados)) {
-            mkdir($pastaArquivados, 0777, true);
+            mkdir($pastaArquivados, 0770, true);
         }
 
         // Caminho destino correto
@@ -1558,7 +1561,7 @@ WHERE 1=1
         PathGuardService::proteger($destinoFinal);
 
         if (!is_dir($destinoFinal)) {
-            mkdir($destinoFinal, 0777, true);
+            mkdir($destinoFinal, 0770, true);
             file_put_contents($destinoFinal . '/.keep', 'sentinel');
         }
 
@@ -1586,6 +1589,7 @@ WHERE 1=1
             $destino = $destinoFinal . $nomeGuardado;
             PathGuardService::proteger($destino);
 
+            \App\Services\UploadPolicy::validarUpload($tmp, $nomeOriginal);
             if (!move_uploaded_file($tmp, $destino)) {
                 BackupLogger::registar('UPLOAD', $destino, false, "Falha ao mover ficheiro");
                 continue;
@@ -1639,8 +1643,8 @@ WHERE 1=1
 
     public function criarAjax()
     {
-        ini_set('display_errors', 1);
-        ini_set('display_startup_errors', 1);
+        ini_set('display_errors', '0');
+        ini_set('display_startup_errors', '0');
         error_reporting(E_ALL);
 
         header('Content-Type: application/json');
@@ -1750,25 +1754,12 @@ WHERE 1=1
             // 5. Criar subpasta
             // ============================
             $subpasta = date('Y/m/d/');
-            $base = realpath(__DIR__ . '/../../../public/uploads/documentos');
-
-            if ($base === false) {
-                $base = __DIR__ . '/../../../public/uploads/documentos';
-            }
-
-            if (!is_dir($base)) {
-                mkdir($base, 0777, true);
-            }
-
-            if ($base === false) {
-                echo json_encode(['erro' => 'Diretório base não encontrado.']);
-                exit;
-            }
+            $base = rtrim(STORAGE_DOCUMENTOS, '/\\');
 
             $destinoBase = $base . DIRECTORY_SEPARATOR . $subpasta;
 
             if (!is_dir($destinoBase)) {
-                mkdir($destinoBase, 0777, true);
+                mkdir($destinoBase, 0770, true);
             }
 
             // ============================
@@ -1837,25 +1828,13 @@ WHERE 1=1
                 }
 
                 // ============================
-                // 6.3 MOVER E GRAVAR
-                // ============================
-                $nomeSeguro = preg_replace('/[^A-Za-z0-9_\.-]/', '_', $nomeOriginal);
-                $nomeGuardado = uniqid('', true) . '_' . $nomeSeguro;
+                // 6.3 Store in the canonical private dated directory.
+                $nomeSeguro = preg_replace('/[^A-Za-z0-9_\.\-]/', '_', $nomeOriginal);
+                $nomeGuardado = bin2hex(random_bytes(16)) . '_' . $nomeSeguro;
                 $destino = $destinoBase . $nomeGuardado;
 
-                // Criar pasta se não existir
-                if (!is_dir($base)) {
-                    mkdir($base, 0777, true);
-                }
-
-                // Nome seguro
-                $nomeSeguro = preg_replace('/[^A-Za-z0-9_\.-]/', '_', $nomeOriginal);
-                $nomeGuardado = uniqid() . '_' . $nomeSeguro;
-
-                // Caminho final correto
-                $destino = rtrim($base, '/\\') . '/' . $nomeGuardado;
-
                 // Mover ficheiro
+                \App\Services\UploadPolicy::validarUpload($tmp, $nomeOriginal);
                 if (!move_uploaded_file($tmp, $destino)) {
                     Sessao::flash('erro', "Erro ao guardar o ficheiro: {$nomeOriginal}");
                     return $this->redirect('/admin/documentos/criar');
@@ -1864,20 +1843,20 @@ WHERE 1=1
                 DocumentoFicheiro::create([
                     'documento_id' => $documento->id,
                     'ficheiro' => $nomeGuardado,
+                    'ficheiro_original' => $nomeOriginal,
+                    'caminho' => $subpasta,
                     'tamanho' => $tamanho,
-                    'mime' => $mimeReal
+                    'mime_type' => $mimeReal,
+                    'hash' => hash_file('sha256', $destino)
                 ]);
             }
 
             echo json_encode(['sucesso' => true]);
             exit;
         } catch (\Throwable $e) {
-            echo json_encode([
-                'erro' => 'Erro interno no servidor.',
-                'detalhe' => $e->getMessage(),
-                'linha' => $e->getLine(),
-                'ficheiro' => $e->getFile()
-            ]);
+            error_log('Upload AJAX failed: ' . get_class($e));
+            http_response_code(500);
+            echo json_encode(['erro' => 'Erro interno no servidor.']);
             exit;
         }
     }

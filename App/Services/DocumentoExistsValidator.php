@@ -23,7 +23,7 @@ class DocumentoExistsValidator
         PathGuardService::init();
 
         // Storage pública correta
-        $root = $_SERVER['DOCUMENT_ROOT'] . '/storage/documentos';
+        $root = STORAGE_DOCUMENTOS;
         PathGuardService::proteger($root);
 
         // Integridade mínima

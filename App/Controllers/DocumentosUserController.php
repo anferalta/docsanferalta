@@ -124,6 +124,21 @@ class DocumentosUserController extends BaseController
             return $this->redirect('/documentos/criar');
         }
 
+        try {
+            if (count($_FILES['ficheiros']['name']) > 10) {
+                throw new \RuntimeException('Maximo de 10 ficheiros por envio.');
+            }
+            foreach ($_FILES['ficheiros']['name'] as $i => $name) {
+                if (($_FILES['ficheiros']['error'][$i] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+                    throw new \RuntimeException('Upload incompleto.');
+                }
+                \App\Services\UploadPolicy::validarUpload($_FILES['ficheiros']['tmp_name'][$i], $name);
+            }
+        } catch (\RuntimeException $e) {
+            Sessao::flash('erro', $e->getMessage());
+            return $this->redirect('/documentos/criar');
+        }
+
         // Criar documento
         $documentoId = Documento::create([
             'titulo' => $titulo,
@@ -146,7 +161,7 @@ class DocumentosUserController extends BaseController
         PathGuardService::proteger($base);
 
         if (!is_dir($base)) {
-            mkdir($base, 0777, true);
+            mkdir($base, 0770, true);
             file_put_contents($base . '/.keep', 'sentinel');
         }
 
@@ -171,6 +186,7 @@ class DocumentosUserController extends BaseController
             $destino = $base . $nomeGuardado;
             PathGuardService::proteger($destino);
 
+            \App\Services\UploadPolicy::validarUpload($tmp, $nomeOriginal);
             if (!move_uploaded_file($tmp, $destino)) {
                 continue;
             }
@@ -233,6 +249,8 @@ class DocumentosUserController extends BaseController
         while (ob_get_level() > 0) {
             ob_end_clean();
         }
+        if (!in_array(explode(";", $mime)[0], ["application/pdf", "image/jpeg", "image/png", "image/gif", "image/webp", "text/plain"], true)) { $mime = "application/octet-stream"; }
+        header("X-Content-Type-Options: nosniff");
         header("Content-Type: {$mime}");
         header("Content-Disposition: inline; filename=\"{$nome}\"");
         header("Content-Length: " . filesize($path));

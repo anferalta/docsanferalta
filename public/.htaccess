@@ -1,4 +1,9 @@
 RewriteEngine On
+Options -Indexes
+Require all granted
+<FilesMatch "^(?!index\.php$).*\.php$">
+    Require all denied
+</FilesMatch>
 
 RewriteCond %{REQUEST_URI} ^/assets/ [OR]
 RewriteCond %{REQUEST_URI} ^/uploads_publicos/

@@ -38,7 +38,7 @@ class RelatorioSLAEmailService
         $pdf = $this->gerarPDF();
         try {
             $enviado = ($this->enviar)(
-                'geral@anferalta.com',
+                array_values(array_filter(array_map('trim', explode(',', \App\Core\Env::required('SLA_REPORT_EMAILS'))))),
                 'Relatório SLA - ' . $periodo . ' - ' . date('d/m/Y'),
                 'relatorio_sla',
                 ['periodo' => $periodo],

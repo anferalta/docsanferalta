@@ -93,16 +93,11 @@ class BackupLogger
      */
     private static function destinatarios(): array
     {
-        $lista = $_ENV['ADMIN_EMAILS'] ?? 'geral@anferalta.com';
+        $lista = \App\Core\Env::get('ADMIN_EMAILS', '');
 
         $emails = array_filter(array_map('trim', explode(',', $lista)), function ($email) {
             return filter_var($email, FILTER_VALIDATE_EMAIL);
         });
-
-        // fallback seguro
-        if (empty($emails)) {
-            $emails = ['geral@anferalta.com'];
-        }
 
         return $emails;
     }

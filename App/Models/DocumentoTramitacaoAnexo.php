@@ -20,8 +20,7 @@ class DocumentoTramitacaoAnexo extends Model
 
     public function caminhoAbsoluto()
     {
-        $root = realpath(__DIR__ . '/../../');
-        return $root . '/storage/tramitacao/' . $this->caminho . $this->ficheiro;
+        return STORAGE_TRAMITACAO . '/' . $this->caminho . $this->ficheiro;
     }
 
     public static function anexosPorHistorico($id)
@@ -71,9 +70,10 @@ class DocumentoTramitacaoAnexo extends Model
             $destinoDir = STORAGE_TRAMITACAO . '/' . $caminho;
 
             if (!is_dir($destinoDir)) {
-                mkdir($destinoDir, 0777, true);
+                mkdir($destinoDir, 0770, true);
             }
 
+            \App\Services\UploadPolicy::validarUpload($tmp, $nomeOriginal);
             if (!move_uploaded_file($tmp, $destinoDir . $ficheiro)) {
                 continue;
             }

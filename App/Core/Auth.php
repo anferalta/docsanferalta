@@ -25,6 +25,13 @@ class Auth
         $email = preg_replace('/\s+/u', '', $email);
         $email = str_replace("\u{FEFF}", "", $email);
 
+        // Do not trust forwarded headers without a separately configured proxy.
+        $origin = (string) ($_SERVER['REMOTE_ADDR'] ?? 'cli');
+        $limiter = new LoginLimiter(STORAGE_TEMP . '/login_limits');
+        if (!$limiter->consume('origin:' . $origin, 60)
+            || !$limiter->consume('account-origin:' . $email . ':' . $origin, 10)) {
+            return false;
+        }
         $user = Utilizador::findByEmail($email);
 
         if (!$user) {

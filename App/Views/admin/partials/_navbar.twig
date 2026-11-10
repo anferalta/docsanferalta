@@ -42,8 +42,8 @@
             </a>
             <ul class="dropdown-menu">
               <li><a class="dropdown-item" href="/admin/backups">Gerir Backups</a></li>
-              <li><a class="dropdown-item" href="/admin/backups/bd/criar">Criar Backup BD</a></li>
-              <li><a class="dropdown-item" href="/admin/backups/files/criar">Criar Backup Ficheiros</a></li>
+              <li><form method="POST" action="/admin/backups/bd/criar">{{ csrf_field() }}<button type="submit" class="dropdown-item">Criar Backup BD</button></form></li>
+              <li><form method="POST" action="/admin/backups/files/criar">{{ csrf_field() }}<button type="submit" class="dropdown-item">Criar Backup Ficheiros</button></form></li>
             </ul>
           </li>
           {% endif %}

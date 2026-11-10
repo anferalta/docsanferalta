@@ -32,7 +32,7 @@ class BaseController
         // ============================
         $this->twig = new Environment($loader, [
             'cache' => false,
-            'debug' => true
+            'debug' => Env::get('APP_ENV', 'production') === 'local' && filter_var(Env::get('APP_DEBUG', 'false'), FILTER_VALIDATE_BOOLEAN)
         ]);
 
         // Os templates usam a API app.request (filtros, ordenação e navegação).
@@ -47,6 +47,7 @@ class BaseController
         // CSRF — gerar UMA vez por request
         // ============================
         $this->csrfToken = CSRF::token();
+        $this->twig->addGlobal('legacy_restore_enabled', filter_var(Env::get('ALLOW_LEGACY_RESTORE', 'false'), FILTER_VALIDATE_BOOLEAN));
         $this->twig->addGlobal('_csrf', $this->csrfToken);
         $this->twig->addGlobal('_csrf_global', $this->csrfToken);
 

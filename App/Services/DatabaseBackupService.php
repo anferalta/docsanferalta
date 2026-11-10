@@ -16,29 +16,18 @@ class DatabaseBackupService
         // Diretório base dos backups
         $this->baseDir = realpath(__DIR__ . '/../../backups/BaseDados') ?: (__DIR__ . '/../../backups/BaseDados');
         if (!is_dir($this->baseDir)) {
-            mkdir($this->baseDir, 0777, true);
+            mkdir($this->baseDir, 0770, true);
         }
         $this->baseDir = rtrim(str_replace('\\', '/', $this->baseDir), '/') . '/';
 
         // Diretório dos logs
         $logDir = __DIR__ . '/../../backups/logs';
         if (!is_dir($logDir)) {
-            mkdir($logDir, 0777, true);
+            mkdir($logDir, 0770, true);
         }
         $this->logFile = rtrim(str_replace('\\', '/', realpath($logDir)), '/') . '/backup_db.log';
 
-        // Conexão PDO
-        $host = $_ENV['DB_HOST'];
-        $db   = $_ENV['DB_NAME'];
-        $user = $_ENV['DB_USER'];
-        $pass = $_ENV['DB_PASS'];
-
-        $dsn = "mysql:host={$host};dbname={$db};charset=utf8mb4";
-
-        $this->pdo = new PDO($dsn, $user, $pass, [
-            PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4",
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-        ]);
+        $this->pdo = DatabaseConnection::open();
     }
 
     public function criar(): string
@@ -53,7 +42,7 @@ class DatabaseBackupService
         $dir = "{$this->baseDir}{$ano}/{$mes}/";
 
         if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
+            mkdir($dir, 0770, true);
         }
 
         $dir = rtrim(str_replace('\\', '/', realpath($dir)), '/') . '/';

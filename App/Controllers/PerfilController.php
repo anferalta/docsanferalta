@@ -1,8 +1,14 @@
-class PerfilController {
-    public function index() {
-        return view('@site/perfil.twig', [
-            'user' => auth()->user()
-        ]);
+<?php
+namespace App\Controllers;
+class PerfilController extends \App\Core\BaseController
+{
+    public function index(): void
+    {
+        $user = \App\Core\Auth::user();
+        if (!$user) {
+            $this->redirect('/login');
+            return;
+        }
+        $this->render('@site/perfil.twig', ['user' => $user]);
     }
 }
-

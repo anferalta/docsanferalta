@@ -32,40 +32,8 @@ class EmailService
         $mail = new PHPMailer(true);
 
         try {
-            // SMTP
-            $mail->isSMTP();
-            $mail->Host = $_ENV['MAIL_HOST'] ?? 'anferalta-com.correoseguro.dinaserver.com';
-            $mail->SMTPAuth = true;
-            $mail->Username = $_ENV['MAIL_USER'] ?? 'geral@anferalta.com';
-            $mail->Password = $_ENV['MAIL_PASS'] ?? '@nF1ra!ta26';
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-            $mail->Port = 465;
+            self::configureSmtp($mail);
 
-            // Timeout
-            $mail->Timeout = 5;
-            $mail->SMTPKeepAlive = false;
-
-            // SSL compatível com WAMP
-            $mail->SMTPOptions = [
-                'ssl' => [
-                    'verify_peer' => false,
-                    'verify_peer_name' => false,
-                    'allow_self_signed' => true
-                ]
-            ];
-
-            // Debug opcional
-            if (!empty($_ENV['MAIL_DEBUG']) && $_ENV['MAIL_DEBUG'] === 'true') {
-                $mail->SMTPDebug = 2;
-            }
-
-            // Remetente
-            $mail->setFrom(
-                    $_ENV['MAIL_FROM'] ?? 'geral@anferalta.com',
-                    $_ENV['MAIL_FROM_NAME'] ?? 'AnferaltaDocs'
-            );
-
-            // Destinatários
             foreach ($destinatarios as $email) {
                 $mail->addAddress($email);
             }
@@ -100,6 +68,60 @@ class EmailService
             );
 
             throw $e;
+        }
+    }
+
+    private static function configureSmtp(PHPMailer $mail): void
+    {
+        $mail->isSMTP();
+        $mail->Host = \App\Core\Env::required('MAIL_HOST');
+        $mail->SMTPAuth = filter_var(\App\Core\Env::get('MAIL_AUTH', 'true'), FILTER_VALIDATE_BOOLEAN);
+        if ($mail->SMTPAuth) {
+            $mail->Username = \App\Core\Env::required('MAIL_USER');
+            $mail->Password = \App\Core\Env::secret('MAIL_PASS');
+            if ($mail->Password === '') throw new \RuntimeException('Credencial SMTP não configurada.');
+        }
+        $encryption = (string) \App\Core\Env::get('MAIL_ENCRYPTION', 'smtps');
+        if (!in_array($encryption, ['smtps', 'tls'], true)) {
+            throw new \RuntimeException('MAIL_ENCRYPTION deve ser smtps ou tls.');
+        }
+        $mail->SMTPSecure = $encryption === 'smtps'
+            ? PHPMailer::ENCRYPTION_SMTPS
+            : PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port = (int) \App\Core\Env::get('MAIL_PORT', $encryption === 'smtps' ? 465 : 587);
+        if ($mail->Port < 1 || $mail->Port > 65535) {
+            throw new \RuntimeException('MAIL_PORT invalido.');
+        }
+        $mail->Timeout = 10;
+        $mail->getSMTPInstance()->Timelimit = 15;
+        $mail->SMTPKeepAlive = false;
+        $mail->SMTPOptions = ['ssl' => [
+            'verify_peer' => true,
+            'verify_peer_name' => true,
+            'allow_self_signed' => false,
+        ]];
+        $ca = (string) \App\Core\Env::get('MAIL_CA_FILE', '');
+        if ($ca !== '') {
+            if (!is_readable($ca)) {
+                throw new \RuntimeException('MAIL_CA_FILE nao e legivel.');
+            }
+            $mail->SMTPOptions['ssl']['cafile'] = $ca;
+        }
+        $mail->setFrom(
+            \App\Core\Env::required('MAIL_FROM'),
+            (string) \App\Core\Env::get('MAIL_FROM_NAME', 'Gestao Documental')
+        );
+    }
+
+    public static function checkConnection(): bool
+    {
+        $mail = new PHPMailer(true);
+        self::configureSmtp($mail);
+        try {
+            if (!$mail->smtpConnect()) throw new \RuntimeException('A autenticacao SMTP falhou.');
+            return true;
+        } finally {
+            $mail->smtpClose();
         }
     }
 

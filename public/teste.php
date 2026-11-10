@@ -1,1 +1,3 @@
-var_dump($_GET);
+<?php
+http_response_code(404);
+exit;

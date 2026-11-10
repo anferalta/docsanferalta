@@ -40,7 +40,7 @@
             <li class="list-group-item">
                 <strong>Encriptação:</strong>
                 {% if detalhes.encriptado %}
-                    <span class="badge bg-warning text-dark">Encriptado (.enc)</span>
+                    <span class="badge bg-warning text-dark">Encriptado</span>
                 {% else %}
                     <span class="badge bg-success">Não encriptado</span>
                 {% endif %}
@@ -109,12 +109,12 @@
         {% endif %}
 
         <p class="fw-bold text-danger mt-4">
-            Este processo é irreversível. Todos os dados atuais serão substituídos.
+            A importacao legada acrescenta dados e pode manter registos e ficheiros atuais. Nao equivale a uma recuperacao completa.
         </p>
 
         {# ------------------ BOTÕES ------------------ #}
 
-        {% set pode_restaurar = detalhes.zip_ok 
+        {% set pode_restaurar = legacy_restore_enabled and detalhes.zip_ok
                                 and (tipo == 'files' or detalhes.sql_ok)
                                 and (not detalhes.encriptado or detalhes.password_ok)
                                 and detalhes.permissoes_ok %}

@@ -32,6 +32,13 @@ class DocumentoUploader
             throw new \Exception("Nenhum ficheiro válido enviado.");
         }
 
+        if (count($ficheiros['name']) > 10) {
+            throw new \RuntimeException('Maximo de 10 ficheiros por envio.');
+        }
+        foreach ($validos as $i) {
+            UploadPolicy::validarUpload($ficheiros['tmp_name'][$i], $ficheiros['name'][$i]);
+        }
+
         $documentoId = Documento::create([
             'titulo'       => $titulo,
             'tipo_id'      => $tipo_id,
@@ -116,7 +123,7 @@ class DocumentoUploader
         PathGuardService::proteger($base);
 
         if (!is_dir($base)) {
-            mkdir($base, 0777, true);
+            mkdir($base, 0770, true);
             file_put_contents($base . '/.keep', 'sentinel');
         }
 
@@ -157,6 +164,7 @@ class DocumentoUploader
             $destino = $base . '/' . $nomeGuardado;
             PathGuardService::proteger($destino);
 
+            \App\Services\UploadPolicy::validarUpload($tmp, $nomeOriginal);
             if (!move_uploaded_file($tmp, $destino)) {
                 throw new \Exception("Erro ao guardar o ficheiro: {$nomeOriginal}");
             }

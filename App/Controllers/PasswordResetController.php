@@ -76,7 +76,7 @@ class PasswordResetController extends BaseController
                 'password_reset',
                 [
                     'nome' => $user->nome ?? $email,
-                    'link' => "https://anferaltadocs.local/reset-password/token/{$token}"
+                    'link' => Helpers::url('/reset-password/token/' . $token)
                 ]
         );
 

@@ -26,7 +26,7 @@ class TramitacaoFileService
 
         // Garantir que existe
         if (!is_dir($baseRoot)) {
-            mkdir($baseRoot, 0777, true);
+            mkdir($baseRoot, 0770, true);
             file_put_contents($baseRoot . '/.keep', 'sentinel');
         }
 
@@ -41,7 +41,7 @@ class TramitacaoFileService
 
         // Criar pasta do histórico
         if (!is_dir($base)) {
-            mkdir($base, 0777, true);
+            mkdir($base, 0770, true);
             file_put_contents($base . '/.keep', 'sentinel');
         }
 
@@ -69,6 +69,7 @@ class TramitacaoFileService
 
             PathGuardService::proteger($destino);
 
+            \App\Services\UploadPolicy::validarUpload($tmp, $nomeOriginal);
             if (!move_uploaded_file($tmp, $destino)) {
                 throw new \Exception("Erro ao guardar o ficheiro: {$nomeOriginal}");
             }

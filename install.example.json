@@ -1,0 +1,12 @@
+{
+    "APP_URL": "https://documentos.example.org",
+    "APP_TIMEZONE": "Europe/Lisbon",
+    "DB_HOST": "127.0.0.1",
+    "DB_PORT": 3306,
+    "DB_NAME": "documentos",
+    "DB_USER": "documentos_instalacao",
+    "DB_PASS_FILE": "/run/secrets/database_password",
+    "ADMIN_EMAIL": "administrador@example.org",
+    "ADMIN_NAME": "Administrador",
+    "ADMIN_PASSWORD_FILE": "/run/secrets/initial_admin_password"
+}

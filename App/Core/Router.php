@@ -34,7 +34,11 @@ class Router
             if ($route['name'] === $name) {
                 $uri = $route['uri'];
                 foreach ($params as $key => $value) {
-                    $uri = str_replace("{{$key}}", $value, $uri);
+                    $uri = preg_replace_callback(
+                        '/\{' . preg_quote((string) $key, '/') . '(?::[^}]+)?\??\}/',
+                        static fn() => rawurlencode((string) $value),
+                        $uri
+                    );
                 }
                 return $uri;
             }
@@ -68,6 +72,12 @@ class Router
 
         $uri = '/' . trim($prefix . '/' . trim($uri, '/'), '/');
 
+        foreach (self::$routes as $route) {
+            if ($route['method'] === $method && $route['uri'] === $uri) {
+                throw new \LogicException("Rota duplicada: {$method} {$uri}");
+            }
+        }
+
         self::$routes[] = [
             'method' => $method,
             'uri' => $uri,
@@ -89,12 +99,9 @@ class Router
             if ($route['method'] !== $method)
                 continue;
 
-            $pattern = rtrim($route['uri'], '/');
-            $pattern = preg_replace('#\{([^}/]+)\?\}#', '([^/]+)?', $pattern);
-            $pattern = preg_replace('#\{([^}]+)\}#', '([^/]+)', $pattern);
-            $pattern .= '/?';
+            $pattern = self::pattern($route['uri']);
 
-            if (preg_match('#^' . $pattern . '$#', $uri, $matches)) {
+            if (preg_match($pattern, $uri, $matches)) {
 
                 array_shift($matches);
 
@@ -105,9 +112,9 @@ class Router
                     if (is_string($m)) {
                         if (str_contains($m, ':')) {
                             [$name, $arg] = explode(':', $m, 2);
-                            Middleware::run($name, $arg);
+                            if (Middleware::run($name, $arg) === false) return;
                         } else {
-                            Middleware::run($m);
+                            if (Middleware::run($m) === false) return;
                         }
                     }
 
@@ -116,12 +123,12 @@ class Router
 
                         // Ex: ['csrf']
                         if (count($m) === 1) {
-                            Middleware::run($m[0]);
+                            if (Middleware::run($m[0]) === false) return;
                         }
 
                         // Ex: ['perm', 'admin.documentos']
                         elseif (count($m) >= 2) {
-                            Middleware::run($m[0], $m[1]);
+                            if (Middleware::run($m[0], $m[1]) === false) return;
                         }
                     }
                 }
@@ -158,5 +165,25 @@ class Router
 
         call_user_func_array([$instance, $method], $params);
         exit;
+    }
+
+    public static function all(): array
+    {
+        return self::$routes;
+    }
+
+    public static function pattern(string $uri): string
+    {
+        $pattern = '';
+        $offset = 0;
+        preg_match_all('/\{([a-zA-Z_][a-zA-Z0-9_]*)(?::([^}]+))?\}/', $uri, $tokens, PREG_OFFSET_CAPTURE);
+        foreach ($tokens[0] as $i => [$token, $position]) {
+            $pattern .= preg_quote(substr($uri, $offset, $position - $offset), '~');
+            $constraint = $tokens[2][$i][0] !== '' ? $tokens[2][$i][0] : '[^/]+';
+            $pattern .= '(' . str_replace('~', '\\~', $constraint) . ')';
+            $offset = $position + strlen($token);
+        }
+        $pattern .= preg_quote(substr($uri, $offset), '~');
+        return '~^' . rtrim($pattern, '/') . '/?$~D';
     }
 }

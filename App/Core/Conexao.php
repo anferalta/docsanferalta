@@ -13,24 +13,11 @@ class Conexao
     {
         if (self::$instancia === null) {
             try {
-                // Usa Env::get() para buscar credenciais
-                $host     = Env::get('DB_HOST', 'localhost');
-                $dbname   = Env::get('DB_NAME', 'anferaltadocs');
-                $user     = Env::get('DB_USER', 'root');
-                $password = Env::get('DB_PASS', '');
-
-                self::$instancia = new PDO(
-                    "mysql:host={$host};dbname={$dbname};charset=utf8mb4",
-                    $user,
-                    $password,
-                    [
-                        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_OBJ,
-                        PDO::ATTR_PERSISTENT         => true
-                    ]
-                );
+                self::$instancia = \App\Services\DatabaseConnection::open();
+                self::$instancia->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_OBJ);
             } catch (PDOException $e) {
-                die("Erro na conexão com a base de dados: " . $e->getMessage());
+                error_log('Database connection failed: ' . $e->getCode());
+                throw new \RuntimeException('Nao foi possivel ligar a base de dados.');
             }
         }
 

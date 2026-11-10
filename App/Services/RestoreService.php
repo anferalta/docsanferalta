@@ -15,16 +15,7 @@ class RestoreService
 
     public function __construct()
     {
-        $host = $_ENV['DB_HOST'];
-        $db   = $_ENV['DB_NAME'];
-        $user = $_ENV['DB_USER'];
-        $pass = $_ENV['DB_PASS'];
-
-        $dsn = "mysql:host={$host};dbname={$db};charset=utf8mb4";
-
-        $this->pdo = new PDO($dsn, $user, $pass, [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-        ]);
+        $this->pdo = DatabaseConnection::open();
     }
 
     /**
@@ -38,6 +29,9 @@ class RestoreService
      */
     public function restaurarBD(string $path): void
     {
+        if (!filter_var(\App\Core\Env::get('ALLOW_LEGACY_RESTORE', 'false'), FILTER_VALIDATE_BOOLEAN)) {
+            throw new \RuntimeException('Importacao legada desativada. A recuperacao completa exige validacao num ambiente isolado.');
+        }
         PathGuardService::init();
         PathGuardService::proteger($path);
 
@@ -51,7 +45,7 @@ class RestoreService
 
         // 2️⃣ Extrair ZIP para pasta temporária
         $tempDir = STORAGE_TEMP . '/restore_db_' . uniqid();
-        mkdir($tempDir, 0777, true);
+        mkdir($tempDir, 0770, true);
 
         PathGuardService::proteger($tempDir);
 
@@ -274,6 +268,9 @@ class RestoreService
      */
     public function restaurarFiles(string $path): void
     {
+        if (!filter_var(\App\Core\Env::get('ALLOW_LEGACY_RESTORE', 'false'), FILTER_VALIDATE_BOOLEAN)) {
+            throw new \RuntimeException('Importacao legada desativada. A recuperacao completa exige validacao num ambiente isolado.');
+        }
         PathGuardService::init();
         PathGuardService::proteger($path);
 
@@ -284,7 +281,7 @@ class RestoreService
         $destino = STORAGE_DOCUMENTOS;
 
         if (!is_dir($destino)) {
-            mkdir($destino, 0777, true);
+            mkdir($destino, 0770, true);
         }
 
         PathGuardService::proteger($destino);

@@ -47,6 +47,6 @@ $pastasObrigatorias = [
 
 foreach ($pastasObrigatorias as $pasta) {
     if (!is_dir($pasta)) {
-        mkdir($pasta, 0777, true);
+        mkdir($pasta, 0770, true);
     }
 }

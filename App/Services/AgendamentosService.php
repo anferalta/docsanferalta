@@ -12,7 +12,7 @@ class AgendamentosService
             ?: (__DIR__ . '/../../storage/agendamentos');
 
         if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
+            mkdir($dir, 0770, true);
         }
 
         $this->ficheiro = $dir . '/agendamentos.json';

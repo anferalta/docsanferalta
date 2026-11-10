@@ -15,7 +15,7 @@ class Helpers
         $dir = __DIR__ . '/../../logs';
 
         if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
+            mkdir($dir, 0770, true);
         }
 
         $ficheiro = $dir . '/' . date('Y-m-d') . '.log';
@@ -48,11 +48,11 @@ class Helpers
      */
     public static function url(string $path): string
     {
-        if ($path[0] !== '/') {
+        if ($path === '' || $path[0] !== '/') {
             $path = '/' . ltrim($path, '/');
         }
 
-        $base = rtrim($_ENV['APP_URL'] ?? '', '/');
+        $base = self::baseUrl();
 
         return $base . $path;
     }
@@ -71,18 +71,11 @@ class Helpers
      */
     public static function baseUrl(): string
     {
-        // Se APP_URL estiver definido, usar sempre
-        if (!empty($_ENV['APP_URL'])) {
-            return rtrim($_ENV['APP_URL'], '/');
+        $url = Env::required('APP_URL');
+        if (!filter_var($url, FILTER_VALIDATE_URL) || !in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true)) {
+            throw new \RuntimeException('APP_URL invalido.');
         }
-
-        // Fallback para ambiente local
-        if ($_ENV['APP_ENV'] === 'local') {
-            return 'http://anferaltadocs.local';
-        }
-
-        // Produção
-        return 'https://anferalta.com';
+        return rtrim($url, '/');
     }
 
     public static function route(string $name, array $params = []): string

@@ -77,7 +77,7 @@ class Documento extends Model
 
     public function path(): string
     {
-        $base = dirname(__DIR__, 3) . '/storage/documentos';
+        $base = STORAGE_DOCUMENTOS;
         $subpasta = trim($this->caminho ?? '', "/\\");
         return $base . DIRECTORY_SEPARATOR . $subpasta . DIRECTORY_SEPARATOR . $this->ficheiro;
     }
