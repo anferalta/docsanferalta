@@ -16,8 +16,8 @@ using System.Web.Script.Serialization;
 using System.Windows.Forms;
 
 [assembly: AssemblyTitle("Instalador AnferaltaDocs")]
-[assembly: AssemblyDescription("Instalação para servidores Windows preparados com PHP e MySQL")]
-[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyDescription("Instalação Windows de raiz com IIS, PHP, MySQL e HTTPS empresarial")]
+[assembly: AssemblyVersion("2.0.0.0")]
 
 namespace AnferaltaDocsSetup
 {
@@ -31,12 +31,14 @@ namespace AnferaltaDocsSetup
             try
             {
                 if (args.Length == 1 && args[0].StartsWith("--self-test=", StringComparison.Ordinal)) return SelfTest.Run(args[0].Substring(12));
-                Application.Run(new Wizard());
+                if (args.Length == 1 && args[0].StartsWith("--bootstrap-self-test=", StringComparison.Ordinal)) return BootstrapSelfTest.Run(args[0].Substring(22));
+                if (args.Length == 1 && args[0] == "--prepared-server") Application.Run(new Wizard());
+                else Application.Run(new CleanMachineWizard());
                 return 0;
             }
             catch (Exception)
             {
-                if (args.Length == 1 && args[0].StartsWith("--self-test=", StringComparison.Ordinal)) return 1;
+                if (args.Length == 1 && (args[0].StartsWith("--self-test=", StringComparison.Ordinal) || args[0].StartsWith("--bootstrap-self-test=", StringComparison.Ordinal))) return 1;
                 MessageBox.Show("Não foi possível iniciar o instalador. Confirme as permissões e o .NET Framework 4.8 do Windows.", "AnferaltaDocs", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return 1;
             }
@@ -71,11 +73,12 @@ namespace AnferaltaDocsSetup
                 if (item.Exists && (item.Attributes & FileAttributes.ReparsePoint) != 0) throw new IOException("Escolha um destino sem ligações simbólicas ou junctions.");
         }
 
-        internal static void Extract(string destination, Action<string> log)
+        internal static void Extract(string destination, Action<string> log, bool resumePartial = false)
         {
             string root = Path.GetFullPath(destination);
             CheckParents(root);
-            if (Directory.Exists(root) && Directory.EnumerateFileSystemEntries(root).Any()) throw new IOException("A pasta de destino deve estar vazia.");
+            if (Directory.Exists(root) && Directory.EnumerateFileSystemEntries(root).Any() && !resumePartial) throw new IOException("A pasta de destino deve estar vazia.");
+            if (resumePartial && File.Exists(Path.Combine(root, ".env"))) throw new IOException("Não é possível repetir a extração sobre uma configuração publicada.");
             Directory.CreateDirectory(root);
             using (Stream payload = Assembly.GetExecutingAssembly().GetManifestResourceStream("AnferaltaDocs.Payload.zip"))
             {
@@ -87,7 +90,9 @@ namespace AnferaltaDocsSetup
                     Dictionary<string, string> manifest;
                     using (var reader = new StreamReader(metadata.Open(), Encoding.UTF8)) manifest = new JavaScriptSerializer().Deserialize<Dictionary<string, string>>(reader.ReadToEnd());
                     if (archive.Entries.Count != manifest.Count + 1) throw new InvalidDataException("Conteúdo inesperado no pacote.");
+                    if (resumePartial && Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories).Any(file => !manifest.ContainsKey(file.Substring(root.TrimEnd('\\').Length + 1).Replace('\\', '/')))) throw new IOException("A extração incompleta contém ficheiros externos ao pacote; requer revisão.");
                     var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                     int count = 0;
                     foreach (var entry in archive.Entries)
                     {
@@ -96,8 +101,10 @@ namespace AnferaltaDocsSetup
                         if (entry.FullName == "setup-manifest.json") continue;
                         string expected;
                         if (!manifest.TryGetValue(entry.FullName, out expected) || !Regex.IsMatch(expected, "^[a-f0-9]{64}$")) throw new InvalidDataException("Manifesto incompleto.");
-                        Directory.CreateDirectory(Path.GetDirectoryName(target));
-                        using (var input = entry.Open()) using (var output = new FileStream(target, FileMode.CreateNew, FileAccess.Write, FileShare.None)) input.CopyTo(output);
+                        string parent = Path.GetDirectoryName(target);
+                        CheckParents(target);
+                        if (directories.Add(parent)) Directory.CreateDirectory(parent);
+                        if (!File.Exists(target)) { using (var input = entry.Open()) using (var output = new FileStream(target, FileMode.CreateNew, FileAccess.Write, FileShare.None)) input.CopyTo(output); }
                         if (!String.Equals(HashFile(target), expected, StringComparison.Ordinal)) throw new InvalidDataException("O pacote não passou na verificação de integridade.");
                         count++;
                         if (count % 400 == 0) log("A extrair e verificar a aplicação (" + count + " ficheiros)...");
@@ -108,7 +115,7 @@ namespace AnferaltaDocsSetup
             }
         }
 
-        internal static void VerifyExisting(string root)
+        internal static void VerifyExisting(string root, bool allowCompletedBootstrap = false)
         {
             CheckParents(root);
             string marker = Path.Combine(root, ".setup-package.json");
@@ -119,7 +126,7 @@ namespace AnferaltaDocsSetup
                 string file = SafePath(root, item.Key);
                 if (!File.Exists(file) || !String.Equals(HashFile(file), item.Value, StringComparison.Ordinal)) throw new IOException("O código extraído foi alterado. Use uma cópia limpa ou o procedimento de manutenção.");
             }
-            if (File.Exists(Path.Combine(root, ".env")) && !File.Exists(Path.Combine(root, "storage", ".installation-incomplete"))) throw new IOException("Esta aplicação já está instalada. O assistente não substitui instalações existentes.");
+            if (!allowCompletedBootstrap && File.Exists(Path.Combine(root, ".env")) && !File.Exists(Path.Combine(root, "storage", ".installation-incomplete"))) throw new IOException("Esta aplicação já está instalada. O assistente não substitui instalações existentes.");
         }
 
         internal static void SecureDirectory(string path)
@@ -266,7 +273,7 @@ namespace AnferaltaDocsSetup
             int row = table.RowCount++; table.Controls.Add(log, 0, row); table.SetColumnSpan(log, 2); log.Dock = DockStyle.Top;
         }
 
-        private static string FindPhp()
+        internal static string FindPhp()
         {
             foreach (string folder in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(';')) { try { string found = Path.Combine(folder.Trim('"'), "php.exe"); if (File.Exists(found)) return found; } catch { } }
             string wamp = @"C:\wamp\bin\php";
@@ -389,8 +396,21 @@ namespace AnferaltaDocsSetup
                 verify(File.Exists(Path.Combine(app, "vendor", "autoload.php")), "Dependencies included");
                 verify(File.Exists(Path.Combine(app, "docs", "guia-instalacao.md")), "Guide included");
                 verify(!File.Exists(Path.Combine(app, ".env")) && !Directory.Exists(Path.Combine(app, "secrets")) && !Directory.Exists(Path.Combine(app, "backups")) && !Directory.Exists(Path.Combine(app, "storage")), "No operational data or secrets");
-                Package.VerifyExisting(app); verify(true, "Extracted manifest matches");
-                File.AppendAllText(Path.Combine(app, "install.php"), "\nchanged"); bool altered = false; try { Package.VerifyExisting(app); } catch (IOException) { altered = true; } verify(altered, "Modified code is refused");
+                string php = Wizard.FindPhp();
+                if (File.Exists(php)) {
+                    var start = new ProcessStartInfo(php, Package.QuoteArgument(Path.Combine(app, "install.php")) + " --check") { WorkingDirectory = app, UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+                    using (var process = Process.Start(start)) {
+                        string output = process.StandardOutput.ReadToEnd(); process.StandardError.ReadToEnd(); process.WaitForExit();
+                        verify(process.ExitCode == 0 && output.Contains("[OK] vendor/autoload.php"), "Bundled application preflight runs successfully");
+                    }
+                } else verify(false, "PHP needed for executable integration test");
+                // Exercise resume checks on a compact fixture; every real payload
+                // file has already been hashed by Extract, so do not rescan 2,500 files.
+                string probe = Path.Combine(root, "resume-probe"); Directory.CreateDirectory(probe);
+                string probeFile = Path.Combine(probe, "install.php"); File.WriteAllText(probeFile, "fixture");
+                File.WriteAllText(Path.Combine(probe, ".setup-package.json"), new JavaScriptSerializer().Serialize(new Dictionary<string, string> { { "install.php", Package.HashFile(probeFile) } }));
+                Package.VerifyExisting(probe); verify(true, "Extracted manifest matches");
+                File.AppendAllText(probeFile, "changed"); bool altered = false; try { Package.VerifyExisting(probe); } catch (IOException) { altered = true; } verify(altered, "Modified code is refused");
                 using (var wizard = new Wizard()) { verify(wizard.Text.Contains("AnferaltaDocs"), "Wizard constructs"); }
             }
             catch (Exception error) { failed.Add(error.GetType().Name + ": " + error.Message); }

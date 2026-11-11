@@ -1,0 +1,6 @@
+{
+  "php": {"version":"8.4.27-1 NTS x64", "file":"php.zip", "url":"https://downloads.php.net/~windows/releases/php-8.4.27-1-nts-Win32-vs17-x64.zip", "sha256":"dbae154a0a89791f36c3d48e68bae797878333e7d6cb5721e74617de59b63ab7"},
+  "mysql": {"version":"8.4.13 LTS x64", "file":"mysql.zip", "url":"https://cdn.mysql.com/Downloads/MySQL-8.4/mysql-8.4.13-winx64.zip", "sha256":"e9cd98b1d23f122987b1afca26ad942efec5891481103d48ae3cde237fa3ea54"},
+  "vc": {"version":"14 x64", "file":"vc_redist.x64.exe", "url":"https://download.visualstudio.microsoft.com/download/pr/78d061c5-9ef3-42ab-98ed-3309d1095dc4/9C02C9ED120F671B900E6B9471D890E3B2414117A7E53F4AE2E855466FA2B7C9/VC_redist.x64.exe", "sha256":"9c02c9ed120f671b900e6b9471d890e3b2414117a7e53f4ae2e855466fa2b7c9", "signer":"Microsoft Corporation"},
+  "rewrite": {"version":"2.1 x64", "file":"rewrite.msi", "url":"https://download.microsoft.com/download/1/2/8/128E2E22-C1B9-44A4-BE2A-5859ED1D4592/rewrite_amd64_en-US.msi", "sha256":"37342ff2f585f263f34f48e9de59eb1051d61015a8e967dbde4075716230a32a", "signer":"Microsoft Corporation"}
+}

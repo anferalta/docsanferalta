@@ -37,7 +37,7 @@ for path in (root / 'scripts/migrations').glob('*.sql'):
     include(path)
 for path in (root / 'database/migrations').glob('*.sql'):
     include(path)
-for name in ['recuperacao-e-instalacao.md', 'validacao-servidor.md', 'instalador.md', 'guia-instalacao.md', 'instalador-windows-exe.md']:
+for name in ['recuperacao-e-instalacao.md', 'validacao-servidor.md', 'instalador.md', 'guia-instalacao.md', 'instalador-windows-exe.md', 'instalacao-windows-de-raiz.md']:
     include(root / 'docs' / name)
 assets = {'.css', '.js', '.svg', '.png', '.jpg', '.jpeg', '.gif', '.webp',
           '.ico', '.woff', '.woff2', '.ttf', '.eot'}

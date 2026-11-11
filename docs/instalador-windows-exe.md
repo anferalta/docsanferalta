@@ -1,47 +1,83 @@
 # Instalador Windows EXE
 
-O ficheiro `AnferaltaDocs-Setup.exe` instala a aplicação num servidor Windows **já preparado** com PHP 8.3+ de 64 bits, MySQL, Apache/IIS e HTTPS. Inclui a aplicação, as bibliotecas correspondentes ao `composer.lock`, as migrações e os guias. Não precisa de Composer no destino nem descarrega bibliotecas ao instalar.
+O `AnferaltaDocs-Setup.exe` abre o assistente de **instalação de raiz para a rede da empresa**: IIS/FastCGI, PHP, MySQL, aplicação e HTTPS. A aplicação e as bibliotecas vêm incluídas; os requisitos são descarregados de fontes oficiais, com versões e SHA-256 fixados.
+
+**Estado: candidato de validação, sem assinatura Authenticode.** A compilação e os testes isolados não substituem a homologação numa máquina Windows limpa. Não utilizar ainda como uma versão homologada para produção.
+
+## Antes de executar
+
+- Windows 11 Pro/Enterprise/Education x64 ou Windows Server 2019+ com ambiente gráfico; Windows atualizado, sem reinícios pendentes e sem IIS, Apache, WAMP ou MySQL existentes. Windows Home e Server Core não fazem parte deste assistente.
+- Conta de administrador, PowerShell do Windows de 64 bits, NTFS e pelo menos 10 GiB livres inicialmente. O espaço para documentos e backups deve ser dimensionado à parte.
+- Internet para descarregar cerca de 330 MB de requisitos, ativar funções Windows e verificar certificados. Não é um instalador offline.
+- Domínio completo da aplicação, por exemplo `documentos.empresa.pt`, e um IP estável para o servidor.
+- Certificado `.pfx`/`.p12` com chave privada e cadeia HTTPS válida para esse domínio, mais a sua palavra-passe. A confiança na CA empresarial deve ser distribuída pela equipa de infraestrutura/GPO. O instalador não adiciona uma CA raiz nem emite certificados empresariais.
 
 ## Passos do assistente
 
-1. Escolher uma pasta vazia, o `php.exe` do servidor e a URL HTTPS.
-2. Indicar uma base MySQL vazia e uma conta de instalação dedicada, com password.
-3. Definir o primeiro administrador, com password de pelo menos 14 caracteres.
-4. Opcionalmente, configurar SMTP e o ficheiro CA necessário ao PHP.
-5. Rever o resumo e clicar em **Instalar**.
+1. Executar o EXE e aceitar a elevação UAC do Windows.
+2. Escolher uma pasta nova, por exemplo `C:\AnferaltaDocs`.
+3. Indicar o domínio sem `https://` e as redes autorizadas: `LocalSubnet` ou redes CIDR separadas por vírgulas.
+4. Definir o nome, email e palavra-passe inicial do administrador, com pelo menos 14 caracteres.
+5. Escolher o PFX e introduzir a sua palavra-passe no campo protegido.
+6. Clicar em **Verificar e instalar**. As verificações iniciais recusam conflitos antes de preparar os serviços. O certificado é validado com a confiança do Windows, incluindo nome DNS, validade, utilização de servidor e revogação.
+7. Se algum requisito exigir reinício, reiniciar quando conveniente e executar novamente o mesmo EXE, com a mesma pasta e os mesmos dados. Não há reinício automático.
+8. No DNS da empresa, criar o registo que aponta o domínio para o IP deste servidor. Esta alteração é feita pela equipa que gere o DNS; o EXE não modifica o DNS nem o ficheiro `hosts`.
+9. Testar `https://dominio-da-entidade/login` a partir de outra máquina autorizada. Usar explicitamente HTTPS: este candidato não configura um site HTTP nem redirecionamento na porta 80.
+10. Alterar a palavra-passe inicial, guardar a chave de recuperação fora do servidor e ensaiar um restauro numa instalação isolada.
 
-O assistente verifica hashes durante a extração, os requisitos PHP, a configuração e a base vazia antes de aplicar migrações e criar o administrador. As passwords são mascaradas na interface e comunicadas ao instalador PHP por ficheiros temporários com acesso restrito, nunca por argumentos de processo. Os ficheiros de entrada são removidos quando a instalação termina com sucesso.
+A instalação pode parar para revisão quando encontra uma inicialização MySQL incompleta ou um recurso existente diferente do registado. Não apaga diretórios de dados para repetir uma etapa. Não é um desinstalador nem um mecanismo de atualização de instalações concluídas.
 
-Se a operação falhar, os dados de entrada e o estado ficam privados para diagnóstico/retoma. Não enviar esses ficheiros para suporte nem copiar o seu conteúdo para o chat. Ao repetir na mesma pasta, o assistente verifica o código extraído e retoma apenas a instalação registada. Uma instalação concluída não é substituída.
+## Estrutura e acessos
 
-## Preparação da infraestrutura
+| Caminho | Utilização |
+| --- | --- |
+| `app/public` | Única raiz publicada pelo IIS. |
+| `app/storage` | Armazenamento com escrita pela identidade do application pool. |
+| `app/secrets` | Chave de recuperação e credencial da aplicação; apenas a credencial MySQL é concedida ao processo web. |
+| `app/backups/Completos` | Primeiro backup completo encriptado e verificado. Acesso administrativo. |
+| `bootstrap` | Estado de preparação e credenciais de root/manutenção MySQL; apenas Administradores e SYSTEM. Não enviar esta pasta para suporte. |
+| `runtime` | PHP e MySQL instalados pelo assistente. |
+| `data/mysql` | Dados MySQL; escrita apenas pela conta de serviço, Administradores e SYSTEM. |
 
-O EXE não instala ou substitui PHP, MySQL, Apache ou IIS, não cria contas no MySQL e não modifica os certificados ou virtual hosts existentes. A conta Windows que o executa precisa de escrita no destino. Se a pasta for protegida, a política do servidor pode exigir execução como administrador.
+O MySQL escuta apenas em `127.0.0.1:3306`. O serviço `AnferaltaDocsMySQL` usa LocalService com permissões concedidas ao SID do próprio serviço. A conta web `anferalta_app` recebe apenas SELECT/INSERT/UPDATE/DELETE na base da aplicação; a conta `anferalta_maintenance` recebe os privilégios de manutenção nessa base, sem privilégios globais ou GRANT OPTION.
 
-No final, o administrador da infraestrutura deve:
+O IIS usa o application pool `AnferaltaDocs`, com identidade própria, e o mesmo nome de site. A regra `AnferaltaDocs-HTTPS-LAN` abre TCP 443 nos perfis Domain/Private apenas para as redes indicadas. Políticas corporativas, outras regras existentes, encaminhamento entre sub-redes e o perfil de rede efetivo devem ser confirmados pela infraestrutura. Não é aberta a porta MySQL nem o perfil Public.
 
-- Configurar o servidor HTTPS com DocumentRoot na subpasta `public/`.
-- Ajustar a conta/grupo do PHP para ler a configuração privada e escrever no armazenamento.
-- Trocar a conta MySQL do processo web para uma conta de aplicação com privilégios mínimos, reservando a conta de instalação para manutenção.
-- Entrar na aplicação, alterar a password inicial e validar os acessos.
-- Criar um backup completo, guardar a chave fora do servidor e ensaiar um restauro isolado.
+O primeiro backup é criado com a conta de manutenção e a chave privada gerada pelo instalador. O agendamento periódico, a cópia externa e a política de retenção devem ser configurados após definir a política da entidade. SMTP também é configurado posteriormente; não são enviados emails durante a instalação.
 
-Se SMTP for configurado, o assistente testa TLS e autenticação sem enviar email. Uma falha SMTP posterior à instalação é comunicada para revisão, sem apagar a aplicação instalada.
+Para manutenção, abrir uma sessão administrativa e fornecer a conta de manutenção apenas nesse processo:
 
-Consultar o [guia completo](guia-instalacao.md) para os comandos e as permissões. O Windows precisa do .NET Framework 4.8 para executar o assistente.
+```powershell
+$env:DB_USER = 'anferalta_maintenance'
+$env:DB_PASS_FILE = 'C:\AnferaltaDocs\bootstrap\mysql-maintenance.key'
+& C:\AnferaltaDocs\runtime\php\php.exe C:\AnferaltaDocs\app\cli\maintenance.php backup
+Remove-Item Env:\DB_USER, Env:\DB_PASS_FILE
+```
 
-## Integridade e assinatura
+Consultar também [recuperação e instalação](recuperacao-e-instalacao.md).
 
-O ficheiro `.sha256` distribuído ao lado do EXE permite comparar a integridade do download. A compilação atual não tem assinatura Authenticode de uma entidade certificada. A assinatura empresarial requer o certificado de assinatura da organização e deve ser aplicada antes de uma distribuição externa; não é substituída por um certificado de desenvolvimento.
+## Integridade, retoma e distribuição
 
-O pacote não contém o `.env`, credenciais, chaves, certificados locais, documentos, logs ou backups da instalação de desenvolvimento. Mantém as licenças dos componentes incluídos em `vendor/` e a licença da aplicação.
+O `.sha256` ao lado do EXE permite comparar o ficheiro recebido. O catálogo `installer/windows/runtimes.json` fixa os downloads; um pacote diferente é recusado, mesmo que tenha o mesmo nome. Visual C++ Runtime e URL Rewrite também exigem assinatura Microsoft válida. Alterações de versões exigem rever o catálogo e reconstruir o EXE.
 
-## Reconstruir o executável
+O assistente verifica os hashes do pacote da aplicação e dos ficheiros que vai retomar. Passwords não são passadas em argumentos de processo nem copiadas da instalação de desenvolvimento. A pasta de entrada privada guarda os dados necessários à retoma; após sucesso, remove as cópias de entrada PFX e as passwords redundantes. As credenciais de manutenção e a chave de recuperação continuam protegidas para operações administrativas.
 
-Na máquina de desenvolvimento, preparar Python, o compilador .NET Framework e `vendor/` exatamente correspondente ao lock. Executar:
+A versão atual não tem assinatura Authenticode de uma entidade certificada. A assinatura empresarial exige um certificado de assinatura de código próprio e deve preceder a distribuição externa. O certificado HTTPS da aplicação tem uma função diferente e não serve para assinar o instalador.
+
+## Reconstrução e testes
+
+Na máquina de desenvolvimento, preparar Python, o compilador .NET Framework e `vendor/` exatamente correspondente ao `composer.lock`:
 
 ```powershell
 ./installer/windows/build.ps1
 ```
 
-O processo gera `dist/AnferaltaDocs-Setup.exe`, o SHA-256 e o relatório de composição do pacote. O código-fonte do assistente está em `installer/windows/Setup.cs`.
+Para compilar uma variante de ensaio sem UAC, que continua a recusar preparação sem administrador:
+
+```powershell
+./installer/windows/build.ps1 -TestBuild
+```
+
+O argumento `--prepared-server` conserva o assistente anterior para infraestruturas já preparadas; não é o modo predefinido.
+
+Fontes dos requisitos: [PHP Windows NTS/FastCGI](https://www.php.net/downloads.php?os=windows&version=8.4), [MySQL Community LTS](https://dev.mysql.com/downloads/mysql/8.4.html?os=3), [Visual C++ Runtime](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) e [IIS URL Rewrite](https://www.iis.net/downloads/microsoft/url-rewrite).

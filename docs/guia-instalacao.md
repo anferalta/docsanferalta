@@ -1,5 +1,7 @@
 # Guia de instalação do AnferaltaDocs
 
+Para uma máquina Windows sem PHP, MySQL ou servidor web, consultar o [assistente EXE de instalação de raiz](instalador-windows-exe.md). O procedimento manual abaixo pressupõe requisitos preparados. O EXE de raiz encontra-se em fase de validação, conforme indicado no seu guia.
+
 Este guia destina-se ao administrador que vai instalar a aplicação nos servidores de uma entidade. O procedimento usa uma cópia limpa do produto e uma base MySQL vazia. Para atualizar a instalação já existente, consultar a secção 10.
 
 ## 1. O que preparar
