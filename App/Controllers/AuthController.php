@@ -112,20 +112,32 @@ class AuthController extends BaseController
                 return $this->error(500, "Não foi possível criar a conta.");
             }
 
-            EmailService::enviar(
-                $email,
-                'Conta criada — aguarda aprovação',
-                'utilizador_criado.twig',
-                [
-                    'nome' => $nome,
-                    'link' => 'A sua conta aguarda aprovação do administrador.'
-                ]
-            );
+            // A conta já está persistida. A notificação não pode transformar
+            // um registo concluído num erro nem ativar a conta sem aprovação.
+            $notificado = false;
+            try {
+                $notificado = EmailService::enviar(
+                    $email,
+                    'Conta criada — aguarda aprovação',
+                    'utilizador_criado.twig',
+                    [
+                        'nome' => $nome,
+                        'link' => 'A sua conta aguarda aprovação do administrador.'
+                    ]
+                );
+            } catch (\Throwable $e) {
+                // O EmailService regista o diagnóstico SMTP em privado.
+                error_log('Falha na notificação de registo; utilizador_id=' . $user->id . '; tipo=' . get_class($e));
+            }
 
             Sessao::flash('sucesso', 'Conta criada com sucesso! Aguarde aprovação.');
+            if (!$notificado) {
+                Sessao::flash('aviso', 'Não foi possível enviar o email de confirmação. Confirme o endereço de email com o administrador. A sua conta continua pendente de aprovação.');
+            }
             return Helpers::redirect('/login');
         } catch (\Exception $e) {
-            return $this->error(500, $e->getMessage());
+            error_log('Falha no registo de utilizador: ' . $e->getMessage());
+            return $this->error(500, 'Não foi possível concluir o registo. Tente novamente mais tarde.');
         }
     }
 }

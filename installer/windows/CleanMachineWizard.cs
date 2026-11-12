@@ -133,6 +133,7 @@ namespace AnferaltaDocsSetup
                 string state=Path.Combine(folder,"state.json");
                 if (File.Exists(state) && serializer.Deserialize<Dictionary<string,string>>(File.ReadAllText(state)).ContainsKey("complete")) throw new IOException("Esta instalação já foi concluída. Use os procedimentos de manutenção.");
                 if (!File.Exists(Path.Combine(folder,"admin-password.txt")) || File.ReadAllText(Path.Combine(folder,"admin-password.txt"))!=adminPassword) throw new IOException("A password inicial deve coincidir com a usada na instalação interrompida.");
+                ExtractResources(folder);
                 var resumeCheck=RunPowerShell(Path.Combine(folder,"Test-CleanMachine.ps1"),"-Destination "+Package.QuoteArgument(root)+" -Resume",null);
                 if (resumeCheck.Item1!=0 || !(bool)serializer.Deserialize<Dictionary<string,object>>(resumeCheck.Item2)["ready"]) throw new IOException("A retoma exige Windows compatível, elevação, espaço livre e nenhum reinício pendente. Conclua o reinício antes de retomar.");
                 Append("A verificar os ficheiros da instalação interrompida...");
@@ -165,11 +166,13 @@ namespace AnferaltaDocsSetup
         {
             string shell=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),@"System32\WindowsPowerShell\v1.0\powershell.exe");
             var info=new ProcessStartInfo(shell,"-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "+Package.QuoteArgument(script)+" "+arguments) { UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true,StandardOutputEncoding=new UTF8Encoding(false),StandardErrorEncoding=new UTF8Encoding(false) };
-            var text=new StringBuilder();
+            var text=new StringBuilder(); var errors=new StringBuilder();
             using (var process=new Process { StartInfo=info }) {
                 process.OutputDataReceived+=delegate(object sender,DataReceivedEventArgs e) { if(e.Data!=null) { text.AppendLine(e.Data); if(output!=null) output(e.Data); } };
-                process.ErrorDataReceived+=delegate(object sender,DataReceivedEventArgs e) { if(e.Data!=null && output!=null) output("O Windows comunicou um erro; consulte o diagnóstico privado da etapa."); };
-                process.Start(); process.BeginOutputReadLine(); process.BeginErrorReadLine(); process.WaitForExit(); return Tuple.Create(process.ExitCode,text.ToString());
+                process.ErrorDataReceived+=delegate(object sender,DataReceivedEventArgs e) { if(e.Data!=null) { errors.AppendLine(e.Data); if(output!=null) output("O Windows comunicou um erro; consulte o diagnóstico privado da etapa."); } };
+                process.Start(); process.BeginOutputReadLine(); process.BeginErrorReadLine(); process.WaitForExit();
+                if(errors.Length>0) File.WriteAllText(Path.Combine(Path.GetDirectoryName(script),"powershell-error.txt"),errors.ToString(),new UTF8Encoding(false));
+                return Tuple.Create(process.ExitCode,text.ToString());
             }
         }
         private void Append(string message) { if(IsDisposed)return; if(InvokeRequired) { BeginInvoke(new Action<string>(Append),message); return; } log.AppendText(message+Environment.NewLine); }

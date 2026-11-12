@@ -102,8 +102,8 @@ namespace AnferaltaDocsSetup
                         string expected;
                         if (!manifest.TryGetValue(entry.FullName, out expected) || !Regex.IsMatch(expected, "^[a-f0-9]{64}$")) throw new InvalidDataException("Manifesto incompleto.");
                         string parent = Path.GetDirectoryName(target);
-                        CheckParents(target);
-                        if (directories.Add(parent)) Directory.CreateDirectory(parent);
+                        if (directories.Add(parent)) { CheckParents(parent); Directory.CreateDirectory(parent); }
+                        if (File.Exists(target) && (File.GetAttributes(target) & FileAttributes.ReparsePoint) != 0) throw new IOException("Ficheiro de destino com ligação simbólica.");
                         if (!File.Exists(target)) { using (var input = entry.Open()) using (var output = new FileStream(target, FileMode.CreateNew, FileAccess.Write, FileShare.None)) input.CopyTo(output); }
                         if (!String.Equals(HashFile(target), expected, StringComparison.Ordinal)) throw new InvalidDataException("O pacote não passou na verificação de integridade.");
                         count++;

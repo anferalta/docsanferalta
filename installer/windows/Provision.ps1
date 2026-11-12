@@ -4,6 +4,7 @@ param([Parameter(Mandatory=$true)][string] $Config, [switch] $LibraryOnly)
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version 2
 $utf8 = New-Object Text.UTF8Encoding($false)
+$script:diagnosticsDirectory=$null
 [Console]::OutputEncoding = $utf8
 function Write-Utf8([string] $Path, [string] $Text) { [IO.File]::WriteAllText($Path, $Text, $utf8) }
 function Invoke-Native([string] $File, [string[]] $Arguments, [int[]] $Allowed = @(0), [hashtable] $Environment = @{}) {
@@ -15,6 +16,7 @@ function Invoke-Native([string] $File, [string[]] $Arguments, [int[]] $Allowed =
     $start.RedirectStandardOutput = $true; $start.RedirectStandardError = $true
     foreach ($key in @($start.EnvironmentVariables.Keys)) { if ($key -match '^(DB_|APP_|ADMIN_|MAIL_|BACKUP_|SESSION_|ALLOW_LEGACY_)') { $start.EnvironmentVariables.Remove($key) } }
     foreach ($key in $Environment.Keys) { $start.EnvironmentVariables[$key]=$Environment[$key] }
+    if ([IO.Path]::GetFileName($File) -ieq 'php.exe') { $start.EnvironmentVariables['PHPRC']=[IO.Path]::GetDirectoryName($File); $start.EnvironmentVariables['PHP_INI_SCAN_DIR']='' }
     $process = New-Object Diagnostics.Process
     $process.StartInfo = $start
     try {
@@ -22,7 +24,10 @@ function Invoke-Native([string] $File, [string[]] $Arguments, [int[]] $Allowed =
         $output = $process.StandardOutput.ReadToEndAsync(); $errorOutput = $process.StandardError.ReadToEndAsync()
         if (!$process.WaitForExit(1200000)) { $process.Kill(); throw 'Operation timed out' }
         $process.WaitForExit()
-        if ($process.ExitCode -notin $Allowed) { throw ('A operação falhou: {0}; código {1}.' -f [IO.Path]::GetFileName($File), $process.ExitCode) }
+        if ($process.ExitCode -notin $Allowed) {
+            if ($script:diagnosticsDirectory) { Write-Utf8 (Join-Path $script:diagnosticsDirectory 'native-error.txt') ([IO.Path]::GetFileName($File)+"`r`n"+$output.Result+"`r`n"+$errorOutput.Result) }
+            throw ('A operação falhou: {0}; código {1}.' -f [IO.Path]::GetFileName($File), $process.ExitCode)
+        }
         return [pscustomobject]@{ Code=$process.ExitCode; Output=$output.Result; Error=$errorOutput.Result }
     } finally { $process.Dispose() }
 }
@@ -66,11 +71,26 @@ function Expand-VerifiedZip([string] $Archive, [string] $Target, [string] $Strip
         }
     } finally { $zip.Dispose() }
 }
+function Read-LocalHttps([string] $Domain, [string] $Path) {
+    $client=New-Object Net.Sockets.TcpClient('127.0.0.1',443)
+    try {
+        $ssl=New-Object Net.Security.SslStream($client.GetStream(),$false)
+        try {
+            $ssl.ReadTimeout=30000; $ssl.WriteTimeout=30000
+            $ssl.AuthenticateAsClient($Domain)
+            $request="GET $Path HTTP/1.1`r`nHost: $Domain`r`nConnection: close`r`n`r`n"
+            $bytes=[Text.Encoding]::ASCII.GetBytes($request); $ssl.Write($bytes,0,$bytes.Length)
+            $reader=New-Object IO.StreamReader($ssl)
+            return $reader.ReadToEnd()
+        } finally { $ssl.Dispose() }
+    } finally { $client.Dispose() }
+}
 if ($LibraryOnly) { return }
 
 $inputConfig = Get-Content -LiteralPath $Config -Raw -Encoding UTF8 | ConvertFrom-Json
 $root = [IO.Path]::GetFullPath($inputConfig.Root).TrimEnd('\')
 $private = Join-Path $root 'bootstrap'
+$script:diagnosticsDirectory=$private
 if ([IO.Path]::GetFullPath($Config) -ne (Join-Path $private 'input.json')) { throw 'Invalid private configuration path' }
 if (!(Test-Path -LiteralPath (Join-Path $root '.bootstrap-owner.json'))) { throw 'Installer ownership marker missing' }
 $owner = Get-Content -LiteralPath (Join-Path $root '.bootstrap-owner.json') -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -294,6 +314,8 @@ log-error=$($mysqlData.Replace('\','/'))/mysql-error.log
         $cgi=Join-Path $phpRoot 'php-cgi.exe'
         $fastCgi=@(Get-WebConfiguration -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter 'system.webServer/fastCgi/application' | Where-Object { $_.fullPath -eq $cgi })
         if (!$fastCgi.Count) { Add-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter 'system.webServer/fastCgi' -Name '.' -Value @{fullPath=$cgi;instanceMaxRequests=10000;requestTimeout=150;activityTimeout=150} }
+        $fastCgiFilter="system.webServer/fastCgi/application[@fullPath='$cgi']/environmentVariables"
+        if (!(Get-WebConfiguration -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter ($fastCgiFilter+"/environmentVariable[@name='PHPRC']"))) { Add-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter $fastCgiFilter -Name '.' -Value @{name='PHPRC';value=$phpRoot} }
         $handler=[Security.SecurityElement]::Escape($cgi)
         Write-Utf8 (Join-Path $app 'public\web.config') (@"
 <?xml version="1.0" encoding="utf-8"?>
@@ -340,19 +362,12 @@ log-error=$($mysqlData.Replace('\','/'))/mysql-error.log
         Import-Module WebAdministration
         Start-WebSite $siteName
         # Test the actual local listener using domain SNI + Windows trust, without changing DNS/hosts.
-        $client=New-Object Net.Sockets.TcpClient('127.0.0.1',443)
-        try {
-            $ssl=New-Object Net.Security.SslStream($client.GetStream(),$false)
-            try {
-                $ssl.ReadTimeout=30000; $ssl.WriteTimeout=30000
-                $ssl.AuthenticateAsClient($inputConfig.Domain)
-                $request="GET /login HTTP/1.1`r`nHost: $($inputConfig.Domain)`r`nConnection: close`r`n`r`n"
-                $bytes=[Text.Encoding]::ASCII.GetBytes($request); $ssl.Write($bytes,0,$bytes.Length)
-                $reader=New-Object IO.StreamReader($ssl)
-                $response=$reader.ReadToEnd()
-                if ($response -notmatch '^HTTP/1\.[01] 200 ' -or $response -notmatch '(?i)<form') { throw 'HTTPS login route validation failed' }
-            } finally { $ssl.Dispose() }
-        } finally { $client.Dispose() }
+        $response=Read-LocalHttps $inputConfig.Domain '/login'
+        if ($response -notmatch '^HTTP/1\.[01] 200 ' -or $response -notmatch '(?i)<form') { throw 'HTTPS login route validation failed' }
+        foreach($path in '/.env','/secrets/database-password.txt','/vendor/autoload.php','/storage/installation-state.json','/web.config') {
+            $response=Read-LocalHttps $inputConfig.Domain $path
+            if ($response -notmatch '^HTTP/1\.[01] (403|404) ') { throw ('Private route exposed: '+$path) }
+        }
         Invoke-Native $php @((Join-Path $app 'cli\maintenance.php'),'status') | Out-Null
     }
     Stage 'initial-backup' {
@@ -382,6 +397,10 @@ log-error=$($mysqlData.Replace('\','/'))/mysql-error.log
     Write-Output ('Instalação concluída: https://'+$inputConfig.Domain+'/login')
     Write-Output 'Configure o DNS da empresa para este servidor e valide o acesso a partir de outra máquina. Guarde a chave de recuperação fora do servidor.'
 } catch {
+    # Never leave a failed half-configured site accepting connections.
+    if ($state.ContainsKey('iis-site') -and $state['iis-site'] -eq 'complete' -and !$state.ContainsKey('complete')) {
+        try { Import-Module WebAdministration; $site=Get-Item ('IIS:\Sites\'+$siteName); if ($site.physicalPath -eq (Join-Path $app 'public')) { Stop-WebSite $siteName } } catch {}
+    }
     # Detailed exceptions may include paths/configuration; keep diagnostics in the private folder.
     Write-Utf8 (Join-Path $private 'last-error.txt') ($_ | Out-String)
     Write-Output ('A instalação parou na etapa '+$script:currentStage+'. Consulte bootstrap\last-error.txt no servidor. Não foram apagados dados.')

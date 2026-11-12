@@ -22,7 +22,7 @@ try {
     $root = [IO.Path]::GetPathRoot($resolved)
     $local = $resolved -match '^[A-Za-z]:\\' -and $resolved.TrimEnd('\') -ne $root.TrimEnd('\')
     $empty = !(Test-Path -LiteralPath $resolved) -or ((Test-Path -LiteralPath $resolved -PathType Container) -and !(Get-ChildItem -LiteralPath $resolved -Force | Select-Object -First 1))
-    $owned = $Resume -and (Test-Path -LiteralPath (Join-Path $resolved '.bootstrap-owner.json')) -and (Test-Path -LiteralPath (Join-Path $resolved 'bootstrap\input.json'))
+    $owned = $Resume -and (Test-Path -LiteralPath (Join-Path $resolved '.bootstrap-owner.json')) -and (Test-Path -LiteralPath (Join-Path $resolved 'bootstrap') -PathType Container)
     Add-Check 'destination' ($local -and ($empty -or $owned)) 'É necessária uma pasta nova e vazia ou uma preparação registada pelo próprio assistente.'
     $drive = [IO.DriveInfo]::new($root)
     Add-Check 'filesystem' ($drive.IsReady -and $drive.DriveFormat -eq 'NTFS') 'NTFS é necessário para as permissões privadas.'
