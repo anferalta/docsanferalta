@@ -34,3 +34,5 @@ Array
 
 2026-10-25 18:57:35 Comando LibreOffice terminou com código 0: convert C:\wamp\www\anferalta\anferaltadocs\storage\documentos\2026\10\25\6ade5106b8e4e_19.docx as a Writer document -> C:\wamp\www\anferalta\anferaltadocs\storage\temp\documentos_preview\25-36423c47c23867f4be5238cf16ed0f8c6eb43dd05e068335509dc335667fad67\6ade5106b8e4e_19.pdf using filter : writer_pdf_Export
 Could not find platform independent libraries <prefix>
+2026-11-17 19:29:55 Comando LibreOffice terminou com código 0: convert C:\wamp\www\anferalta\anferaltadocs\storage\documentos\2026\11\17\6afcab207d2a9_18.docx as a Writer document -> C:\wamp\www\anferalta\anferaltadocs\storage\temp\documentos_preview\47-dbba26fcd21fde06773df39991f58d5b3f6e682e6db9cb3ca46441f019277b90\6afcab207d2a9_18.pdf using filter : writer_pdf_Export
+Could not find platform independent libraries <prefix>
